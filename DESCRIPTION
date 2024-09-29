@@ -1,0 +1,18 @@
+Package: legaciesr
+Type: Package
+Title: Data management for the LEGACIES data project
+Version: 0.1.0
+Authors@R: person("Cappelen", "Christoffer", email = "christoffer.cappelen@gmail.com",
+  role = c("aut", "cre")) 
+Description: Contains functions for aggregating overlapping polygons.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Imports: 
+  smoothr,
+  dplyr,
+  sf,
+  terra
+RoxygenNote: 7.3.2
+Depends: 
+    R (>= 2.10)
