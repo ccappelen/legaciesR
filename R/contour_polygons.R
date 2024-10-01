@@ -9,12 +9,17 @@
 #'  Default is 2.
 #' @param res Resolution of the raster used to calculate polygon density. Higher resolution (i.e., lower numbers)
 #'  creates smoother borders but also increases processing time. Default is 1/60 degrees.
-#' @param invalid_geom One of "none" (default), "exclude", or "fix". The function attempts to rebuild invalid geometries
+#' @param invalid_geom One of "none" (default), "exclude", "fix_exclude", or "fix_all". The function attempts to rebuild invalid geometries
 #'  using sf::st_make_valid(shp). However, some geometries may be invalid even after attempting to rebuild. If "none" the function will
-#'  return an error in case of invalid geometries (after attempting to rebuild). If "exlude", any invalid geometries will be removed.
-#'  If "fix", the function will attempt to rebuild invalid geometries by iteratively lowering the snapping
-#'  precision (in \code{s2::s2_snap_precision()}). It will return an error if it fails to rebuild valid geometries.
-#'  The use of "include" is experimental and the result should be inspected manually.
+#'  return an error in case of invalid geometries (after attempting to rebuild). If "exclude", any invalid geometries will be removed.
+#'  If "fix_exclude", invalid geometries will be rebuilt using default arguments and any remaining invalid
+#'  geometries will be removed. If "fix_all", the function will attempt to rebuild invalid geometries by
+#'  iteratively lowering the snappingnprecision (in \code{s2::s2_snap_precision()}). It will return an error
+#'  if it fails to rebuild valid geometries. The use of "fix_all" is experimental and the result should be
+#'  inspected manually.
+#' @param keep_vars logical, indicating is the returned dataframe should include columns from the input dataframe.
+#' Since the number of rows do not match, only the first row from the input dataframe is used across all
+#' rows in the output.
 #' @return Returns an SF PolygonsDataFrame with the same number of features as specified in *cuts*. The density,
 #'  or percentile, is stored in the attributes \code{"prob"} and \code{"label"}.
 #' @importFrom smoothr smooth
@@ -24,7 +29,6 @@
 #' @importFrom terra rasterize
 #' @importFrom terra as.polygons
 #' @import dplyr
-
 #' @export
 
 ## RETURN ORIGINAL DATAFRAME (INCL. YEAR IF SEVERAL PERIODS, PERHAPS IN OTHER FUNCTION)
@@ -33,8 +37,8 @@
 contour_polygons <- function(shp, cuts = 10,
                              smooth_method = c("ksmooth", "chaikin", "spline"), smoothness_factor = 2,
                              res = 1/60,
-                             invalid_geom = c("none", "exclude", "fix"),
-                             keep_vars){
+                             invalid_geom = c("none", "exclude", "fix_exclude", "fix_all"),
+                             keep_vars = F){
 
   smooth_method <- match.arg(smooth_method)
   invalid_geom <- match.arg(invalid_geom)
@@ -46,24 +50,35 @@ contour_polygons <- function(shp, cuts = 10,
 
   if(!all(sf::st_is_valid(shp))){
 
-    shp <- sf::st_make_valid(shp)
+    ## Option invalid_geom == "exclude"
+    if(invalid_geom == "exclude"){
 
-    if(all(sf::st_is_valid(shp))){
+      shp <- shp[sf::st_is_valid(shp), ]
+      if(nrow(shp) <= 1) stop("Less than two valid geometries.")
+      if(!all(sf::st_is_valid(shp))) stop("Invalid features, unable to remove")
+
+      warning("Invalid geometries have been removed from the dataset.")
+
+      }else{
+
+      shp <- sf::st_make_valid(shp)
       warning("Some geometries are invalid. They have been fixed using sf::st_make_valid().
             Consider checking spatial features before continuing.")
+
     }
+
 
     if(!all(sf::st_is_valid(shp))){
 
-      ## Option exclude_invalid == "none"
+      ## Option invalid_geom == "none"
       if(invalid_geom == "none"){
 
         stop("Invalid geometries: sf::st_make_valid() was unable to rebuild valid geometries.")
 
       }
 
-      ## Option exclude_invalid == "exclude"
-      if(invalid_geom == "exclude"){
+      ## Option invalid_geom == "fix_exclude"
+      if(invalid_geom == "fix_exclude"){
 
         shp <- shp[st_is_valid(shp), ]
         if(!all(sf::st_is_valid(shp))) stop("Invalid features, unable to remove")
@@ -71,8 +86,8 @@ contour_polygons <- function(shp, cuts = 10,
         warning("Invalid geometries have been removed from the dataset.")
       }
 
-      ## Option exclude_invalid == "fix"
-      if(invalid_geom == "fix"){
+      ## Option invalid_geom == "fix_all"
+      if(invalid_geom == "fix_all"){
 
         shp_invalid <- TRUE
         snap_prec <- 10000000
@@ -136,8 +151,9 @@ contour_polygons <- function(shp, cuts = 10,
         dplyr::mutate(cut = x) %>%
         dplyr::mutate(prob_interval = paste0((x-cut_interval), "-", x)) %>%
         dplyr::mutate(COWID = cow_id,
-                      COWNUM = cow_num) %>%
-        dplyr::select(COWID, COWNUM, cut, prob_interval)
+                      COWNUM = cow_num,
+                      nmaps = n_maps) %>%
+        dplyr::select(COWID, COWNUM, cut, prob_interval, nmaps)
     }) %>%
     dplyr::bind_rows()
 

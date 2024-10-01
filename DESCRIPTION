@@ -12,7 +12,8 @@ Imports:
   smoothr,
   dplyr,
   sf,
-  terra
+  terra,
+  pbapply
 RoxygenNote: 7.3.2
 Depends: 
     R (>= 2.10)

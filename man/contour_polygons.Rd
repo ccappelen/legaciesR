@@ -10,7 +10,8 @@ contour_polygons(
   smooth_method = c("ksmooth", "chaikin", "spline"),
   smoothness_factor = 2,
   res = 1/60,
-  invalid_geom = c("none", "exclude", "fix")
+  invalid_geom = c("none", "exclude", "fix_exclude", "fix_all"),
+  keep_vars = F
 )
 }
 \arguments{
@@ -28,12 +29,18 @@ Default is 2.}
 \item{res}{Resolution of the raster used to calculate polygon density. Higher resolution (i.e., lower numbers)
 creates smoother borders but also increases processing time. Default is 1/60 degrees.}
 
-\item{invalid_geom}{One of "none" (default), "exclude", or "fix". The function attempts to rebuild invalid geometries
+\item{invalid_geom}{One of "none" (default), "exclude", "fix_exclude", or "fix_all". The function attempts to rebuild invalid geometries
 using sf::st_make_valid(shp). However, some geometries may be invalid even after attempting to rebuild. If "none" the function will
-return an error in case of invalid geometries (after attempting to rebuild). If "exlude", any invalid geometries will be removed.
-If "fix", the function will attempt to rebuild invalid geometries by iteratively lowering the snapping
-precision (in \code{s2::s2_snap_precision()}). It will return an error if it fails to rebuild valid geometries.
-The use of "include" is experimental and the result should be inspected manually.}
+return an error in case of invalid geometries (after attempting to rebuild). If "exclude", any invalid geometries will be removed.
+If "fix_exclude", invalid geometries will be rebuilt using default arguments and any remaining invalid
+geometries will be removed. If "fix_all", the function will attempt to rebuild invalid geometries by
+iteratively lowering the snappingnprecision (in \code{s2::s2_snap_precision()}). It will return an error
+if it fails to rebuild valid geometries. The use of "fix_all" is experimental and the result should be
+inspected manually.}
+
+\item{keep_vars}{logical, indicating is the returned dataframe should include columns from the input dataframe.
+Since the number of rows do not match, only the first row from the input dataframe is used across all
+rows in the output.}
 }
 \value{
 Returns an SF PolygonsDataFrame with the same number of features as specified in *cuts*. The density,
