@@ -11,8 +11,7 @@ contour_polygons(
   smooth_method = c("ksmooth", "chaikin", "spline"),
   smoothness_factor = 2,
   res = 1/30,
-  invalid_geom = c("none", "exclude", "fix_exclude", "fix_all"),
-  keep_vars = F
+  invalid_geom = c("none", "exclude", "fix_exclude", "fix_all")
 )
 }
 \arguments{
@@ -21,8 +20,7 @@ contour_polygons(
 \item{cuts}{An integer of length 1 specifying the number of (equally spaced) contour polygons to be returned.
 For example, if \code{cuts = 10} the function will return 10 polygons representing the 10 deciles (0-0.1,0.1-0.2,...).}
 
-\item{id_vars}{Columns from original shape that should be included in the new contour polygons. Should only include columns
-that are constant within a group.}
+\item{id_vars}{Group identifiers}
 
 \item{smooth_method}{Character scalar specifying the smoothing method used to convert raster to polygon.
 The options are \code{"ksmooth"} (default), \code{"chaikin"}, and \code{"spline"}.}

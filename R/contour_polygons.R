@@ -1,6 +1,7 @@
 #' @title Create Contour Polygons
 #' @description This function creates contour polygons from multiple overlapping polygons.
 #' @param shp The SF PolygonsDataFrame to be aggregated. Must consist of more than one feature.
+#' @param id_vars Group identifiers
 #' @param cuts An integer of length 1 specifying the number of (equally spaced) contour polygons to be returned.
 #'  For example, if \code{cuts = 10} the function will return 10 polygons representing the 10 deciles (0-0.1,0.1-0.2,...).
 #' @param smooth_method Character scalar specifying the smoothing method used to convert raster to polygon.
@@ -17,8 +18,6 @@
 #'  iteratively lowering the snappingnprecision (in \code{s2::s2_snap_precision()}). It will return an error
 #'  if it fails to rebuild valid geometries. The use of "fix_all" is experimental and the result should be
 #'  inspected manually.
-#' @param id_vars Columns from original shape that should be included in the new contour polygons. Should only include columns
-#' that are constant within a group.
 #' @return Returns an SF PolygonsDataFrame with the same number of features as specified in *cuts*. The density,
 #'  or percentile, is stored in the attributes \code{"prob"} and \code{"label"}.
 #' @importFrom smoothr smooth
@@ -27,17 +26,19 @@
 #' @importFrom terra ifel
 #' @importFrom terra rasterize
 #' @importFrom terra as.polygons
+#' @importFrom rlang .data
 #' @import dplyr
+#' @import s2
 #' @export
 
 ## RETURN ORIGINAL DATAFRAME (INCL. YEAR IF SEVERAL PERIODS, PERHAPS IN OTHER FUNCTION)
 ## RETURN DATA FRAME (CONDITION ON KEEP_VARS)
 
-contour_polygons <- function(shp, cuts = 4, id_vars,
+contour_polygons <- function(shp, cuts = 4,
+                             id_vars,
                              smooth_method = c("ksmooth", "chaikin", "spline"), smoothness_factor = 2,
                              res = 1/30,
-                             invalid_geom = c("none", "exclude", "fix_exclude", "fix_all"),
-                             keep_vars = F){
+                             invalid_geom = c("none", "exclude", "fix_exclude", "fix_all")){
 
   smooth_method <- match.arg(smooth_method)
   invalid_geom <- match.arg(invalid_geom)
@@ -217,7 +218,9 @@ contour_polygons <- function(shp, cuts = 4, id_vars,
   #   sf::st_drop_geometry() %>%
   #   dplyr::select({{ id_vars }})
 
-  cow_id <- shp$COWID[1]
+  ids <- shp[1,] %>%
+    sf::st_drop_geometry() %>%
+    select({{ id_vars }})
 
   cut_seq <- seq(from = 0, to = 1, length.out = cuts+1)[-1]
   cut_interval <- 1/cuts
@@ -230,10 +233,9 @@ contour_polygons <- function(shp, cuts = 4, id_vars,
         smoothr::smooth(method = smooth_method, smoothness = smoothness_factor) %>%
         dplyr::mutate(cut = round(x, 3)) %>%
         dplyr::mutate(prob_interval = paste0(round(x-cut_interval, 3), "-", x)) %>%
-        # cbind(keep_vars) %>%
-        dplyr::mutate(COWID = cow_id) %>%
+        cbind(ids) %>%
         dplyr::mutate(nmaps = n_maps) %>%
-        dplyr::select(COWID, cut, prob_interval, nmaps)
+        dplyr::select({{ id_vars }}, "cut", "prob_interval", "nmaps")
     }) %>%
     dplyr::bind_rows()
 

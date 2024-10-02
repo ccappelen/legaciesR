@@ -9,7 +9,7 @@ get_contours(
   grp_id,
   by_period = FALSE,
   interval,
-  period_name,
+  period_id,
   nmap_threshold = 5,
   returnList = F,
   progress = F,
@@ -32,7 +32,7 @@ For user specification, the value can be either a scalar, indicating the length 
 (in which case the full range is used), or a vector specifying the exact breaks, including both the
 minimum and maximum.}
 
-\item{period_name}{name of the period variable to be used for time grouping.
+\item{period_id}{name of the period variable to be used for time grouping.
 This argument is necessary if \code{by_period} is \code{TRUE}.}
 
 \item{nmap_threshold}{scalar indicating the number of shapes requires within each group. Default is 5.}
