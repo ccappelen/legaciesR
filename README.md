@@ -14,6 +14,9 @@ of historical states at different probability thresholds, (2) create a
 grid with various summary measures of historical state presence, and (3)
 add a range of commonly used covariates to the polygon and grid data.
 
+NB: The package is still experimental and no functions should be
+considered stable.
+
 ## Installation
 
 You can install the development version of legaciesr from
