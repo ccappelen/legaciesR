@@ -11,7 +11,8 @@ contour_polygons(
   smooth_method = c("ksmooth", "chaikin", "spline"),
   smoothness_factor = 2,
   res = 1/30,
-  invalid_geom = c("none", "exclude", "fix_exclude", "fix_all")
+  invalid_geom = c("none", "exclude", "fix_exclude", "fix_all"),
+  include_higher = T
 )
 }
 \arguments{
@@ -38,7 +39,11 @@ If "fix_exclude", invalid geometries will be rebuilt using default arguments and
 geometries will be removed. If "fix_all", the function will attempt to rebuild invalid geometries by
 iteratively lowering the snappingnprecision (in \code{s2::s2_snap_precision()}). It will return an error
 if it fails to rebuild valid geometries. The use of "fix_all" is experimental and the result should be
-inspected manually.}
+inspected manually.
+@param include_higher logical, whether the contour polygons should include percentiles above current interval.
+If TRUE (default), the 50 % polygon will include all areas covered by at least 50 % of the shapes
+(and not just within the specified interval, e.g., 0.75-1, 0.50-1, 0.25-1...). If FALSE, the polygon will include only areas
+within the specified interval (e.g., 0.75-1, 0.50-0.75, 0.25-0.50...).}
 }
 \value{
 Returns an SF PolygonsDataFrame with the same number of features as specified in *cuts*. The density,

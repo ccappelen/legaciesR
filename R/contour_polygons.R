@@ -18,6 +18,10 @@
 #'  iteratively lowering the snappingnprecision (in \code{s2::s2_snap_precision()}). It will return an error
 #'  if it fails to rebuild valid geometries. The use of "fix_all" is experimental and the result should be
 #'  inspected manually.
+#'  @param include_higher logical, whether the contour polygons should include percentiles above current interval.
+#'  If TRUE (default), the 50 % polygon will include all areas covered by at least 50 % of the shapes
+#'  (and not just within the specified interval, e.g., 0.75-1, 0.50-1, 0.25-1...). If FALSE, the polygon will include only areas
+#'  within the specified interval (e.g., 0.75-1, 0.50-0.75, 0.25-0.50...).
 #' @return Returns an SF PolygonsDataFrame with the same number of features as specified in *cuts*. The density,
 #'  or percentile, is stored in the attributes \code{"prob"} and \code{"label"}.
 #' @importFrom smoothr smooth
@@ -38,7 +42,10 @@ contour_polygons <- function(shp, cuts = 4,
                              id_vars,
                              smooth_method = c("ksmooth", "chaikin", "spline"), smoothness_factor = 2,
                              res = 1/30,
-                             invalid_geom = c("none", "exclude", "fix_exclude", "fix_all")){
+                             invalid_geom = c("none", "exclude", "fix_exclude", "fix_all"),
+                             include_higher = T){
+
+  # print(shp$COWID[1])
 
   smooth_method <- match.arg(smooth_method)
   invalid_geom <- match.arg(invalid_geom)
@@ -97,23 +104,26 @@ contour_polygons <- function(shp, cuts = 4,
     invalid <- !all(sf::st_is_valid(shp))
 
     if(invalid){
-      shp <- sf::st_make_valid()
-      shp_invalid <- TRUE
-      snap_prec <- 10000000
 
-      while(shp_invalid == TRUE & snap_prec >= 10){
-
-        shp <- st_make_valid(shp, s2_options = s2::s2_options(snap = s2::s2_snap_precision(snap_prec)))
-        shp_invalid <- !all(st_is_valid(shp))
-        if(snap_prec < 100){
-          snap_prec <- snap_prec * 0.9
-        }else{
-          snap_prec <- snap_prec * 0.5
-        }
-      }
-
+      shp <- fix_invalid(shp, max_precision = 10^7, min_precision = 10,
+                         stop_if_invalid = F, progress = F, parallel = F, report = F, reportColumns = F)
+      shp_invalid <- !all(sf::st_is_valid(shp))
       if(shp_invalid == TRUE) stop("Invalid geometries: sf::st_make_valid() failed to rebuild
                                      valid geometries withint acceptable snapping precision.")
+
+      # shp <- sf::st_make_valid(shp)
+      # shp_invalid <- !all(sf::st_is_valid(shp))
+      # snap_prec <- 10^7
+      #
+      # while(shp_invalid == TRUE & snap_prec >= 10){
+      #
+      #   shp <- st_make_valid(shp, s2_options = s2::s2_options(snap = s2::s2_snap_precision(snap_prec)))
+      #   shp_invalid <- !all(st_is_valid(shp))
+      #   snap_prec <- ifelse(snap_prec > 100, snap_prec / 10, snap_prec - 10)
+      # }
+      #
+      # if(shp_invalid == TRUE) stop("Invalid geometries: sf::st_make_valid() failed to rebuild
+      #                                valid geometries withint acceptable snapping precision.")
 
       warning("Some geometries are invalid. They have been fixed using sf::st_make_valid().
             Consider checking spatial features before continuing.")
@@ -224,20 +234,49 @@ contour_polygons <- function(shp, cuts = 4,
 
   cut_seq <- seq(from = 0, to = 1, length.out = cuts+1)[-1]
   cut_interval <- 1/cuts
-  shp_smoothed <- lapply(
-    cut_seq,
-    FUN = function(x){
-      terra::ifel(r_prob > x - cut_interval & r_prob <= x, 1, NA) %>%
-        terra::as.polygons() %>%
-        sf::st_as_sf() %>%
-        smoothr::smooth(method = smooth_method, smoothness = smoothness_factor) %>%
-        dplyr::mutate(cut = round(x, 3)) %>%
-        dplyr::mutate(prob_interval = paste0(round(x-cut_interval, 3), "-", x)) %>%
-        cbind(ids) %>%
-        dplyr::mutate(nmaps = n_maps) %>%
-        dplyr::select({{ id_vars }}, "cut", "prob_interval", "nmaps")
-    }) %>%
-    dplyr::bind_rows()
+
+  ##############
+  # REMOVES INTERVALS FOR WHICH THERE IS NO COVERAGE. Likely only happens is there are geometries with no overlap which is
+  # likely to be an error. Check if this code is necessary when we've fixed shapes.
+  cut_seq <- cut_seq[!cut_seq - cut_interval >= terra::values(r_prob) %>% max(na.rm = T)]
+  ##############
+
+  if(include_higher){
+
+    shp_smoothed <- lapply(
+      cut_seq,
+      FUN = function(x){
+        terra::ifel(r_prob > 1 - x & r_prob <= 1, 1, NA) %>%
+          terra::as.polygons() %>%
+          sf::st_as_sf() %>%
+          smoothr::smooth(method = smooth_method, smoothness = smoothness_factor) %>%
+          dplyr::mutate(cut = round(x, 3)) %>%
+          dplyr::mutate(prob_interval = paste0(round(x-cut_interval, 3), "-", x)) %>%
+          cbind(ids) %>%
+          dplyr::mutate(nmaps = n_maps) %>%
+          dplyr::select({{ id_vars }}, "cut", "prob_interval", "nmaps")
+      }) %>%
+      dplyr::bind_rows()
+
+  }else{
+
+    shp_smoothed <- lapply(
+      cut_seq,
+      FUN = function(x){
+        terra::ifel(r_prob > x - cut_interval & r_prob <= x, 1, NA) %>%
+          terra::as.polygons() %>%
+          sf::st_as_sf() %>%
+          smoothr::smooth(method = smooth_method, smoothness = smoothness_factor) %>%
+          dplyr::mutate(cut = round(x, 3)) %>%
+          dplyr::mutate(prob_interval = paste0(round(x-cut_interval, 3), "-", x)) %>%
+          cbind(ids) %>%
+          dplyr::mutate(nmaps = n_maps) %>%
+          dplyr::select({{ id_vars }}, "cut", "prob_interval", "nmaps")
+      }) %>%
+      dplyr::bind_rows()
+
+  }
+
 
   # if(!all(sf::st_is_valid(shp_smoothed))){
   #   shp_smoothed <- sf::st_make_valid(shp_smoothed)

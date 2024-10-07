@@ -12,8 +12,8 @@ get_contours(
   period_id,
   nmap_threshold = 5,
   returnList = F,
-  progress = F,
-  parallel = F,
+  progress = T,
+  parallel = T,
   ncores,
   ...
 )

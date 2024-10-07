@@ -6,12 +6,14 @@
 \usage{
 fix_invalid(
   shp,
-  max_precision = 1e+07,
+  max_precision = 10^7,
   min_precision = 10,
   stop_if_invalid = FALSE,
   progress = T,
   parallel = T,
-  ncores
+  ncores,
+  report = T,
+  reportColumns = T
 )
 }
 \arguments{
@@ -32,10 +34,15 @@ to rebuild a valid geometry. The error message will indicate the row number of t
 Default is TRUE.}
 
 \item{ncores}{number of cores to use for parallel processing. Default is all available cores minus 1.}
+
+\item{report}{logical, whether to report the number of valid, rebuilt, and invalid geometries.}
+
+\item{reportColumns}{logical, whether to return the status of each geometry in new columns
+(geom_valid, rebuilt, and snap_precision)}
 }
 \value{
 Returns an sf dataframe with the same number of features as the input. The dataframe includes
-three new columns: 'geom_invalid' indicates whether the original geometry was valid (TRUE), 'rebuilt'
+three new columns: 'geom_valid' indicates whether the original geometry was valid (TRUE), 'rebuilt'
 indicates if the geometry was successfully rebuilt, and 'snap_precision' indicates the snapping
 precision used to rebuild geometry (if 'rebuilt' is FALSE, 'snap_precision' indicates the minimum snapping
 precision that led to invalid geometry).

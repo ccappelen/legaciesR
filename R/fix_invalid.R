@@ -12,8 +12,11 @@
 #' @param parallel logical, whether to use parallel processing with \code{ncores} number of cores.
 #' Default is TRUE.
 #' @param ncores number of cores to use for parallel processing. Default is all available cores minus 1.
+#' @param report logical, whether to report the number of valid, rebuilt, and invalid geometries.
+#' @param reportColumns logical, whether to return the status of each geometry in new columns
+#' (geom_valid, rebuilt, and snap_precision)
 #' @return Returns an sf dataframe with the same number of features as the input. The dataframe includes
-#' three new columns: 'geom_invalid' indicates whether the original geometry was valid (TRUE), 'rebuilt'
+#' three new columns: 'geom_valid' indicates whether the original geometry was valid (TRUE), 'rebuilt'
 #' indicates if the geometry was successfully rebuilt, and 'snap_precision' indicates the snapping
 #' precision used to rebuild geometry (if 'rebuilt' is FALSE, 'snap_precision' indicates the minimum snapping
 #' precision that led to invalid geometry).
@@ -24,10 +27,12 @@
 #' @export
 
 
-fix_invalid <- function(shp, max_precision = 1e07, min_precision = 10,
+fix_invalid <- function(shp, max_precision = 10^7, min_precision = 10,
                         stop_if_invalid = FALSE,
-                        progress = T, parallel = T, ncores){
+                        progress = T, parallel = T, ncores,
+                        report = T, reportColumns = T){
 
+  if(parallel)
   shp <- shp %>%
     dplyr::mutate(rowid = dplyr::row_number())
 
@@ -43,9 +48,11 @@ fix_invalid <- function(shp, max_precision = 1e07, min_precision = 10,
 
     if(st_is_valid(shp1)){
 
-      shp1[["geom_valid"]] <- TRUE
-      shp1[["rebuilt"]] <- FALSE
-      shp1[["snap_precision"]] <- NA
+      if(reportColumns){
+        shp1[["geom_valid"]] <- TRUE
+        shp1[["rebuilt"]] <- FALSE
+        shp1[["snap_precision"]] <- NA
+      }
 
     }else{
 
@@ -53,9 +60,12 @@ fix_invalid <- function(shp, max_precision = 1e07, min_precision = 10,
 
       if(st_is_valid(shp1)){
 
-        shp1[["geom_valid"]] <- FALSE
-        shp1[["rebuilt"]] <- TRUE
-        shp1[["snap_precision"]] <- NA
+        if(reportColumns){
+          shp1[["geom_valid"]] <- FALSE
+          shp1[["rebuilt"]] <- TRUE
+          shp1[["snap_precision"]] <- NA
+        }
+
         return(shp1)
 
       }else{
@@ -75,16 +85,23 @@ fix_invalid <- function(shp, max_precision = 1e07, min_precision = 10,
         }
 
         if(!st_is_valid(shp1) & stop_if_invalid == FALSE){
-          warning(paste0("Unable to rebuild valid geometry for row number #:", shp1[["rowid"]]))
-          shp1[["geom_valid"]] <- FALSE
-          shp1[["rebuilt"]] <- FALSE
-          shp1[["snap_precision"]] <- snap_prec_last
+          # warning(paste0("Unable to rebuild valid geometry for row number #:", shp1[["rowid"]]))
+          if(reportColumns){
+            shp1[["geom_valid"]] <- FALSE
+            shp1[["rebuilt"]] <- FALSE
+            shp1[["snap_precision"]] <- snap_prec_last
+          }
+
         }
 
         if(st_is_valid(shp1)){
-          shp1[["geom_valid"]] <- FALSE
-          shp1[["rebuilt"]] <- TRUE
-          shp1[["snap_precision"]] <- snap_prec_last
+
+          if(reportColumns){
+            shp1[["geom_valid"]] <- FALSE
+            shp1[["rebuilt"]] <- TRUE
+            shp1[["snap_precision"]] <- snap_prec_last
+          }
+
         }
 
       }
@@ -112,7 +129,7 @@ fix_invalid <- function(shp, max_precision = 1e07, min_precision = 10,
 
   shp_list_valid <- pbapply::pblapply(
     shp_list,
-    FUN = function(x) fun.make.valid(x),
+    FUN = function(x) fun.make.valid(x, max_precision, min_precision, stop_if_invalid),
     cl = ncores
   )
 
@@ -127,6 +144,27 @@ fix_invalid <- function(shp, max_precision = 1e07, min_precision = 10,
   if(any(shp_errors) & stop_if_invalid) stop("Some groups encountered an error")
 
   shp_list_new <- shp_list_valid %>% bind_rows()
+
+  valid_rowids <- shp_list_new %>%
+    filter(geom_valid == TRUE) %>%
+    pull(rowid)
+  rebuilt_rowids <- shp_list_new %>%
+    filter(geom_valid == FALSE & rebuilt == TRUE) %>%
+    pull(rowid)
+  invalid_rowids <- shp_list_new %>%
+    filter(geom_valid == FALSE & rebuilt == FALSE) %>%
+    pull(rowid)
+
+  if(report){
+  message(paste0(length(rebuilt_rowids), " (", round(length(rebuilt_rowids)/nrow(shp_list_new), 3)*100, " %) ",
+                 "geometries were successfully rebuilt.\n"),
+          paste0(length(invalid_rowids), " (", round(length(invalid_rowids)/nrow(shp_list_new), 3)*100, " %) ",
+                 "geometries failed to rebuild as valid (see row numbers below).\n"),
+          ifelse(length(invalid_rowids) <= 10,
+                 paste0("Invalid geometries: ", paste0(invalid_rowids, collapse = ", ")),
+                 paste0("Invalid geometries: ", paste0(invalid_rowids[1:10], collapse = ", "), " ..... (more than 10)")))
+  }
+
   shp_list_new[["rowid"]] <- NULL
 
   return(shp_list_new)

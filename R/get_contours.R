@@ -32,8 +32,8 @@ get_contours <- function(shp, grp_id,
                          by_period = FALSE, interval, period_id,
                          nmap_threshold = 5,
                          returnList = F,
-                         progress = F,
-                         parallel = F,
+                         progress = T,
+                         parallel = T,
                          ncores,
                          ...){
 
@@ -152,14 +152,44 @@ get_contours <- function(shp, grp_id,
   }
 
   pboptions(char = "=", style = 1, type = progress_bar)
+
+  # if(by_period == FALSE){
+  #
+  #   shp_contours <- pbapply::pblapply(
+  #     shp_list,
+  #     FUN = function(x) {
+  #       contour_polygons(
+  #         x, id_vars = {{ grp_id }})
+  #     },
+  #     cl = ncores
+  #   ) %>% suppressWarnings()
+  #
+  # }
+  #
+  # if(by_period == TRUE){
+  #
+  #   shp_contours <- pbapply::pblapply(
+  #     shp_list,
+  #     FUN = function(x) {
+  #       contour_polygons(
+  #         x, id_vars = c({{ grp_id }}, {{ period_id }}))
+  #     },
+  #     cl = ncores
+  #   ) %>% suppressWarnings()
+  #
+  # }
+
   shp_contours <- pbapply::pblapply(
     shp_list,
     FUN = function(x) {
       contour_polygons(
-        x, id_vars = c({{ grp_id }}, {{ period_id }}),...)
-      },
+        x, id_vars = c({{ grp_id }}, {{ period_id }}),
+        ...)
+    },
     cl = ncores
   ) %>% suppressWarnings()
+
+
 
   contour_errors <- sapply(shp_contours, inherits, what = "try-error")
   if(any(contour_errors)) stop("Some groups encountered an error, likely because of invalid geometries. Consider trying invalid_geom = 'exclude' or 'fix_exclude' instead.")
@@ -169,7 +199,8 @@ get_contours <- function(shp, grp_id,
     sapply(all) %>%
     all()
   if(!inv_list){
-    shp_contours <- sf::st_make_valid(shp_contours)
+    shp_contours <- lapply(shp_contours,
+                           FUN = function(x) st_make_valid(x))
   }
 
   inv_list <- lapply(shp_contours, FUN = function(x) sf::st_is_valid(x)) %>%
