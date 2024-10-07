@@ -6,7 +6,7 @@
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of legaciesr is to …
+The goal of `legaciesr` is to …
 
 ## Installation
 
