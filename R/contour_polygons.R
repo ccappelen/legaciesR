@@ -47,6 +47,10 @@ contour_polygons <- function(shp, cuts = 4,
 
   # print(shp$COWID[1])
 
+  if(missing(id_vars)){
+    stop("Please specify at least one column in id_vars.")
+  }
+
   smooth_method <- match.arg(smooth_method)
   invalid_geom <- match.arg(invalid_geom)
 
@@ -77,9 +81,10 @@ contour_polygons <- function(shp, cuts = 4,
 
     if(invalid){
       shp <- sf::st_make_valid(shp)
-      if(!all(sf::st_is_valid(shp))) stop("Invalid geometries: sf::st_make_valid() was unable to rebuild valid geometries.")
-      warning("Some geometries are invalid. They have been fixed using sf::st_make_valid().
-            Consider checking spatial features before continuing.")
+      if(!all(sf::st_is_valid(shp))){
+        stop("Invalid geometries: sf::st_make_valid() was unable to rebuild valid geometries.")
+      }
+      warning("Some geometries are invalid. They have been fixed using sf::st_make_valid(). Consider checking spatial features before continuing.")
     }else{
       shp <- shp
     }
@@ -108,8 +113,9 @@ contour_polygons <- function(shp, cuts = 4,
       shp <- fix_invalid(shp, max_precision = 10^7, min_precision = 10,
                          stop_if_invalid = F, progress = F, parallel = F, report = F, reportColumns = F)
       shp_invalid <- !all(sf::st_is_valid(shp))
-      if(shp_invalid == TRUE) stop("Invalid geometries: sf::st_make_valid() failed to rebuild
-                                     valid geometries withint acceptable snapping precision.")
+      if(shp_invalid == TRUE){
+        stop("Invalid geometries: sf::st_make_valid() failed to rebuild valid geometries withint acceptable snapping precision.")
+      }
 
       # shp <- sf::st_make_valid(shp)
       # shp_invalid <- !all(sf::st_is_valid(shp))
@@ -125,8 +131,7 @@ contour_polygons <- function(shp, cuts = 4,
       # if(shp_invalid == TRUE) stop("Invalid geometries: sf::st_make_valid() failed to rebuild
       #                                valid geometries withint acceptable snapping precision.")
 
-      warning("Some geometries are invalid. They have been fixed using sf::st_make_valid().
-            Consider checking spatial features before continuing.")
+      warning("Some geometries are invalid. They have been fixed using sf::st_make_valid(). Consider checking spatial features before continuing.")
     }else{
       shp <- shp
     }
@@ -208,6 +213,9 @@ contour_polygons <- function(shp, cuts = 4,
   cuts <- cuts
   n_maps <- nrow(shp)
 
+  ## IF ONLY 1 MAP: EITHER RETURN ERROR OR RETURN SINGLE GEOMETRY (IN LATTER CASE,
+  ## RETURN ORIGINAL POLYGON WITHOUT RASTERIZING AND WITH INTERVAL 0-1)
+
   if(cuts > n_maps - 1){
     cuts <- n_maps - 1
   }
@@ -241,12 +249,14 @@ contour_polygons <- function(shp, cuts = 4,
   cut_seq <- cut_seq[!cut_seq - cut_interval >= terra::values(r_prob) %>% max(na.rm = T)]
   ##############
 
+  max_cut <- max(cut_seq)
+
   if(include_higher){
 
     shp_smoothed <- lapply(
       cut_seq,
       FUN = function(x){
-        terra::ifel(r_prob > 1 - x & r_prob <= 1, 1, NA) %>%
+        terra::ifel(r_prob > max_cut - x & r_prob <= max_cut, 1, NA) %>%
           terra::as.polygons() %>%
           sf::st_as_sf() %>%
           smoothr::smooth(method = smooth_method, smoothness = smoothness_factor) %>%

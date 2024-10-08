@@ -192,8 +192,11 @@ get_contours <- function(shp, grp_id,
 
 
   contour_errors <- sapply(shp_contours, inherits, what = "try-error")
-  if(any(contour_errors)) stop("Some groups encountered an error, likely because of invalid geometries. Consider trying invalid_geom = 'exclude' or 'fix_exclude' instead.")
-  # shp_contours <- shp_contours[!contour_errors]
+  if(any(contour_errors)){
+    stop("Some groups encountered an error, likely because of invalid geometries. Consider trying invalid_geom = 'exclude' or 'fix_exclude' instead.")
+  }
+
+    # shp_contours <- shp_contours[!contour_errors]
 
   inv_list <- lapply(shp_contours, FUN = function(x) sf::st_is_valid(x)) %>%
     sapply(all) %>%
@@ -206,7 +209,9 @@ get_contours <- function(shp, grp_id,
   inv_list <- lapply(shp_contours, FUN = function(x) sf::st_is_valid(x)) %>%
     sapply(all) %>%
     all()
-  if(!inv_list) warning("Contour polygons may contain invalid geometries. Consider trying different resolution and/or number of cuts.")
+  if(!inv_list){
+    warning("Contour polygons may contain invalid geometries. Consider trying different resolution and/or number of cuts.")
+  }
 
   ## Return list or dataframe
   if(returnList){
