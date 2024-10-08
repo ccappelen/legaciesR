@@ -35,10 +35,11 @@ Default is TRUE.}
 
 \item{ncores}{number of cores to use for parallel processing. Default is all available cores minus 1.}
 
-\item{report}{logical, whether to report the number of valid, rebuilt, and invalid geometries.}
+\item{report}{logical, whether to report the number of valid, rebuilt, and invalid geometries. If
+\code{reportColumns} is FALSE, no report will be generated.}
 
 \item{reportColumns}{logical, whether to return the status of each geometry in new columns
-(geom_valid, rebuilt, and snap_precision)}
+(geom_valid, rebuilt, and snap_precision).}
 }
 \value{
 Returns an sf dataframe with the same number of features as the input. The dataframe includes

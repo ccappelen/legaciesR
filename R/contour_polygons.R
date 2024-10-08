@@ -4,12 +4,15 @@
 #' @param id_vars Group identifiers
 #' @param cuts An integer of length 1 specifying the number of (equally spaced) contour polygons to be returned.
 #'  For example, if \code{cuts = 10} the function will return 10 polygons representing the 10 deciles (0-0.1,0.1-0.2,...).
-#' @param smooth_method Character scalar specifying the smoothing method used to convert raster to polygon.
-#'  The options are \code{"ksmooth"} (default), \code{"chaikin"}, and \code{"spline"}.
-#' @param smoothness_factor Numerical scalar indicating the amount of smoothing the \code{\link[smoothr]{smooth}} function should do.
-#'  Default is 2.
+# OLD PARAM smooth_method Character scalar specifying the smoothing method used to convert raster to polygon.
+#  The options are \code{"ksmooth"} (default), \code{"chaikin"}, and \code{"spline"}.
+# OLD PARAM smoothness_factor Numerical scalar indicating the amount of smoothing the \code{\link[smoothr]{smooth}} function should do.
+#  Default is 2.
+#' @param smoothing logical, whether to apply smoothing after polygonizing raster. Default is TRUE.
 #' @param res Resolution of the raster used to calculate polygon density. Higher resolution (i.e., lower numbers)
 #'  creates smoother borders but also increases processing time. Default is 1/30 degrees.
+#' @param nmap_threshold scalar, indicating the number of geometries required. Default is 2. If threshold is 1, a single geometry will
+#' be returned unmodified.
 #' @param invalid_geom One of "none" (default), "exclude", "fix_exclude", or "fix_all". The function attempts to rebuild invalid geometries
 #'  using sf::st_make_valid(shp). However, some geometries may be invalid even after attempting to rebuild. If "none" the function will
 #'  return an error in case of invalid geometries (after attempting to rebuild). If "exclude", any invalid geometries will be removed.
@@ -40,19 +43,20 @@
 
 contour_polygons <- function(shp, cuts = 4,
                              id_vars,
-                             smooth_method = c("ksmooth", "chaikin", "spline"), smoothness_factor = 2,
-                             res = 1/30,
+                             # smooth_method = c("ksmooth", "chaikin", "spline"), smoothness_factor = 2,
+                             res = 1/30, nmap_threshold = 2,
+                             smoothing = TRUE,
                              invalid_geom = c("none", "exclude", "fix_exclude", "fix_all"),
-                             include_higher = T){
-
-  # print(shp$COWID[1])
+                             include_higher = TRUE){
 
   if(missing(id_vars)){
     stop("Please specify at least one column in id_vars.")
   }
 
-  smooth_method <- match.arg(smooth_method)
+  # smooth_method <- match.arg(smooth_method)
   invalid_geom <- match.arg(invalid_geom)
+
+  if(nrow(shp) < nmap_threshold) stop("Not enough geometries. Consider using lower threshold.")
 
   if(sf::st_crs(shp) != sf::st_crs("EPSG:4326")){
     shp <- shp %>%
@@ -213,77 +217,84 @@ contour_polygons <- function(shp, cuts = 4,
   cuts <- cuts
   n_maps <- nrow(shp)
 
-  ## IF ONLY 1 MAP: EITHER RETURN ERROR OR RETURN SINGLE GEOMETRY (IN LATTER CASE,
-  ## RETURN ORIGINAL POLYGON WITHOUT RASTERIZING AND WITH INTERVAL 0-1)
-
-  if(cuts > n_maps - 1){
-    cuts <- n_maps - 1
-  }
-
-  shp_union <- sf::st_union(shp) %>%
-    sf::st_as_sf() %>%
-    suppressMessages()
-
-  r <- terra::rast(shp_union, resolution = res)
-  r_count <- terra::rasterize(shp, r, fun = "count")
-  r_prob <- r_count / n_maps
-
-  if(missing(cuts)){
-    stop("Error: Please specify the number of cuts. For example, if the polygons should be split into deciles, the number of cuts should be 10 (for quartiles it should be 4).")
-  }
-
-  # keep_vars <- shp[1,] %>%
-  #   sf::st_drop_geometry() %>%
-  #   dplyr::select({{ id_vars }})
-
   ids <- shp[1,] %>%
     sf::st_drop_geometry() %>%
     select({{ id_vars }})
 
-  cut_seq <- seq(from = 0, to = 1, length.out = cuts+1)[-1]
-  cut_interval <- 1/cuts
 
-  ##############
-  # REMOVES INTERVALS FOR WHICH THERE IS NO COVERAGE. Likely only happens is there are geometries with no overlap which is
-  # likely to be an error. Check if this code is necessary when we've fixed shapes.
-  cut_seq <- cut_seq[!cut_seq - cut_interval >= terra::values(r_prob) %>% max(na.rm = T)]
-  ##############
+  if(n_maps == 1){
 
-  max_cut <- max(cut_seq)
-
-  if(include_higher){
-
-    shp_smoothed <- lapply(
-      cut_seq,
-      FUN = function(x){
-        terra::ifel(r_prob > max_cut - x & r_prob <= max_cut, 1, NA) %>%
-          terra::as.polygons() %>%
-          sf::st_as_sf() %>%
-          smoothr::smooth(method = smooth_method, smoothness = smoothness_factor) %>%
-          dplyr::mutate(cut = round(x, 3)) %>%
-          dplyr::mutate(prob_interval = paste0(round(x-cut_interval, 3), "-", x)) %>%
-          cbind(ids) %>%
-          dplyr::mutate(nmaps = n_maps) %>%
-          dplyr::select({{ id_vars }}, "cut", "prob_interval", "nmaps")
-      }) %>%
-      dplyr::bind_rows()
+    shp_smoothed <- shp %>%
+      dplyr::mutate(cut = 1) %>%
+      dplyr::mutate(prob_interval = "0-1") %>%
+      cbind(ids) %>%
+      dplyr::mutate(nmaps = n_maps) %>%
+      dplyr::select({{ id_vars }}, "cut", "prob_interval", "nmaps")
 
   }else{
 
-    shp_smoothed <- lapply(
-      cut_seq,
-      FUN = function(x){
-        terra::ifel(r_prob > x - cut_interval & r_prob <= x, 1, NA) %>%
-          terra::as.polygons() %>%
-          sf::st_as_sf() %>%
-          smoothr::smooth(method = smooth_method, smoothness = smoothness_factor) %>%
-          dplyr::mutate(cut = round(x, 3)) %>%
-          dplyr::mutate(prob_interval = paste0(round(x-cut_interval, 3), "-", x)) %>%
-          cbind(ids) %>%
-          dplyr::mutate(nmaps = n_maps) %>%
-          dplyr::select({{ id_vars }}, "cut", "prob_interval", "nmaps")
-      }) %>%
-      dplyr::bind_rows()
+    if(cuts > n_maps - 1){
+      cuts <- n_maps - 1
+    }
+
+    shp_union <- sf::st_union(shp) %>%
+      sf::st_as_sf() %>%
+      suppressMessages()
+
+    r <- terra::rast(shp_union, resolution = res)
+    r_count <- terra::rasterize(shp, r, fun = "count")
+    r_prob <- r_count / n_maps
+
+    if(missing(cuts)){
+      stop("Error: Please specify the number of cuts. For example, if the polygons should be split into deciles, the number of cuts should be 10 (for quartiles it should be 4).")
+    }
+
+    # keep_vars <- shp[1,] %>%
+    #   sf::st_drop_geometry() %>%
+    #   dplyr::select({{ id_vars }})
+
+    cut_seq <- seq(from = 0, to = 1, length.out = cuts+1)[-1]
+    cut_interval <- 1/cuts
+
+    cut_seq <- cut_seq[!cut_seq - cut_interval >= terra::values(r_prob) %>% max(na.rm = T)]
+
+    max_cut <- max(cut_seq)
+
+    if(include_higher){
+
+      shp_smoothed <- lapply(
+        cut_seq,
+        FUN = function(x){
+          terra::ifel(r_prob > max_cut - x & r_prob <= max_cut, 1, NA) %>%
+            terra::as.polygons() %>%
+            sf::st_as_sf() %>%
+            {if(smoothing) smoothr::smooth(.) else . } %>% # method = smooth_method, smoothness = smoothness_factor
+            dplyr::mutate(cut = round(max_cut - x, 2)) %>%
+            dplyr::mutate(prob_interval = paste0(round(max_cut - x, 2), "-", max_cut)) %>%
+            cbind(ids) %>%
+            dplyr::mutate(nmaps = n_maps) %>%
+            dplyr::select({{ id_vars }}, "cut", "prob_interval", "nmaps")
+        }) %>%
+        dplyr::bind_rows()
+
+    }else{
+
+      shp_smoothed <- lapply(
+        cut_seq,
+        FUN = function(x){
+          terra::ifel(r_prob > x - cut_interval & r_prob <= x, 1, NA) %>%
+            terra::as.polygons() %>%
+            sf::st_as_sf() %>%
+            {if(smoothing) smoothr::smooth(.) else . } %>% # method = smooth_method, smoothness = smoothness_factor
+            dplyr::mutate(cut = round(x, 2)) %>%
+            dplyr::mutate(prob_interval = paste0(round(x-cut_interval, 2), "-", x)) %>%
+            cbind(ids) %>%
+            dplyr::mutate(nmaps = n_maps) %>%
+            dplyr::select({{ id_vars }}, "cut", "prob_interval", "nmaps")
+        }) %>%
+        dplyr::bind_rows()
+
+    }
 
   }
 

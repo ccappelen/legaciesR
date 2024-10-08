@@ -8,11 +8,11 @@ contour_polygons(
   shp,
   cuts = 4,
   id_vars,
-  smooth_method = c("ksmooth", "chaikin", "spline"),
-  smoothness_factor = 2,
   res = 1/30,
+  nmap_threshold = 2,
+  smoothing = TRUE,
   invalid_geom = c("none", "exclude", "fix_exclude", "fix_all"),
-  include_higher = T
+  include_higher = TRUE
 )
 }
 \arguments{
@@ -23,14 +23,13 @@ For example, if \code{cuts = 10} the function will return 10 polygons representi
 
 \item{id_vars}{Group identifiers}
 
-\item{smooth_method}{Character scalar specifying the smoothing method used to convert raster to polygon.
-The options are \code{"ksmooth"} (default), \code{"chaikin"}, and \code{"spline"}.}
-
-\item{smoothness_factor}{Numerical scalar indicating the amount of smoothing the \code{\link[smoothr]{smooth}} function should do.
-Default is 2.}
-
 \item{res}{Resolution of the raster used to calculate polygon density. Higher resolution (i.e., lower numbers)
 creates smoother borders but also increases processing time. Default is 1/30 degrees.}
+
+\item{nmap_threshold}{scalar, indicating the number of geometries required. Default is 2. If threshold is 1, a single geometry will
+be returned unmodified.}
+
+\item{smoothing}{logical, whether to apply smoothing after polygonizing raster. Default is TRUE.}
 
 \item{invalid_geom}{One of "none" (default), "exclude", "fix_exclude", or "fix_all". The function attempts to rebuild invalid geometries
 using sf::st_make_valid(shp). However, some geometries may be invalid even after attempting to rebuild. If "none" the function will

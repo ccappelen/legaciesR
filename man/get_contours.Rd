@@ -8,12 +8,13 @@ get_contours(
   shp,
   grp_id,
   by_period = FALSE,
-  interval,
+  interval = NULL,
   period_id,
   nmap_threshold = 5,
-  returnList = F,
-  progress = T,
-  parallel = T,
+  smoothing = TRUE,
+  returnList = FALSE,
+  progress = TRUE,
+  parallel = TRUE,
   ncores,
   ...
 )
@@ -27,7 +28,7 @@ get_contours(
 Default is \code{FALSE}.}
 
 \item{interval}{scalar or vector indicating the intervals to group by. If \code{NULL} (default), the
-intervals will automatically be set 20 and include the full range (i.e. \code{seq(min, max, 20)}).
+intervals will automatically be set to 20 and include the full range (i.e. \code{seq(min, max, 20)}).
 For user specification, the value can be either a scalar, indicating the length of intervals
 (in which case the full range is used), or a vector specifying the exact breaks, including both the
 minimum and maximum.}
@@ -36,6 +37,8 @@ minimum and maximum.}
 This argument is necessary if \code{by_period} is \code{TRUE}.}
 
 \item{nmap_threshold}{scalar indicating the number of shapes requires within each group. Default is 5.}
+
+\item{smoothing}{logical, whether to apply smoothing after polygonizing the raster. Default is TRUE.}
 
 \item{returnList}{logical, whether to return a list of geometries by group.
 Default is to return an sf dataframe containing all geometries.}

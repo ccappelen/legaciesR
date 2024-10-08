@@ -8,10 +8,11 @@
 #' @param period_id name of the period variable to be used for time grouping.
 #' This argument is necessary if \code{by_period} is \code{TRUE}.
 #' @param interval scalar or vector indicating the intervals to group by. If \code{NULL} (default), the
-#' intervals will automatically be set 20 and include the full range (i.e. \code{seq(min, max, 20)}).
+#' intervals will automatically be set to 20 and include the full range (i.e. \code{seq(min, max, 20)}).
 #' For user specification, the value can be either a scalar, indicating the length of intervals
 #' (in which case the full range is used), or a vector specifying the exact breaks, including both the
 #' minimum and maximum.
+#' @param smoothing logical, whether to apply smoothing after polygonizing the raster. Default is TRUE.
 #' @param nmap_threshold scalar indicating the number of shapes requires within each group. Default is 5.
 #' @param returnList logical, whether to return a list of geometries by group.
 #' Default is to return an sf dataframe containing all geometries.
@@ -29,11 +30,12 @@
 
 
 get_contours <- function(shp, grp_id,
-                         by_period = FALSE, interval, period_id,
+                         by_period = FALSE, interval = NULL, period_id,
                          nmap_threshold = 5,
-                         returnList = F,
-                         progress = T,
-                         parallel = T,
+                         smoothing = TRUE,
+                         returnList = FALSE,
+                         progress = TRUE,
+                         parallel = TRUE,
                          ncores,
                          ...){
 
@@ -51,6 +53,8 @@ get_contours <- function(shp, grp_id,
 
     shp_list <- split(shp, shp[[deparse(substitute(grp_id))]], drop = T)
 
+    period_id <- NULL
+    period <- NULL
   }
 
   ## CREATE CONTOUR POLYGONS BY PERIOD
@@ -60,12 +64,12 @@ get_contours <- function(shp, grp_id,
       stop("Please specify the time variable as a character vector.")
     }
 
-    if(is.character(substitute(grp_id))){
+    if(is.character(substitute(period_id))){
       stop("period_id should be a variable, not a character string.")
     }
 
     ## USE DEFAULT INTERVAL
-    if(missing(interval)){
+    if(is.null(interval)){
 
       interval_min <- min(shp[[deparse(substitute(period_id))]], na.rm = T)
       interval_max <- max(shp[[deparse(substitute(period_id))]], na.rm = T)
@@ -183,7 +187,9 @@ get_contours <- function(shp, grp_id,
     shp_list,
     FUN = function(x) {
       contour_polygons(
-        x, id_vars = c({{ grp_id }}, {{ period_id }}),
+        x, id_vars = c({{ grp_id }}, period),
+        nmap_threshold = nmap_threshold,
+        smoothing = smoothing,
         ...)
     },
     cl = ncores
@@ -198,20 +204,23 @@ get_contours <- function(shp, grp_id,
 
     # shp_contours <- shp_contours[!contour_errors]
 
-  inv_list <- lapply(shp_contours, FUN = function(x) sf::st_is_valid(x)) %>%
-    sapply(all) %>%
-    all()
-  if(!inv_list){
-    shp_contours <- lapply(shp_contours,
-                           FUN = function(x) st_make_valid(x))
-  }
+  # if(by_period == F){
+    inv_list <- lapply(shp_contours, FUN = function(x) sf::st_is_valid(x)) %>%
+      sapply(all) %>%
+      all()
+    if(!inv_list){
+      shp_contours <- lapply(shp_contours,
+                             FUN = function(x) st_make_valid(x))
+    }
 
-  inv_list <- lapply(shp_contours, FUN = function(x) sf::st_is_valid(x)) %>%
-    sapply(all) %>%
-    all()
-  if(!inv_list){
-    warning("Contour polygons may contain invalid geometries. Consider trying different resolution and/or number of cuts.")
-  }
+    inv_list <- lapply(shp_contours, FUN = function(x) sf::st_is_valid(x)) %>%
+      sapply(all) %>%
+      all()
+    if(!inv_list){
+      warning("Contour polygons may contain invalid geometries. Consider trying different resolution and/or number of cuts.")
+    }
+  # }
+
 
   ## Return list or dataframe
   if(returnList){
