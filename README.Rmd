@@ -52,7 +52,7 @@ df <- fix_invalid(df)
 
 Currently, one geometry (COWID = "EGY") fails to rebuild due to crossing edges. However, a few other COWIDs result in invalid geometries when creating contour polygons. For now, these are omitted:
 
-```{r omit COWIDs with invalid geometries, eval = FALSE}
+```{r omit COWIDs with invalid geometries, eval = TRUE}
 df <- df %>% 
   filter(!COWID %in% c("EGY", "LUN", "KUN", "SAF"))
 ```
@@ -61,7 +61,7 @@ df <- df %>%
 
 See documentation for additional arguments (e.g., threshold for number of maps, the number of contour polygons, resolution of raster, and handling of invalid geometries).
 
-```{r contour polygons for single COWID, eval = FALSE}
+```{r contour polygons for single COWID, eval = TRUE}
 sok <- df %>%
   filter(COWID == "SOK")
 contour_polygons(sok, id_vars = COWID)
@@ -71,13 +71,13 @@ contour_polygons(sok, id_vars = COWID)
 
 See documentation for additional arguments (e.g., specifying the period intervals to group by, thresholds for number of maps within a group, etc.).
 
-```{r contour polygons across all COWIDs, eval = FALSE}
+```{r contour polygons across all COWIDs, eval = TRUE}
 get_contours(df, grp_id = COWID)
 ```
 
 ## Create contour polygons across all COWIDs and by period
 
-```{r contour polygons across COWIDs and period, eval = FALSE}
+```{r contour polygons across COWIDs and period, eval = TRUE}
 get_contours(df, by_period = T, grp_id = COWID, period_id = year)
 ```
 
