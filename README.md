@@ -39,18 +39,6 @@ errors as well, it is recommended to check for valid geometries and run
 the `legaciesr::fix_invalid()` to identify potential issues. See package
 documentation for further information on the use of this function.
 
-``` r
-library(legaciesr)
-library(sf)
-library(dplyr)
-
-## DO NOT RUN
-# df_path <- file.path("../../LEGACIES/Test code/test_shape") # PATH FOR FOLDER OF master_shapefile
-df <- read_sf(df_path, "master_shapefile") # LOAD master_shapefile
-
-df <- fix_invalid(df)
-```
-
 Currently, one geometry (COWID = “EGY”) fails to rebuild due to crossing
 edges. However, a few other COWIDs result in invalid geometries when
 creating contour polygons. For now, these are omitted:

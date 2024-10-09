@@ -36,13 +36,13 @@ devtools::install_github("ccappelen/legaciesR")
 
 The functions in `legaciesr` will (by default) attempt to fix invalid geometries which would otherwise return an error. The fixes rely on `legaciesr::fix_invalid()` which is a wrapper around the `sf::st_make_valid()` function that attempts to reiteratively lower the allowed precision to rebuild valid geometries. However, because invalid geometries can happen for many reasons that may point to other data errors as well, it is recommended to check for valid geometries and run the `legaciesr::fix_invalid()` to identify potential issues. See package documentation for further information on the use of this function.
 
-```{r fix invalid geometries, eval = FALSE}
+```{r fix invalid geometries, eval = FALSE, echo = FALSE}
 library(legaciesr)
 library(sf)
 library(dplyr)
 
 ## DO NOT RUN
-# df_path <- file.path("../../LEGACIES/Test code/test_shape") # PATH FOR FOLDER OF master_shapefile
+df_path <- file.path("../../LEGACIES/Test code/test_shape") # PATH FOR FOLDER OF master_shapefile
 df <- read_sf(df_path, "master_shapefile") # LOAD master_shapefile
 
 df <- fix_invalid(df)
