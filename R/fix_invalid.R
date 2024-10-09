@@ -10,7 +10,7 @@
 #' to rebuild a valid geometry. The error message will indicate the row number of the invalid geometry.
 #' @param progress logical, whether a progress bar should be displayed. Default is TRUE.
 #' @param parallel logical, whether to use parallel processing with \code{ncores} number of cores.
-#' Default is TRUE.
+#' On Unix platforms (e.g., MacOS), the default is TRUE. On Windows platforms, the default is FALSE (see below).
 #' @param ncores number of cores to use for parallel processing. Default is all available cores minus 1.
 #' @param report logical, whether to report the number of valid, rebuilt, and invalid geometries. If
 #' \code{reportColumns} is FALSE, no report will be generated.
@@ -25,13 +25,21 @@
 #' @import pbapply
 #' @import dplyr
 #' @import s2
+#' @import parallel
+#' @section Support for parallel processing:
+#' There are two ways of running jobs in parallel. Forked R processes or running multiple background
+#' R sessions. In the current setup, running multiple background processes (multisession) are slower than
+#' running the jobs sequentially due to the overhead associated with opening new R sessions. However,
+#' machines running on Microsoft Windows do not support forking (multicore) and will therefore default to
+#' a sequential plan unless \code{parallel} is set to TRUE. On Unix platforms (e.g., MacOS), it will default
+#' to parallel processing.
 #' @export
 
 
 fix_invalid <- function(shp, max_precision = 10^7, min_precision = 10,
                         stop_if_invalid = FALSE,
-                        progress = T, parallel = T, ncores,
-                        report = T, reportColumns = T){
+                        progress = TRUE, parallel = NULL, ncores,
+                        report = TRUE, reportColumns = TRUE){
 
   shp <- shp %>%
     dplyr::mutate(rowid = dplyr::row_number())
@@ -115,22 +123,96 @@ fix_invalid <- function(shp, max_precision = 10^7, min_precision = 10,
   ## Apply fun.make.valid over all items
   progress_bar <- ifelse(progress, "timer", "none")
 
-  if(parallel == T){
-    if(missing(ncores)){
-      ncores <- parallel::detectCores()-1
+  ns <- getNamespace("parallel")
+  supportedByOS <- exists("mcparallel", mode = "function", envir = ns,
+                          inherits = FALSE)
+
+  if(is.null(parallel)){
+
+    if(supportedByOS){
+      parallel <- TRUE
     }else{
-      ncores <- ncores
+      parallel <- FALSE
     }
-  }else{
-    ncores <- 1
+
   }
+
+  if(parallel){
+
+    if(supportedByOS){
+
+      if(missing(ncores)){
+        cl <- parallel::detectCores()-1
+      }else{
+        cl <- ncores
+      }
+
+      message("Jobs running in parallel using forking (multicore)")
+
+    }else{
+
+      if(missing(ncores)) ncores <- parallel::detectCores()-1
+      ncores <- ncores
+      cl <- parallel::makeCluster(8)
+      on.exit(stopCluster(cl))
+
+      message("Jobs running in parallel using multisession.")
+    }
+
+  }else{
+
+    cl <- 1
+
+    message("Jobs running sequentially.")
+
+  }
+
+
+  # if(!supportedByOS) parallel <- FALSE
+  #
+  # if(parallel){
+  #
+  #   if(plan_set){
+  #
+  #     cl <- "future"
+  #
+  #     }else{
+  #
+  #       cl <- "future"
+  #
+  #       if(missing(ncores)){
+  #
+  #         ncores <- parallelly::availableCores()-1
+  #
+  #       }
+  #
+  #     future::plan(multicore, workers = ncores)
+  #     on.exit(plan(sequential), add = TRUE)
+  #
+  #   }
+  #
+  # }else{
+  #
+  #   cl <- 1
+  #
+  # }
+
+  # if(parallel == T){
+  #   if(missing(ncores)){
+  #     ncores <- parallel::detectCores()-1
+  #   }else{
+  #     ncores <- ncores
+  #   }
+  # }else{
+  #   ncores <- 1
+  # }
 
   pboptions(char = "=", style = 1, type = progress_bar)
 
   shp_list_valid <- pbapply::pblapply(
     shp_list,
     FUN = function(x) fun.make.valid(x, max_precision, min_precision, stop_if_invalid),
-    cl = ncores
+    cl = cl
   )
 
   # shp_list_valid <- pbapply::pblapply(

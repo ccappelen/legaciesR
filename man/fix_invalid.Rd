@@ -9,11 +9,11 @@ fix_invalid(
   max_precision = 10^7,
   min_precision = 10,
   stop_if_invalid = FALSE,
-  progress = T,
-  parallel = T,
+  progress = TRUE,
+  parallel = NULL,
   ncores,
-  report = T,
-  reportColumns = T
+  report = TRUE,
+  reportColumns = TRUE
 )
 }
 \arguments{
@@ -31,7 +31,7 @@ to rebuild a valid geometry. The error message will indicate the row number of t
 \item{progress}{logical, whether a progress bar should be displayed. Default is TRUE.}
 
 \item{parallel}{logical, whether to use parallel processing with \code{ncores} number of cores.
-Default is TRUE.}
+On Unix platforms (e.g., MacOS), the default is TRUE. On Windows platforms, the default is FALSE (see below).}
 
 \item{ncores}{number of cores to use for parallel processing. Default is all available cores minus 1.}
 
@@ -52,3 +52,13 @@ precision that led to invalid geometry).
 Rebuilds invalid geometries. If necessary, the functions will iteratively
 lower the snapping precision if default options are inadequate.
 }
+\section{Support for parallel processing}{
+
+There are two ways of running jobs in parallel. Forked R processes or running multiple background
+R sessions. In the current setup, running multiple background processes (multisession) are slower than
+running the jobs sequentially due to the overhead associated with opening new R sessions. However,
+machines running on Microsoft Windows do not support forking (multicore) and will therefore default to
+a sequential plan unless \code{parallel} is set to TRUE. On Unix platforms (e.g., MacOS), it will default
+to parallel processing.
+}
+

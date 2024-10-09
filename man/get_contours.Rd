@@ -45,10 +45,10 @@ Default is to return an sf dataframe containing all geometries.}
 
 \item{progress}{logical, indicating whether to show a progress bar.}
 
-\item{parallel}{logical, indicating whether to use parallel processing.}
+\item{parallel}{logical, whether to use parallel processing with \code{ncores} number of cores.
+On Unix platforms (e.g., MacOS), the default is TRUE. On Windows platforms, the default is FALSE (see below).}
 
-\item{ncores}{scalar, indicating the number of cores to use for parallel processing.
-Default is the number of cores available minus 1.}
+\item{ncores}{number of cores to use for parallel processing. Default is all available cores minus 1.}
 
 \item{...}{Additional arguments passed to \code{\link{contour_polygons}}.}
 }
@@ -59,3 +59,13 @@ Returns either an sf dataframe (default) or a list of sf dataframes (one list it
 This function creates contour polygons across multiple groups, either by group alone or
 in combination with a time column.
 }
+\section{Support for parallel processing}{
+
+There are two ways of running jobs in parallel. Forked R processes or running multiple background
+R sessions. In the current setup, running multiple background processes (multisession) are slower than
+running the jobs sequentially due to the overhead associated with opening new R sessions. However,
+machines running on Microsoft Windows do not support forking (multicore) and will therefore default to
+a sequential plan unless \code{parallel} is set to TRUE. On Unix platforms (e.g., MacOS), it will default
+to parallel processing.
+}
+

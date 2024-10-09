@@ -21,7 +21,7 @@
 #'  iteratively lowering the snappingnprecision (in \code{s2::s2_snap_precision()}). It will return an error
 #'  if it fails to rebuild valid geometries. The use of "fix_all" is experimental and the result should be
 #'  inspected manually.
-#'  @param include_higher logical, whether the contour polygons should include percentiles above current interval.
+#' @param include_higher logical, whether the contour polygons should include percentiles above current interval.
 #'  If TRUE (default), the 50 % polygon will include all areas covered by at least 50 % of the shapes
 #'  (and not just within the specified interval, e.g., 0.75-1, 0.50-1, 0.25-1...). If FALSE, the polygon will include only areas
 #'  within the specified interval (e.g., 0.75-1, 0.50-0.75, 0.25-0.50...).

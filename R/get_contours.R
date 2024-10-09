@@ -17,15 +17,23 @@
 #' @param returnList logical, whether to return a list of geometries by group.
 #' Default is to return an sf dataframe containing all geometries.
 #' @param progress logical, indicating whether to show a progress bar.
-#' @param parallel logical, indicating whether to use parallel processing.
-#' @param ncores scalar, indicating the number of cores to use for parallel processing.
-#' Default is the number of cores available minus 1.
+#' @param parallel logical, whether to use parallel processing with \code{ncores} number of cores.
+#' On Unix platforms (e.g., MacOS), the default is TRUE. On Windows platforms, the default is FALSE (see below).
+#' @param ncores number of cores to use for parallel processing. Default is all available cores minus 1.
 #' @param ... Additional arguments passed to \code{\link{contour_polygons}}.
 #' @return Returns either an sf dataframe (default) or a list of sf dataframes (one list item per group).
 #' @importFrom rlang .data
 #' @import sf
 #' @import dplyr
 #' @import pbapply
+#' @import parallel
+#' @section Support for parallel processing:
+#' There are two ways of running jobs in parallel. Forked R processes or running multiple background
+#' R sessions. In the current setup, running multiple background processes (multisession) are slower than
+#' running the jobs sequentially due to the overhead associated with opening new R sessions. However,
+#' machines running on Microsoft Windows do not support forking (multicore) and will therefore default to
+#' a sequential plan unless \code{parallel} is set to TRUE. On Unix platforms (e.g., MacOS), it will default
+#' to parallel processing.
 #' @export
 
 
@@ -145,15 +153,50 @@ get_contours <- function(shp, grp_id,
 
   progress_bar <- ifelse(progress, "timer", "none")
 
-  if(parallel == T){
-    if(missing(ncores)){
-      ncores <- parallel::detectCores()-1
+  ns <- getNamespace("parallel")
+  supportedByOS <- exists("mcparallel", mode = "function", envir = ns,
+                          inherits = FALSE)
+
+  if(is.null(parallel)){
+
+    if(supportedByOS){
+      parallel <- TRUE
     }else{
-      ncores <- ncores
+      parallel <- FALSE
     }
-  }else{
-    ncores <- 1
+
   }
+
+  if(parallel){
+
+    if(supportedByOS){
+
+      if(missing(ncores)){
+        cl <- parallel::detectCores()-1
+      }else{
+        cl <- ncores
+      }
+
+      message("Jobs running in parallel using forking (multicore)")
+
+    }else{
+
+      if(missing(ncores)) ncores <- parallel::detectCores()-1
+      ncores <- ncores
+      cl <- parallel::makeCluster(8)
+      on.exit(stopCluster(cl))
+
+      message("Jobs running in parallel using multisession.")
+    }
+
+  }else{
+
+    cl <- 1
+
+    message("Jobs running sequentially.")
+
+  }
+
 
   pboptions(char = "=", style = 1, type = progress_bar)
 
@@ -192,7 +235,7 @@ get_contours <- function(shp, grp_id,
         smoothing = smoothing,
         ...)
     },
-    cl = ncores
+    cl = cl
   ) %>% suppressWarnings()
 
 

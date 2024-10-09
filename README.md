@@ -41,19 +41,60 @@ documentation for further information on the use of this function.
 
 ``` r
 library(legaciesr)
+library(sf)
+library(dplyr)
 
-sf::st_is_valid(df)
+## DO NOT RUN
+# df_path <- file.path("../../LEGACIES/Test code/test_shape") # PATH FOR FOLDER OF master_shapefile
+df <- read_sf(df_path, "master_shapefile") # LOAD master_shapefile
 
-df_fixed <- fix_invalid(df)
+df <- fix_invalid(df)
 ```
 
-<!-- What is special about using `README.Rmd` instead of just `README.md`? You can include R chunks like so: -->
-<!-- ```{r cars} -->
-<!-- summary(cars) -->
-<!-- ``` -->
-<!-- You'll still need to render `README.Rmd` regularly, to keep `README.md` up-to-date. `devtools::build_readme()` is handy for this. -->
-<!-- You can also embed plots, for example: -->
-<!-- ```{r pressure, echo = FALSE} -->
-<!-- plot(pressure) -->
-<!-- ``` -->
-<!-- In that case, don't forget to commit and push the resulting figure files, so they display on GitHub and CRAN. -->
+Currently, one geometry (COWID = “EGY”) fails to rebuild due to crossing
+edges. However, a few other COWIDs result in invalid geometries when
+creating contour polygons. For now, these are omitted:
+
+``` r
+df <- df %>% 
+  filter(!COWID %in% c("EGY", "LUN", "KUN", "SAF"))
+```
+
+## Create contour polygons for a single COWID
+
+See documentation for additional arguments (e.g., threshold for number
+of maps, the number of contour polygons, resolution of raster, and
+handling of invalid geometries).
+
+``` r
+sok <- df %>%
+  filter(COWID == "SOK")
+contour_polygons(sok, id_vars = COWID)
+```
+
+## Create contour polygons across all COWIDs
+
+See documentation for additional arguments (e.g., specifying the period
+intervals to group by, thresholds for number of maps within a group,
+etc.).
+
+``` r
+get_contours(df, grp_id = COWID)
+```
+
+## Create contour polygons across all COWIDs and by period
+
+``` r
+get_contours(df, by_period = T, grp_id = COWID, period_id = year)
+```
+
+## Support for parallel processing:
+
+There are two ways of running jobs in parallel. Forked R processes or
+running multiple background R sessions. In the current setup, running
+multiple background processes (multisession) are slower than running the
+jobs sequentially due to the overhead associated with opening new R
+sessions. However, machines running on Microsoft Windows do not support
+forking (multicore) and will therefore default to a sequential plan
+unless `parallel` is set to TRUE. On Unix platforms (e.g., MacOS), it
+will default to parallel processing.
