@@ -32,17 +32,18 @@ You can install the development version of legaciesr from [GitHub](https://githu
 devtools::install_github("ccappelen/legaciesR")
 ```
 
+```{r packages, eval = TRUE, message = FALSE}
+library(legaciesr) 
+library(sf) 
+library(dplyr)
+```
+
 ## Handling of invalid geometries
 
 The functions in `legaciesr` will (by default) attempt to fix invalid geometries which would otherwise return an error. The fixes rely on `legaciesr::fix_invalid()` which is a wrapper around the `sf::st_make_valid()` function that attempts to reiteratively lower the allowed precision to rebuild valid geometries. However, because invalid geometries can happen for many reasons that may point to other data errors as well, it is recommended to check for valid geometries and run the `legaciesr::fix_invalid()` to identify potential issues. See package documentation for further information on the use of this function.
 
-```{r fix invalid geometries, eval = FALSE, echo = FALSE}
-library(legaciesr)
-library(sf)
-library(dplyr)
-
-## DO NOT RUN
-df_path <- file.path("../../LEGACIES/Test code/test_shape") # PATH FOR FOLDER OF master_shapefile
+```{r fix invalid geometries, eval = TRUE}
+df_path <- file.path("../../LEGACIES/Test code/test_shape") # PATH FOR FOLDER OF master_shapefile (user-defined)
 df <- read_sf(df_path, "master_shapefile") # LOAD master_shapefile
 
 df <- fix_invalid(df)
@@ -58,7 +59,7 @@ df <- df %>%
 
 ## Create contour polygons for a single COWID
 
-See documentation for additional arguments (e.g., threshold for number of maps, the number of contour polygons, resolution of raster, and handling of invalid geometries). 
+See documentation for additional arguments (e.g., threshold for number of maps, the number of contour polygons, resolution of raster, and handling of invalid geometries).
 
 ```{r contour polygons for single COWID, eval = FALSE}
 sok <- df %>%

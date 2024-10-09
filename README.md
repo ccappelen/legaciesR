@@ -27,6 +27,12 @@ You can install the development version of legaciesr from
 devtools::install_github("ccappelen/legaciesR")
 ```
 
+``` r
+library(legaciesr) 
+library(sf) 
+library(dplyr)
+```
+
 ## Handling of invalid geometries
 
 The functions in `legaciesr` will (by default) attempt to fix invalid
@@ -38,6 +44,17 @@ geometries can happen for many reasons that may point to other data
 errors as well, it is recommended to check for valid geometries and run
 the `legaciesr::fix_invalid()` to identify potential issues. See package
 documentation for further information on the use of this function.
+
+``` r
+df_path <- file.path("../../LEGACIES/Test code/test_shape") # PATH FOR FOLDER OF master_shapefile (user-defined)
+df <- read_sf(df_path, "master_shapefile") # LOAD master_shapefile
+
+df <- fix_invalid(df)
+#> Jobs running in parallel using forking (multicore)
+#> 447 (3.7 %) geometries were successfully rebuilt.
+#> 1 (0 %) geometries failed to rebuild as valid (see row numbers below).
+#> Invalid geometries: 1297
+```
 
 Currently, one geometry (COWID = “EGY”) fails to rebuild due to crossing
 edges. However, a few other COWIDs result in invalid geometries when
