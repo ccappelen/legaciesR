@@ -17,35 +17,35 @@ fix_invalid(
 )
 }
 \arguments{
-\item{shp}{a sf dataframe with at least some invalid geometries.}
+\item{shp}{An sf dataframe.}
 
-\item{max_precision}{maximum level of precision for \code{s2::s2options}, default is \eqn{10^7}.}
+\item{max_precision}{Integer, maximum level of precision for \code{\link[s2:s2_options]{s2::s2_options()}}, default is 10^7.}
 
-\item{min_precision}{minimum allowed precision for \code{s2::s2options}, default is 10. If geometry
-is invalid after rebuilding with \code{min_precision}, the function will return an error if
-\code{stop_if_invalid} is TRUE and a warning otherwise.}
+\item{min_precision}{Integer, minimum allowed precision for \code{\link[s2:s2_options]{s2::s2_options()}}, default is 10. If geometry
+is invalid after rebuilding with minimum precision allowed, the function will return an error if
+\code{stop_if_invalid} is \code{TRUE} and a warning otherwise.}
 
-\item{stop_if_invalid}{logical, whether the function should return an error if it fails
+\item{stop_if_invalid}{Logical, whether the function should return an error if it fails
 to rebuild a valid geometry. The error message will indicate the row number of the invalid geometry.}
 
-\item{progress}{logical, whether a progress bar should be displayed. Default is TRUE.}
+\item{progress}{Logical, whether a progress bar should be displayed. Default is \code{TRUE.}}
 
-\item{parallel}{logical, whether to use parallel processing with \code{ncores} number of cores.
-On Unix platforms (e.g., MacOS), the default is TRUE. On Windows platforms, the default is FALSE (see below).}
+\item{parallel}{Logical, whether to use parallel processing with \code{ncores} number of cores.
+See details below.}
 
-\item{ncores}{number of cores to use for parallel processing. Default is all available cores minus 1.}
+\item{ncores}{Integer, number of cores to use for parallel processing. Default is all available cores minus 1.}
 
-\item{report}{logical, whether to report the number of valid, rebuilt, and invalid geometries. If
-\code{reportColumns} is FALSE, no report will be generated.}
+\item{report}{Logical, whether to report the number of valid, rebuilt, and invalid geometries. If
+\code{reportColumns} is \code{FALSE}, no report will be generated.}
 
-\item{reportColumns}{logical, whether to return the status of each geometry in new columns
-(geom_valid, rebuilt, and snap_precision).}
+\item{reportColumns}{Logical, whether to return the status of each geometry in new columns
+(\code{geom_valid}, \code{rebuilt}, and \code{snap_precision}).}
 }
 \value{
 Returns an sf dataframe with the same number of features as the input. The dataframe includes
-three new columns: 'geom_valid' indicates whether the original geometry was valid (TRUE), 'rebuilt'
-indicates if the geometry was successfully rebuilt, and 'snap_precision' indicates the snapping
-precision used to rebuild geometry (if 'rebuilt' is FALSE, 'snap_precision' indicates the minimum snapping
+three new columns: \code{geom_valid} indicates whether the original geometry was valid (\code{TRUE}), \code{rebuilt}
+indicates if the geometry was successfully rebuilt, and \code{snap_precision} indicates the snapping
+precision used to rebuild geometry (if \code{rebuilt} is \code{FALSE}, \code{snap_precision} indicates the minimum snapping
 precision that led to invalid geometry).
 }
 \description{
@@ -58,7 +58,7 @@ There are two ways of running jobs in parallel. Forked R processes or running mu
 R sessions. In the current setup, running multiple background processes (multisession) are slower than
 running the jobs sequentially due to the overhead associated with opening new R sessions. However,
 machines running on Microsoft Windows do not support forking (multicore) and will therefore default to
-a sequential plan unless \code{parallel} is set to TRUE. On Unix platforms (e.g., MacOS), it will default
+a sequential plan unless \code{parallel} is set to \code{TRUE.} On Unix platforms (e.g., MacOS), it will default
 to parallel processing.
 }
 

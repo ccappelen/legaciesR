@@ -20,37 +20,37 @@ get_contours(
 )
 }
 \arguments{
-\item{shp}{an sf dataframe containing all geometries (polygons).}
+\item{shp}{An sf dataframe containing all geometries (polygons).}
 
-\item{grp_id}{grouping variable.}
+\item{grp_id}{Name of the grouping variable.}
 
-\item{by_period}{logical, indicating if shapes should be divided into groups by time in addition to IDs.
-Default is \code{FALSE}.}
+\item{by_period}{Logical, indicating if shapes should be divided into groups by time in addition to IDs.
+Default is \code{FALSE.}}
 
-\item{interval}{scalar or vector indicating the intervals to group by. If \code{NULL} (default), the
-intervals will automatically be set to 20 and include the full range (i.e. \code{seq(min, max, 20)}).
+\item{interval}{Scalar or vector indicating the intervals to group by. If \code{NULL} (default), the
+intervals will automatically be set to 20 (years) and include the full range (i.e. \code{seq(min, max, 20)}).
 For user specification, the value can be either a scalar, indicating the length of intervals
 (in which case the full range is used), or a vector specifying the exact breaks, including both the
-minimum and maximum.}
+start of the first interval and end of the last interval.}
 
-\item{period_id}{name of the period variable to be used for time grouping.
-This argument is necessary if \code{by_period} is \code{TRUE}.}
+\item{period_id}{Name of the period variable to be used for time grouping.
+This argument is necessary if \code{by_period} is \code{TRUE.}}
 
-\item{nmap_threshold}{scalar indicating the number of shapes requires within each group. Default is 5.}
+\item{nmap_threshold}{Integer, indicating the number of shapes requires within each group. Default is 5.}
 
-\item{smoothing}{logical, whether to apply smoothing after polygonizing the raster. Default is TRUE.}
+\item{smoothing}{Logical, whether to apply smoothing after polygonizing the raster. Default is TRUE.}
 
-\item{returnList}{logical, whether to return a list of geometries by group.
+\item{returnList}{Logical, whether to return a list of geometries by group.
 Default is to return an sf dataframe containing all geometries.}
 
-\item{progress}{logical, indicating whether to show a progress bar.}
+\item{progress}{Logical, whether to show a progress bar.}
 
-\item{parallel}{logical, whether to use parallel processing with \code{ncores} number of cores.
-On Unix platforms (e.g., MacOS), the default is TRUE. On Windows platforms, the default is FALSE (see below).}
+\item{parallel}{Logical, whether to use parallel processing with \code{ncores} number of cores.
+See details below.}
 
-\item{ncores}{number of cores to use for parallel processing. Default is all available cores minus 1.}
+\item{ncores}{Integer, the number of cores to use for parallel processing. Default is all available cores minus 1.}
 
-\item{...}{Additional arguments passed to \code{\link{contour_polygons}}.}
+\item{...}{Additional arguments passed to \link{contour_polygons}.}
 }
 \value{
 Returns either an sf dataframe (default) or a list of sf dataframes (one list item per group).
@@ -65,7 +65,7 @@ There are two ways of running jobs in parallel. Forked R processes or running mu
 R sessions. In the current setup, running multiple background processes (multisession) are slower than
 running the jobs sequentially due to the overhead associated with opening new R sessions. However,
 machines running on Microsoft Windows do not support forking (multicore) and will therefore default to
-a sequential plan unless \code{parallel} is set to TRUE. On Unix platforms (e.g., MacOS), it will default
+a sequential plan unless \code{parallel} is set to \code{TRUE.} On Unix platforms (e.g., MacOS), it will default
 to parallel processing.
 }
 

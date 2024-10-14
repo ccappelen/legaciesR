@@ -16,39 +16,43 @@ contour_polygons(
 )
 }
 \arguments{
-\item{shp}{The SF PolygonsDataFrame to be aggregated. Must consist of more than one feature.}
+\item{shp}{An sf dataframe to be aggregated. Must consist of more than one feature.}
 
-\item{cuts}{An integer of length 1 specifying the number of (equally spaced) contour polygons to be returned.
-For example, if \code{cuts = 10} the function will return 10 polygons representing the 10 deciles (0-0.1,0.1-0.2,...).}
+\item{cuts}{Integer of length 1 specifying the number of (equally spaced) contour polygons to be returned.
+For example, if \code{cuts = 10} the function will return 10 polygons representing the 10 deciles (0-0.1, 0.1-0.2, ...).}
 
-\item{id_vars}{Group identifiers}
+\item{id_vars}{Group identifiers.}
 
-\item{res}{Resolution of the raster used to calculate polygon density. Higher resolution (i.e., lower numbers)
+\item{res}{Resolution of the raster (in degrees) used to calculate polygon density. Higher resolution (i.e., lower numbers)
 creates smoother borders but also increases processing time. Default is 1/30 degrees.}
 
-\item{nmap_threshold}{scalar, indicating the number of geometries required. Default is 2. If threshold is 1, a single geometry will
+\item{nmap_threshold}{Integer indicating the number of geometries required. Default is 2. If threshold is 1, a single geometry will
 be returned unmodified.}
 
-\item{smoothing}{logical, whether to apply smoothing after polygonizing raster. Default is TRUE.}
+\item{smoothing}{Logical, whether to apply smoothing after polygonizing raster. Default is \code{TRUE.}}
 
-\item{invalid_geom}{One of "none" (default), "exclude", "fix_exclude", or "fix_all". The function attempts to rebuild invalid geometries
-using sf::st_make_valid(shp). However, some geometries may be invalid even after attempting to rebuild. If "none" the function will
-return an error in case of invalid geometries (after attempting to rebuild). If "exclude", any invalid geometries will be removed.
-If "fix_exclude", invalid geometries will be rebuilt using default arguments and any remaining invalid
-geometries will be removed. If "fix_all", the function will attempt to rebuild invalid geometries by
-iteratively lowering the snappingnprecision (in \code{s2::s2_snap_precision()}). It will return an error
-if it fails to rebuild valid geometries. The use of "fix_all" is experimental and the result should be
-inspected manually.}
+\item{invalid_geom}{Character scalar, how invalid geometries are handled.
+Can be either "none" (default), "exclude", "fix_exclude", or "fix_all". See \emph{Invalid geometries} for details.}
 
 \item{include_higher}{logical, whether the contour polygons should include percentiles above current interval.
-If TRUE (default), the 50 % polygon will include all areas covered by at least 50 % of the shapes
+If TRUE (default), the 50 \% polygon will include all areas covered by at least 50 \% of the shapes
 (and not just within the specified interval, e.g., 0.75-1, 0.50-1, 0.25-1...). If FALSE, the polygon will include only areas
 within the specified interval (e.g., 0.75-1, 0.50-0.75, 0.25-0.50...).}
 }
 \value{
-Returns an SF PolygonsDataFrame with the same number of features as specified in *cuts*. The density,
- or percentile, is stored in the attributes \code{"prob"} and \code{"label"}.
+Returns an sf dataframe with the same number of features as specified in \code{cuts.} The density,
+or percentile, is stored in the columns \code{prob} and \code{label.}
 }
 \description{
 This function creates contour polygons from multiple overlapping polygons.
 }
+\section{Invalid geometries}{
+
+The function attempts to rebuild invalid geometries using \code{\link[sf:valid]{sf::st_make_valid()}}. However, some geometries may be invalid even after attempting
+to rebuild. If "none" the function will return an error in case of invalid geometries (after attempting to rebuild). If "exclude", any invalid
+geometries will be removed. If "fix_exclude", invalid geometries will be rebuilt using default arguments and any remaining invalid
+geometries will be removed. If "fix_all", the function will attempt to rebuild invalid geometries by iteratively lowering the
+snapping precision (in \code{s2::s2_snap_precision()}). It will return an error if it fails to rebuild valid geometries.
+The use of "fix_all" is experimental and the result should be inspected manually.
+}
+
