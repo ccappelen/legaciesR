@@ -33,6 +33,17 @@ library(sf)
 library(dplyr)
 ```
 
+## Errors in current master_shapefile
+
+Currently, one geometry (COWID = “EGY”) fails to rebuild due to crossing
+edges. However, a few other COWIDs result in invalid geometries when
+creating contour polygons. For now, these are omitted:
+
+``` r
+df <- df %>% 
+  filter(!COWID %in% c("EGY", "LUN", "KUN", "SAF"))
+```
+
 ## Handling of invalid geometries
 
 The functions in `legaciesr` will (by default) attempt to fix invalid
@@ -46,97 +57,85 @@ the `legaciesr::fix_invalid()` to identify potential issues. See package
 documentation for further information on the use of this function.
 
 ``` r
-df_path <- file.path("../../LEGACIES/Test code/test_shape") # PATH FOR FOLDER OF master_shapefile (user-defined)
-df <- read_sf(df_path, "master_shapefile") # LOAD master_shapefile
-
+df <- example_df # Load example data set (based on random data)
 df <- fix_invalid(df)
 #> Jobs running in parallel using forking (multicore)
-#> 447 (3.7 %) geometries were successfully rebuilt.
-#> 1 (0 %) geometries failed to rebuild as valid (see row numbers below).
-#> Invalid geometries: 1297
+#> 0 (0 %) geometries were successfully rebuilt.
+#> 0 (0 %) geometries failed to rebuild as valid (see row numbers below).
+#> Invalid geometries:
 ```
 
-Currently, one geometry (COWID = “EGY”) fails to rebuild due to crossing
-edges. However, a few other COWIDs result in invalid geometries when
-creating contour polygons. For now, these are omitted:
-
-``` r
-df <- df %>% 
-  filter(!COWID %in% c("EGY", "LUN", "KUN", "SAF"))
-```
-
-## Create contour polygons for a single COWID
+## Create contour polygons for a single group
 
 See documentation for additional arguments (e.g., threshold for number
 of maps, the number of contour polygons, resolution of raster, and
 handling of invalid geometries).
 
 ``` r
-sok <- df %>%
-  filter(COWID == "SOK")
-contour_polygons(sok, id_vars = COWID)
+df1 <- df[df$name == unique(df$name)[7], ]
+contour_polygons(df1, id_vars = name)
 #> Simple feature collection with 4 features and 4 fields
-#> Geometry type: GEOMETRY
+#> Geometry type: POLYGON
 #> Dimension:     XY
-#> Bounding box:  xmin: -1.270313 ymin: 3.541847 xmax: 18.12969 ymax: 19.44185
+#> Bounding box:  xmin: 13.2298 ymin: -12.1308 xmax: 18.1298 ymax: -6.497462
 #> Geodetic CRS:  WGS 84
-#>   COWID  cut prob_interval nmaps                       geometry
-#> 1   SOK 0.75        0.75-1   159 MULTIPOLYGON (((5.26302 11....
-#> 2   SOK 0.50         0.5-1   159 MULTIPOLYGON (((4.329687 13...
-#> 3   SOK 0.25        0.25-1   159 POLYGON ((5.14427 14.74185,...
-#> 4   SOK 0.00           0-1   159 POLYGON ((8.40052 19.44185,...
+#>        name prob  label nmaps                       geometry
+#> 1 Freedonia 0.00    0-1    92 POLYGON ((15.13188 -6.49746...
+#> 2 Freedonia 0.25 0.25-1    92 POLYGON ((15.38396 -7.09746...
+#> 3 Freedonia 0.50  0.5-1    92 POLYGON ((15.31105 -7.53079...
+#> 4 Freedonia 0.75 0.75-1    92 POLYGON ((15.07771 -7.89746...
 ```
 
-## Create contour polygons across all COWIDs
+## Create contour polygons across all groups
 
 See documentation for additional arguments (e.g., specifying the period
 intervals to group by, thresholds for number of maps within a group,
 etc.).
 
 ``` r
-get_contours(df, grp_id = COWID)
+get_contours(df, grp_id = name)
 #> Jobs running in parallel using forking (multicore)
-#> Simple feature collection with 1126 features and 4 fields
+#> Simple feature collection with 80 features and 4 fields
 #> Geometry type: GEOMETRY
 #> Dimension:     XY
-#> Bounding box:  xmin: -17.92631 ymin: -32.91223 xmax: 158.0887 ymax: 56.76821
+#> Bounding box:  xmin: -6.94765 ymin: -31.48974 xmax: 48.82694 ymax: 37.22605
 #> Geodetic CRS:  WGS 84
 #> First 10 features:
-#>    COWID  cut prob_interval nmaps                       geometry
-#> 1    ABJ 0.75        0.75-1     6 POLYGON ((7.400228 9.312875...
-#> 2    ABJ 0.50         0.5-1     6 POLYGON ((7.433561 9.346209...
-#> 3    ABJ 0.25        0.25-1     6 POLYGON ((9.362728 10.64621...
-#> 4    ABJ 0.00           0-1     6 POLYGON ((9.248145 10.71288...
-#> 5    ACH 0.75        0.75-1    26 MULTIPOLYGON (((95.89119 4....
-#> 6    ACH 0.50         0.5-1    26 MULTIPOLYGON (((97.35786 3....
-#> 7    ACH 0.25        0.25-1    26 MULTIPOLYGON (((94.95786 5....
-#> 8    ACH 0.00           0-1    26 POLYGON ((102.3058 6.372775...
-#> 9    ADA 0.75        0.75-1    74 POLYGON ((14.1256 10.50851,...
-#> 10   ADA 0.50         0.5-1    74 POLYGON ((14.3256 11.07518,...
+#>           name prob  label nmaps                       geometry
+#> 1  Absurdistan 0.00    0-1    92 POLYGON ((14.77997 4.423399...
+#> 2  Absurdistan 0.25 0.25-1    92 POLYGON ((13.87997 3.423399...
+#> 3  Absurdistan 0.50  0.5-1    92 POLYGON ((14.21331 2.790065...
+#> 4  Absurdistan 0.75 0.75-1    92 POLYGON ((13.91539 1.990065...
+#> 5      Agrabah 0.00    0-1    92 POLYGON ((9.676273 37.22605...
+#> 6      Agrabah 0.25 0.25-1    92 POLYGON ((8.06169 36.62605,...
+#> 7      Agrabah 0.50  0.5-1    92 POLYGON ((8.432523 36.39272...
+#> 8      Agrabah 0.75 0.75-1    92 POLYGON ((8.403356 36.05939...
+#> 9    Arendelle 0.00    0-1    92 POLYGON ((45.39569 -16.3062...
+#> 10   Arendelle 0.25 0.25-1    92 POLYGON ((45.38944 -17.2062...
 ```
 
-## Create contour polygons across all COWIDs and by period
+## Create contour polygons across all groups and by period
 
 ``` r
-get_contours(df, by_period = T, grp_id = COWID, period_id = year)
+get_contours(df, by_period = T, grp_id = name, period_id = year)
 #> Jobs running in parallel using forking (multicore)
-#> Simple feature collection with 1839 features and 5 fields
+#> Simple feature collection with 320 features and 5 fields
 #> Geometry type: GEOMETRY
 #> Dimension:     XY
-#> Bounding box:  xmin: -17.84571 ymin: -31.77972 xmax: 158.093 ymax: 56.79681
+#> Bounding box:  xmin: -6.94765 ymin: -31.48974 xmax: 48.82967 ymax: 37.21565
 #> Geodetic CRS:  WGS 84
 #> First 10 features:
-#>    COWID    period  cut prob_interval nmaps                       geometry
-#> 1    AIR 1738-1758 0.75        0.75-1     6 MULTIPOLYGON (((8.051684 17...
-#> 2    AIR 1738-1758 0.50         0.5-1     6 POLYGON ((8.795434 18.14707...
-#> 3    AIR 1738-1758 0.25        0.25-1     6 MULTIPOLYGON (((11.11835 19...
-#> 4    AIR 1738-1758 0.00           0-1     6 POLYGON ((10.8996 20.78041,...
-#> 5    ALA 1738-1758 0.75        0.75-1     6 MULTIPOLYGON (((1.617851 7....
-#> 6    ALA 1738-1758 0.50         0.5-1     6 MULTIPOLYGON (((1.517851 7....
-#> 7    ALA 1738-1758 0.25        0.25-1     6 MULTIPOLYGON (((2.084518 8....
-#> 8    ALA 1738-1758 0.00           0-1     6 MULTIPOLYGON (((5.051185 9....
-#> 9    ALG 1738-1758 0.75        0.75-1    10 POLYGON ((6.309909 37.08083...
-#> 10   ALG 1738-1758 0.50         0.5-1    10 MULTIPOLYGON (((8.380742 37...
+#>           name    period prob  label nmaps                       geometry
+#> 1  Absurdistan 1800-1820 0.00    0-1    24 POLYGON ((15.51037 4.31889,...
+#> 2  Absurdistan 1800-1820 0.25 0.25-1    24 POLYGON ((14.07704 3.352223...
+#> 3  Absurdistan 1800-1820 0.50  0.5-1    24 POLYGON ((13.79162 2.81889,...
+#> 4  Absurdistan 1800-1820 0.75 0.75-1    24 POLYGON ((14.23329 2.21889,...
+#> 5      Agrabah 1800-1820 0.00    0-1    16 POLYGON ((8.943135 36.92605...
+#> 6      Agrabah 1800-1820 0.25 0.25-1    16 POLYGON ((8.911885 36.69272...
+#> 7      Agrabah 1800-1820 0.50  0.5-1    16 POLYGON ((8.180635 36.52605...
+#> 8      Agrabah 1800-1820 0.75 0.75-1    16 POLYGON ((8.780635 36.19272...
+#> 9    Arendelle 1800-1820 0.00    0-1    23 POLYGON ((45.54461 -16.3603...
+#> 10   Arendelle 1800-1820 0.25 0.25-1    23 POLYGON ((45.56336 -17.1936...
 ```
 
 ## Support for parallel processing:

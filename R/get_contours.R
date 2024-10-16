@@ -100,7 +100,7 @@ get_contours <- function(shp,
       cli::cli_inform("Jobs running in parallel using multisession.")
     }
   } else {
-    cl <- 1
+    cl <- NULL
     cli::cli_inform("Jobs running sequentially.")
   }
 

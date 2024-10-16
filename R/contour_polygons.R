@@ -258,7 +258,7 @@ contour_polygons <- function(shp,
             dplyr::select({{ id_vars }}, "prob", "label", "nmaps")
         }) |>
         dplyr::bind_rows() |>
-        dplyr::arrange(cut)
+        dplyr::arrange(prob)
 
     } else {
 
