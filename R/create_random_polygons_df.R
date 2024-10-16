@@ -72,18 +72,30 @@ create_random_polygons_df <- function(
   pnts_random <- sf::st_sample(ext, size = n) |>
     sf::st_as_sf()
   buff_random <- sf::st_buffer(pnts_random, dist = runif(nrow(pnts_random), 300e03, 700e03))
-  buff_random <- buff_random |>
+  buff_random <- buff_random
+  poly_random <- lapply(
+    split(buff_random, 1:nrow(buff_random)),
+    FUN = function(x) {
+      sf::st_geometry(x) <- sf::st_sample(x, 20) |>
+        sf::st_union() |>
+        sf::st_concave_hull(ratio = 0.8) |>
+        smoothr::smooth()
+      return(x)
+    }
+  ) |> bind_rows()
+
+  poly_random <- poly_random |>
     sf::st_intersection(ext) |>
     dplyr::rename(geometry = x) |>
     dplyr::mutate(id = 1:n)
 
-  ext_df <- dplyr::left_join(buff_random, id_df, by = "id")
+  ext_df <- dplyr::left_join(poly_random, id_df, by = "id")
 
   sample_polygon <- function(shp, n.pnts) {
     sf::st_geometry(shp) <- shp |>
       sf::st_sample(n.pnts) |>
       sf::st_union() |>
-      sf::st_convex_hull() |>
+      sf::st_concave_hull(ratio = 0.8) |>
       smoothr::smooth() |>
       sf::st_geometry()
     return(shp)

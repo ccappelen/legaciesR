@@ -236,10 +236,10 @@ contour_polygons <- function(shp,
 
     cut_seq <- seq(from = 0, to = 1, length.out = cuts+1)[-1]
     cut_interval <- 1/cuts
-    max_cut <- max(cut_seq)
 
     ## If there are no grid cells with probability in a certain cut range (most likely the uppermost range), remove this from cut_seq
     cut_seq <- cut_seq[!cut_seq - cut_interval >= terra::values(r_prob) %>% max(na.rm = T)]
+    max_cut <- max(cut_seq)
 
     if (include_higher) {
 

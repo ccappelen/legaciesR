@@ -10,7 +10,7 @@ create_random_polygons_df(
   nmap_min = 50,
   nmap_max = 200,
   year_min = 1800,
-  year_max = 1899,
+  year_max = 1900,
   n.pnts = 10,
   progress = TRUE
 )
