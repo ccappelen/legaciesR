@@ -1,31 +1,37 @@
-Package: legaciesr
 Type: Package
+Package: legaciesr
 Title: Data management for the LEGACIES data project
 Version: 0.2.1
-Authors@R: person("Cappelen", "Christoffer", email = "christoffer.cappelen@gmail.com",
-  role = c("aut", "cre")) 
+Authors@R: 
+    person("Christoffer", "Cappelen", , "christoffer.cappelen@gmail.com", role = c("aut", "cre"))
 Description: Contains functions for aggregating overlapping polygons.
 License: MIT + file LICENSE
-Encoding: UTF-8
-LazyData: true
-Imports: 
-    smoothr,
-    sf,
-    raster,
-    terra,
-    pbapply,
-    s2,
-    rlang,
-    cli,
-    parallel,
-    data.table,
-    dtplyr,
-    tibble,
-    dplyr,
-    rnaturalearthdata,
-    fasterize,
-    tidyr
-Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+URL: https://www.legacies-project.com
+BugReports: https://github.com/ccappelen/legaciesR/issues
 Depends: 
     R (>= 4.3)
+Imports: 
+    cli,
+    data.table,
+    dplyr,
+    dtplyr,
+    fasterize,
+    parallel,
+    pbapply,
+    raster,
+    rlang,
+    s2,
+    sf,
+    smoothr,
+    terra,
+    tibble,
+    tidyr
+Suggests: 
+    ggplot2,
+    rnaturalearthdata,
+    testthat (>= 3.0.0)
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Config/testthat/edition: 3

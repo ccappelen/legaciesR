@@ -64,7 +64,7 @@ df <- fix_invalid(df)
 See documentation for additional arguments (e.g., threshold for number of maps, the number of contour polygons, resolution of raster, and handling of invalid geometries).
 
 ```{r contour polygons for single group, eval = TRUE}
-df1 <- df[df$name == unique(df$name)[13], ]
+df1 <- df[df$name == unique(df$name)[8], ]
 contour_polygons(df1, id_vars = name)
 ```
 
