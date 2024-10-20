@@ -17,7 +17,7 @@ create_random_polygons_df(
 }
 \arguments{
 \item{ext}{An sf object, within which the polygons will be sampled. If \code{NULL}, it will be use
-a polygon of Africa as the extent extent object (from \link{rnaturalearthdata}).}
+a polygon of Africa as the extent extent object (from \link[rnaturalearthdata:countries]{rnaturalearthdata::countries50}).}
 
 \item{n}{Integer, the number of groups to create}
 

@@ -1,3 +1,17 @@
+#' Create grid summarizing overlapping polygons.
+#'
+#' Create gridded data by group (or group and year) summarizing the number of
+#' polygons covering a given grid cell.
+#'
+#' @param shp Shape
+#' @param ras Raster
+#' @param raster_from_shp Logical
+#' @param res Resolution
+#' @param by_grp By group
+#' @param id_var ID variable name
+#' @param updates Logical
+#' @param return List or data.frame
+
 #' @import dplyr
 #' @import dtplyr
 #' @importFrom raster raster
@@ -5,11 +19,12 @@
 #' @importFrom terra as.data.frame
 #' @importFrom terra set.names
 #' @import tibble
-#' @import rnaturalearthdata
+# #' @import rnaturalearthdata
 #' @import fasterize
-#' @import pbapply
+# #' @import pbapply
 #' @importFrom data.table as.data.table
 
+#' @return Data frame of grid cell-by-state (or grid cell-by-state-by-year).
 #' @export
 
 get_grid <- function(shp, ras,
@@ -19,6 +34,7 @@ get_grid <- function(shp, ras,
                      updates = T,
                      return = c("list", "data")){
 
+  base = sov_a3 = layer = cname = NULL
   if(raster_from_shp){
 
     ## Create empty grid from user-provided shp
@@ -31,6 +47,10 @@ get_grid <- function(shp, ras,
       dplyr::select(-base)
 
   }else{
+
+    rlang::check_installed(
+      "rnaturalearthdata",
+      reason = "'rnaturalearthdata' must be installed to use the default 'ext' option.")
 
     ## Load shape of modern countries (used to define grid and extract country names)
     world <- rnaturalearthdata::countries50

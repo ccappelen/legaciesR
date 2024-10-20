@@ -4,6 +4,10 @@
 # legaciesr
 
 <!-- badges: start -->
+
+[![Codecov test
+coverage](https://codecov.io/gh/ccappelen/legaciesR/graph/badge.svg)](https://app.codecov.io/gh/ccappelen/legaciesR)
+[![R-CMD-check](https://github.com/ccappelen/legaciesR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/ccappelen/legaciesR/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 The `legaciesr` package provides a set of functions used to aggregate
@@ -59,10 +63,8 @@ documentation for further information on the use of this function.
 ``` r
 df <- example_df # Load example data set (based on random data)
 df <- fix_invalid(df)
-#> Jobs running in parallel using forking (multicore)
 #> 1 (0 %) geometries were successfully rebuilt.
-#> 0 (0 %) geometries failed to rebuild as valid (see row numbers below).
-#> Invalid geometries:
+#> 0 (0 %) geometries failed to rebuild as valid.
 ```
 
 ## Create contour polygons for a single group
@@ -94,7 +96,6 @@ etc.).
 
 ``` r
 get_contours(df, grp_id = name)
-#> Jobs running in parallel using forking (multicore)
 #> Simple feature collection with 88 features and 4 fields
 #> Geometry type: GEOMETRY
 #> Dimension:     XY
@@ -118,7 +119,6 @@ get_contours(df, grp_id = name)
 
 ``` r
 get_contours(df, by_period = T, grp_id = name, period_id = year)
-#> Jobs running in parallel using forking (multicore)
 #> Simple feature collection with 440 features and 5 fields
 #> Geometry type: GEOMETRY
 #> Dimension:     XY
@@ -140,11 +140,23 @@ get_contours(df, by_period = T, grp_id = name, period_id = year)
 
 ## Support for parallel processing:
 
-There are two ways of running jobs in parallel. Forked R processes or
-running multiple background R sessions. In the current setup, running
-multiple background processes (multisession) are slower than running the
-jobs sequentially due to the overhead associated with opening new R
-sessions. However, machines running on Microsoft Windows do not support
-forking (multicore) and will therefore default to a sequential plan
-unless `parallel` is set to TRUE. On Unix platforms (e.g., MacOS), it
-will default to parallel processing.
+Parallel processing is is implemented using the \[future::future\]
+framework. There are two ways of running jobs in parallel: `multicore`
+which uses ‘forking’ to run multiple jobs in parallel with shared memory
+and `multisession` which launches a set of background R sessions.
+‘Forking’ can be faster than multisession because of the larger overhead
+associated with copying the active environment to each background R
+session (whereas forking processes shares memory). However, ‘forking’ is
+not supported on Windows platforms and is considered unstable when
+running from within RStudio (on both Windows and Unix systems such as
+MacOS). The function will automatically determine whether `multicore` is
+supported by the platform and choose the appropriate plan.
+
+The greater overhead associated with `multisession` is primarily during
+the first parallel run in a given R session (since the background R
+sessions stays available for additional parallel jobs). It is possible
+to define a \[future::plan(“multisession”)\] in the global environment,
+which will minimize overhead in subsequent parallel jobs (apart from the
+first). The function will automatically detect if a `multisession` plan
+has been set globally and, thus, will not close background sessions
+after running.

@@ -1,7 +1,7 @@
 #' Create random overlapping polygons
 #'
 #' @param ext An sf object, within which the polygons will be sampled. If `NULL`, it will be use
-#'   a polygon of Africa as the extent extent object (from [rnaturalearthdata]).
+#'   a polygon of Africa as the extent extent object (from [rnaturalearthdata::countries50]).
 #' @param n Integer, the number of groups to create
 #' @param nmap_min Integer, minimum number of features within a group
 #' @param nmap_max Integer, maximum number of features within a group
@@ -16,8 +16,11 @@
 #' @importFrom tidyr unnest
 #' @importFrom smoothr smooth
 #' @import sf
-#' @import pbapply
+# #' @import pbapply
 #' @import rlang
+#' @importFrom stats runif
+#' @import future
+#' @importFrom furrr future_map
 
 create_random_polygons_df <- function(
     ext,
@@ -28,6 +31,8 @@ create_random_polygons_df <- function(
     year_max = 1900,
     n.pnts = 10,
     progress = TRUE) {
+
+  continent = nmap = map_id = x = NULL
 
   if (missing(ext)) {
     rlang::check_installed(
@@ -42,8 +47,16 @@ create_random_polygons_df <- function(
   }
 
   # Set progress bar options
-  progress_bar <- ifelse(progress, "timer", "none")
-  pboptions(char = "=", style = 1, type = progress_bar)
+  if (progress) {
+    old_handler <- progressr::handlers(progressr::handler_progress(
+      format = ":spin :bar :percent Elapsed: :elapsed, Remaining: ~:eta",
+      intrusiveness = 1
+    ))
+    on.exit(
+      if (is.null(old_handler)) progressr::handlers("void") else progressr::handlers(old_handler),
+      add = TRUE
+    )
+  }
 
   # List of fictional names
   names_list <- c("Genovia", "Freedonia", "Panem", "Kundu", "Narnia", "Wakanda", "Florin",
@@ -107,11 +120,19 @@ create_random_polygons_df <- function(
     return(shp)
   }
 
-  df <- pbapply::pblapply(
-    split(ext_df, 1:nrow(ext_df)),
-    FUN = function(x) sample_polygon(x, n.pnts = 10)
-  ) |>
-    dplyr::bind_rows()
+  progressr::with_progress({
+    p <- progressr::progressor(steps = nrow(ext_df))
+
+    df <- furrr::future_map(
+      split(ext_df, 1:nrow(ext_df)),
+      .f = function(x) {
+        p()
+        sample_polygon(x, n.pnts = 10)
+      }
+    ) |>
+      dplyr::bind_rows()
+
+  })
 
   return(df)
 }

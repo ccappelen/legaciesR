@@ -14,8 +14,12 @@
 #'   creates smoother borders but also increases processing time. Default is 1/30 degrees.
 #' @param nmap_threshold Integer indicating the number of geometries required. Default is 2. If threshold is 1, a single geometry will
 #'   be returned unmodified.
-#' @param invalid_geom Character scalar, how invalid geometries are handled.
-#'   Can be either "none" (default), "exclude", "fix_exclude", or "fix_all". See *Invalid geometries* for details.
+# #' @param invalid_geom Character scalar, how invalid geometries are handled.
+# #'   Can be either "none" (default), "exclude", "fix_exclude", or "fix_all". See *Invalid geometries* for details.
+#' @param invalid_geom Character, how to handle invalid geometries. If `"stop"`, returns an error
+#'   if there are invalid geometries; if `"exclude"`, invalid geometries will be removed before
+#'   calculating contours; if `"fix"`, invalid geometries will be rebuilt using [fix_invalid].
+#'   It is recommended to check for invalid geometries and run [fix_invalid] separately.
 #' @param include_higher logical, whether the contour polygons should include percentiles above current interval.
 #'  If TRUE (default), the 50 % polygon will include all areas covered by at least 50 % of the shapes
 #'  (and not just within the specified interval, e.g., 0.75-1, 0.50-1, 0.25-1...). If FALSE, the polygon will include only areas
@@ -24,13 +28,13 @@
 #' @return Returns an sf dataframe with the same number of features as specified in `cuts.` The density,
 #'  or percentile, is stored in the columns `prob` and `label.`
 
-#' @section Invalid geometries:
-#' The function attempts to rebuild invalid geometries using [sf::st_make_valid()]. However, some geometries may be invalid even after attempting
-#' to rebuild. If "none" the function will return an error in case of invalid geometries (after attempting to rebuild). If "exclude", any invalid
-#' geometries will be removed. If "fix_exclude", invalid geometries will be rebuilt using default arguments and any remaining invalid
-#' geometries will be removed. If "fix_all", the function will attempt to rebuild invalid geometries by iteratively lowering the
-#' snapping precision (in `s2::s2_snap_precision()`). It will return an error if it fails to rebuild valid geometries.
-#' The use of "fix_all" is experimental and the result should be inspected manually.
+# #' @section Invalid geometries:
+# #' The function attempts to rebuild invalid geometries using [sf::st_make_valid()]. However, some geometries may be invalid even after attempting
+# #' to rebuild. If "none" the function will return an error in case of invalid geometries (after attempting to rebuild). If "exclude", any invalid
+# #' geometries will be removed. If "fix_exclude", invalid geometries will be rebuilt using default arguments and any remaining invalid
+# #' geometries will be removed. If "fix_all", the function will attempt to rebuild invalid geometries by iteratively lowering the
+# #' snapping precision (in `s2::s2_snap_precision()`). It will return an error if it fails to rebuild valid geometries.
+# #' The use of "fix_all" is experimental and the result should be inspected manually.
 
 #' @importFrom smoothr smooth
 #' @import sf
@@ -52,8 +56,10 @@ contour_polygons <- function(shp,
                              res = 1/30,
                              nmap_threshold = 2,
                              smoothing = TRUE,
-                             invalid_geom = c("none", "exclude", "fix_exclude", "fix_all"),
+                             invalid_geom = c("stop", "fix", "exclude"),
                              include_higher = TRUE) {
+
+  prob <- NULL
 
   # Check arguments
   if (missing(id_vars)) {
@@ -65,6 +71,153 @@ contour_polygons <- function(shp,
 
   invalid_geom <- match.arg(invalid_geom)
 
+  if (sf::st_crs(shp) != sf::st_crs("EPSG:4326")) {
+    shp <- shp %>%
+      sf::st_transform(crs = 4326)
+  }
+
+  # Check for invalid geometries
+  invalid <- any(!st_is_valid(shp))
+
+  if (invalid_geom == "stop" && invalid) {
+    cli::cli_abort(c(
+      "Invalid geometries",
+      "x" = "{.arg shp} contains invalid geometries.",
+      "i" = "Consider setting {.arg invalid_geom} to 'fix' or 'exclude'."
+    ))
+  }
+
+  if (invalid_geom == "exclude") {
+    shp <- shp[sf::st_is_valid(shp),]
+  }
+
+  if (invalid_geom == "fix") {
+    shp <- fix_invalid(shp, progress = FALSE, parallel = FALSE,
+                       report = FALSE, reportColumns = FALSE)
+  }
+
+
+
+  # ## DEPRECATED - REMOVE WHEN STABLE
+  # # Fix invalid geometries (depending on argument invalid_geom)
+  # if (invalid_geom == "exclude") {
+  #   invalid <- !all(sf::st_is_valid(shp))
+  #
+  #   if (invalid) {
+  #     shp <- shp[sf::st_is_valid(shp), ]
+  #     if(nrow(shp) <= nmap_threshold) {
+  #       cli::cli_abort(c(
+  #         "Number of valid features is less than {.arg nmap_threshold}.",
+  #         "i" = "Consider lowering the threshold or setting {.arg invalid_geom} to 'fix_exclude' or 'fix_all'."
+  #       ))
+  #       }
+  #
+  #     if (!all(sf::st_is_valid(shp))) {
+  #       cli::cli_abort(c(
+  #         "Unable to remove invalid features."
+  #       ))
+  #     }
+  #
+  #     cli::cli_inform("Invalid geometries have been removed from the dataset.")
+  #
+  #   } else {
+  #
+  #     shp <- shp[sf::st_is_valid(shp), ]
+  #
+  #   }
+  #
+  # }
+  #
+  # if (invalid_geom == "none") {
+  #   invalid <- !all(sf::st_is_valid(shp))
+  #
+  #   if (invalid) {
+  #     shp <- sf::st_make_valid(shp)
+  #     if (!all(sf::st_is_valid(shp))) {
+  #       cli::cli_abort(c(
+  #         "Invalid geometries",
+  #         "i" = "{.code sf::st_make_valid()} was unable to rebuild valid geometries.
+  #         Consider setting {.arg invalid_geom} to 'exlude, 'fix_exclude' or 'fix_all'."
+  #       ))
+  #     }
+  #
+  #     cli::cli_inform(
+  #       "Some geometries were invalid. They have been fixed using {.code sf::st_make_valid()}."
+  #       )
+  #
+  #   } else {
+  #
+  #     shp <- shp
+  #
+  #   }
+  # }
+  #
+  # if (invalid_geom == "fix_exclude") {
+  #
+  #   invalid <- !all(sf::st_is_valid(shp))
+  #
+  #   if (invalid) {
+  #     shp <- sf::st_make_valid(shp)
+  #     shp <- shp[st_is_valid(shp), ]
+  #
+  #     if (!all(sf::st_is_valid(shp))) {
+  #       cli::cli_abort(c(
+  #         "Unable to remove invalid geometries",
+  #         "i" = "Consider setting {.arg invalid_geom} to 'fix_all' instead."
+  #       ))
+  #     }
+  #
+  #     cli::cli_inform(
+  #       "Invalid geometries have been rebuilt. Geometries that are invalid after rebuilding have been removed."
+  #       )
+  #
+  #   } else {
+  #
+  #     shp <- shp
+  #
+  #   }
+  # }
+  #
+  #
+  # if (invalid_geom == "fix_all") {
+  #
+  #   invalid <- !all(sf::st_is_valid(shp))
+  #
+  #   if (invalid) {
+  #
+  #     shp <- fix_invalid(shp = shp,
+  #                        max_precision = 10^7,
+  #                        min_precision = 10,
+  #                        stop_if_invalid = F,
+  #                        progress = F,
+  #                        parallel = F,
+  #                        report = F,
+  #                        reportColumns = F)
+  #
+  #     shp_invalid <- !all(sf::st_is_valid(shp))
+  #
+  #     if (shp_invalid == TRUE) {
+  #       cli::cli_abort(c(
+  #         "Invalid geometries",
+  #         "i" = "{.code sf::st_make_valid()} failed to rebuild valid geometries within acceptable snapping precision.",
+  #         "i" = "Likely caused by severe edge errors in geometry that should be identified and corrected manually."
+  #       ))
+  #     }
+  #
+  #     cli::cli_inform(
+  #       "Some geometries are invalid. They have been fixed using sf::st_make_valid(). Consider checking spatial features before continuing."
+  #       )
+  #
+  #   } else {
+  #
+  #     shp <- shp
+  #
+  #   }
+  #
+  # }
+
+
+  # Check number of maps
   if (nrow(shp) < nmap_threshold) {
     cli::cli_abort(c(
       "Not enough features",
@@ -72,130 +225,6 @@ contour_polygons <- function(shp,
       Consider lowering the threshold."
     ))
   }
-
-  if (sf::st_crs(shp) != sf::st_crs("EPSG:4326")) {
-    shp <- shp %>%
-      sf::st_transform(crs = 4326)
-  }
-
-
-  # Fix invalid geometries (depending on argument invalid_geom)
-  if (invalid_geom == "exclude") {
-    invalid <- !all(sf::st_is_valid(shp))
-
-    if (invalid) {
-      shp <- shp[sf::st_is_valid(shp), ]
-      if(nrow(shp) <= nmap_threshold) {
-        cli::cli_abort(c(
-          "Number of valid features is less than {.arg nmap_threshold}.",
-          "i" = "Consider lowering the threshold or setting {.arg invalid_geom} to 'fix_exclude' or 'fix_all'."
-        ))
-        }
-
-      if (!all(sf::st_is_valid(shp))) {
-        cli::cli_abort(c(
-          "Unable to remove invalid features."
-        ))
-      }
-
-      cli::cli_inform("Invalid geometries have been removed from the dataset.")
-
-    } else {
-
-      shp <- shp[sf::st_is_valid(shp), ]
-
-    }
-
-  }
-
-  if (invalid_geom == "none") {
-    invalid <- !all(sf::st_is_valid(shp))
-
-    if (invalid) {
-      shp <- sf::st_make_valid(shp)
-      if (!all(sf::st_is_valid(shp))) {
-        cli::cli_abort(c(
-          "Invalid geometries",
-          "i" = "{.code sf::st_make_valid()} was unable to rebuild valid geometries.
-          Consider setting {.arg invalid_geom} to 'exlude, 'fix_exclude' or 'fix_all'."
-        ))
-      }
-
-      cli::cli_inform(
-        "Some geometries were invalid. They have been fixed using {.code sf::st_make_valid()}."
-        )
-
-    } else {
-
-      shp <- shp
-
-    }
-  }
-
-  if (invalid_geom == "fix_exclude") {
-
-    invalid <- !all(sf::st_is_valid(shp))
-
-    if (invalid) {
-      shp <- sf::st_make_valid(shp)
-      shp <- shp[st_is_valid(shp), ]
-
-      if (!all(sf::st_is_valid(shp))) {
-        cli::cli_abort(c(
-          "Unable to remove invalid geometries",
-          "i" = "Consider setting {.arg invalid_geom} to 'fix_all' instead."
-        ))
-      }
-
-      cli::cli_inform(
-        "Invalid geometries have been rebuilt. Geometries that are invalid after rebuilding have been removed."
-        )
-
-    } else {
-
-      shp <- shp
-
-    }
-  }
-
-
-  if (invalid_geom == "fix_all") {
-
-    invalid <- !all(sf::st_is_valid(shp))
-
-    if (invalid) {
-
-      shp <- fix_invalid(shp = shp,
-                         max_precision = 10^7,
-                         min_precision = 10,
-                         stop_if_invalid = F,
-                         progress = F,
-                         parallel = F,
-                         report = F,
-                         reportColumns = F)
-
-      shp_invalid <- !all(sf::st_is_valid(shp))
-
-      if (shp_invalid == TRUE) {
-        cli::cli_abort(c(
-          "Invalid geometries",
-          "i" = "{.code sf::st_make_valid()} failed to rebuild valid geometries within acceptable snapping precision.",
-          "i" = "Likely caused by severe edge errors in geometry that should be identified and corrected manually."
-        ))
-      }
-
-      cli::cli_inform(
-        "Some geometries are invalid. They have been fixed using sf::st_make_valid(). Consider checking spatial features before continuing."
-        )
-
-    } else {
-
-      shp <- shp
-
-    }
-
-  }
-
 
   # Make contours
   cuts <- cuts

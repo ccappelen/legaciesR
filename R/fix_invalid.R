@@ -25,19 +25,31 @@
 #'   precision that led to invalid geometry).
 
 #' @import sf
-#' @import pbapply
+# #' @import pbapply
 #' @import dplyr
 #' @import s2
-#' @import parallel
+# #' @import parallel
 #' @import cli
+#' @import future
+#' @importFrom furrr future_map
+#' @import progressr
 
 #' @section Support for parallel processing:
-#' There are two ways of running jobs in parallel. Forked R processes or running multiple background
-#' R sessions. In the current setup, running multiple background processes (multisession) are slower than
-#' running the jobs sequentially due to the overhead associated with opening new R sessions. However,
-#' machines running on Microsoft Windows do not support forking (multicore) and will therefore default to
-#' a sequential plan unless `parallel` is set to `TRUE.` On Unix platforms (e.g., MacOS), it will default
-#' to parallel processing.
+#' Parallel processing is is implemented using the [future::future] framework. There are two ways
+#' of running jobs in parallel: `multicore` which uses 'forking' to run multiple jobs in parallel with
+#' shared memory and `multisession` which launches a set of background R sessions. 'Forking' can be faster
+#' than multisession because of the larger overhead associated with copying the active environment to
+#' each background R session (whereas forking processes shares memory). However, 'forking' is not
+#' supported on Windows platforms and is considered unstable when running from within RStudio
+#' (on both Windows and Unix systems such as MacOS). The function will automatically determine
+#' whether `multicore` is supported by the platform and choose the appropriate plan.
+#'
+#' The greater overhead associated with `multisession` is primarily during the first parallel
+#' run in a given R session (since the background R sessions stays available for additional
+#' parallel jobs). It is possible to define a [future::plan()] in the global environment,
+#' which will minimize overhead in subsequent parallel jobs (apart from the first). The function will
+#' automatically detect if a `multisession` plan has been set globally and, thus, will not close
+#' background sessions after running.
 
 #' @export
 
@@ -62,41 +74,138 @@ fix_invalid <- function(shp,
   shp_list <- split(shp, shp$rowid)
 
   # Set progress bar options
-  progress_bar <- ifelse(progress, "timer", "none")
-  pboptions(char = "=", style = 1, type = progress_bar)
+  if (progress) {
+    old_handler <- progressr::handlers(progressr::handler_progress(
+      format = ":spin :bar :percent Elapsed: :elapsed, Remaining: ~:eta",
+      intrusiveness = 1
+    ))
+    on.exit(
+      if (is.null(old_handler)) progressr::handlers("void") else progressr::handlers(old_handler),
+      add = TRUE
+    )
+  }
 
   # Set parallel options
-  supportedByOS <- ifelse(.Platform$OS.type == "unix", TRUE, FALSE)
+  multicore_support <- future::supportsMulticore()
+  future_global <- is(future::plan(), "multisession") | is(future::plan(), "multicore")
 
   if (is.null(parallel)) {
-    if (supportedByOS) {
-      parallel <- TRUE
-    } else {
+    if (nrow(shp) < 5000) {
       parallel <- FALSE
+    } else {
+      parallel <- TRUE
+    }
+  }
+
+  if (!parallel) {
+    if (future_global) {
+      old_plan <- future::plan("sequential")
+      on.exit(future::plan(old_plan), add = TRUE)
+      cli::cli_inform(c("Jobs running sequentially.",
+                      "i" = "Reverts to original plan after running."
+                      ))
     }
   }
 
   if (parallel) {
-    if (supportedByOS) {
+    if (!future_global) {
       if (missing(ncores)) {
-        cl <- parallel::detectCores()-1
-      } else {
-        cl <- ncores
+        ncores <- future::availableCores() - 1
       }
-      cli::cli_inform("Jobs running in parallel using forking (multicore)")
-    } else {
-      if (missing(ncores)) {
-        ncores <- parallel::detectCores()-1
+
+      if (ncores < 2) {
+        old_plan <- future::plan("sequential")
+        on.exit(future::plan(old_plan), add = TRUE)
+        cli::cli_inform("Jobs running sequentially since {.arg ncores} is 1.")
       }
-      ncores <- ncores
-      cl <- parallel::makeCluster(ncores)
-      on.exit(stopCluster(cl))
-      cli::cli_inform("Jobs running in parallel using multisession.")
+
+      if (ncores >= 2) {
+        if (multicore_support) {
+          old_plan <- future::plan("multicore", workers = ncores)
+          on.exit(future::plan(old_plan), add = TRUE)
+          cli::cli_inform(c("Jobs running in parallel using 'multicore' (forking).",
+                          "i" = "Reverts to original plan after running."
+                          ))
+        } else {
+          old_plan <- future::plan("multisession", workers = ncores)
+          on.exit(future::plan(old_plan), add = TRUE)
+          cli::cli_inform(c("Jobs running in parallel using 'multisession'.",
+                          "i" = "Reverts to original plan after running."
+                          ))
+        }
+      }
     }
-  } else {
-    cl <- NULL
-    cli::cli_inform("Jobs running sequentially.")
   }
+
+
+
+  # Set parallel options
+  # supportedByOS <- ifelse(.Platform$OS.type == "unix", TRUE, FALSE)
+  #
+  # if (is.null(parallel)) {
+  #   if (supportedByOS) {
+  #     parallel <- TRUE
+  #   } else {
+  #     parallel <- FALSE
+  #   }
+  # }
+
+  # if (parallel) {
+  #   if (supportedByOS) {
+  #     if(missing(ncores)) {
+  #       future::plan("multisession", workers = future::availableCores() - 1)
+  #     } else {
+  #       if (ncores >= 2) {
+  #         future::plan("multisession", workers = ncores)
+  #       } else{
+  #         future::plan("sequential")
+  #         if (progress) cli::cli_inform("Jobs running sequentially since {.arg ncores} is 1.")
+  #       }
+  #     }
+  #     if (progress) cli::cli_inform("Jobs running in parallel using forking (multicore)")
+  #   } else {
+  #     if (missing(ncores)) {
+  #       ncores <- future::availableCores() - 1
+  #     }
+  #     future::plan("multisession", workers = ncores)
+  #     if (progress) cli::cli_inform("Jobs running in parallel using multisession.")
+  #   }
+  # } else {
+  #   future::plan("sequential")
+  #   if (progress) cli::cli_inform("Jobs running sequentially.")
+  # }
+  # on.exit(future::plan("sequential"), add = TRUE)
+
+  ## FRAMEWORK FOR PBAPPLY
+  # if (is.null(parallel)) {
+  #   if (supportedByOS) {
+  #     parallel <- TRUE
+  #   } else {
+  #     parallel <- FALSE
+  #   }
+  # }
+  #
+  # if (parallel) {
+  #   if (supportedByOS) {
+  #     if (missing(ncores)) {
+  #       cl <- parallel::detectCores()-1
+  #     } else {
+  #       cl <- ncores
+  #     }
+  #     if (progress) cli::cli_inform("Jobs running in parallel using forking (multicore)")
+  #   } else {
+  #     if (missing(ncores)) {
+  #       ncores <- parallel::detectCores()-1
+  #     }
+  #     ncores <- ncores
+  #     cl <- parallel::makeCluster(ncores)
+  #     on.exit(stopCluster(cl))
+  #     if (progress) cli::cli_inform("Jobs running in parallel using multisession.")
+  #   }
+  # } else {
+  #   cl <- NULL
+  #   if (progress) cli::cli_inform("Jobs running sequentially.")
+  # }
 
   # Write helper function to make valid geometries (iteratively if necessary)
   fun.make.valid <- function(shp1,
@@ -170,11 +279,32 @@ fix_invalid <- function(shp,
   }
 
   # Run fun.make.valid over all geometries in shp
-  shp_list_valid <- pbapply::pblapply(
-    shp_list,
-    FUN = function(x) fun.make.valid(x, max_precision, min_precision, stop_if_invalid),
-    cl = cl
-  )
+  # shp_list_valid <- pbapply::pblapply(
+  #   shp_list,
+  #   FUN = function(x) fun.make.valid(x, max_precision, min_precision, stop_if_invalid),
+  #   cl = cl
+  # )
+
+  # old_handler <- progressr::handlers(handler_pbcol(
+  #   adjust = 1,
+  #   pad = 5,
+  #   complete = function(s) cli::bg_br_green(cli::col_black(s)),
+  #   incomplete = function(s) cli::bg_white(cli::col_black(s)),
+  #   intrusiveness = 2))
+
+  progressr::with_progress({
+    p <- progressr::progressor(along = shp_list)
+
+    shp_list_valid <- furrr::future_map(
+      shp_list,
+      .f = function(x) {
+        p()
+        fun.make.valid(x, max_precision, min_precision, stop_if_invalid)
+      },
+      .options = furrr_options(seed = TRUE)
+    )
+  }, interrupts = TRUE)
+
 
   # Check list for error messages
   shp_errors <- sapply(shp_list_valid, inherits, what = "try-error")
@@ -210,11 +340,15 @@ fix_invalid <- function(shp,
       paste0(length(rebuilt_rowids), " (", round(length(rebuilt_rowids)/nrow(shp_list_new), 3)*100, " %) ",
              "geometries were successfully rebuilt.\n"),
       paste0(length(invalid_rowids), " (", round(length(invalid_rowids)/nrow(shp_list_new), 3)*100, " %) ",
-             "geometries failed to rebuild as valid (see row numbers below).\n"),
-      ifelse(length(invalid_rowids) <= 10,
-             paste0("Invalid geometries: ", paste0(invalid_rowids, collapse = ", ")),
-             paste0("Invalid geometries: ", paste0(invalid_rowids[1:10], collapse = ", "), " ..... (more than 10)")))
-    )
+             "geometries failed to rebuild as valid.\n"),
+      if (length(invalid_rowids) > 0) {
+        ifelse(length(invalid_rowids) <= 10,
+               paste0("Invalid geometries: ", paste0(invalid_rowids, collapse = ", ")),
+               paste0("Invalid geometries: ",
+                      paste0(invalid_rowids[1:10], collapse = ", "),
+                      " ..... (more than 10)"))
+      }
+    ))
   }
 
   # Remove rowid column

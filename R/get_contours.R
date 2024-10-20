@@ -13,7 +13,8 @@
 #'   For user specification, the value can be either a scalar, indicating the length of intervals
 #'   (in which case the full range is used), or a vector specifying the exact breaks, including both the
 #'   start of the first interval and end of the last interval.
-#' @param smoothing Logical, whether to apply smoothing after polygonizing the raster. Default is TRUE.
+#' @inheritParams contour_polygons
+#' @param smoothing Logical, whether to apply smoothing after polygonizing the raster. Default is `TRUE`.
 #' @param nmap_threshold Integer, indicating the number of shapes requires within each group. Default is 5.
 #' @param returnList Logical, whether to return a list of geometries by group.
 #'   Default is to return an sf dataframe containing all geometries.
@@ -28,17 +29,31 @@
 #' @importFrom rlang .data
 #' @import sf
 #' @import dplyr
-#' @import pbapply
-#' @import parallel
+# #' @import pbapply
+# #' @import parallel
 #' @import cli
+#' @import future
+#' @import furrr
+#' @importFrom purrr map
+#' @import progressr
+#' @importFrom methods is
 
 #' @section Support for parallel processing:
-#' There are two ways of running jobs in parallel. Forked R processes or running multiple background
-#' R sessions. In the current setup, running multiple background processes (multisession) are slower than
-#' running the jobs sequentially due to the overhead associated with opening new R sessions. However,
-#' machines running on Microsoft Windows do not support forking (multicore) and will therefore default to
-#' a sequential plan unless `parallel` is set to `TRUE.` On Unix platforms (e.g., MacOS), it will default
-#' to parallel processing.
+#' Parallel processing is is implemented using the [future::future] framework. There are two ways
+#' of running jobs in parallel: `multicore` which uses 'forking' to run multiple jobs in parallel with
+#' shared memory and `multisession` which launches a set of background R sessions. 'Forking' can be faster
+#' than multisession because of the larger overhead associated with copying the active environment to
+#' each background R session (whereas forking processes shares memory). However, 'forking' is not
+#' supported on Windows platforms and is considered unstable when running from within RStudio
+#' (on both Windows and Unix systems such as MacOS). The function will automatically determine
+#' whether `multicore` is supported by the platform and choose the appropriate plan.
+#'
+#' The greater overhead associated with `multisession` is primarily during the first parallel
+#' run in a given R session (since the background R sessions stays available for additional
+#' parallel jobs). It is possible to define a [future::plan()] in the global environment,
+#' which will minimize overhead in subsequent parallel jobs (apart from the first). The function will
+#' automatically detect if a `multisession` plan has been set globally and, thus, will not close
+#' background sessions after running.
 
 #' @export
 
@@ -48,10 +63,11 @@ get_contours <- function(shp,
                          interval = NULL,
                          period_id,
                          nmap_threshold = 5,
+                         invalid_geom = c("stop", "fix", "exclude"),
                          smoothing = TRUE,
                          returnList = FALSE,
                          progress = TRUE,
-                         parallel = TRUE,
+                         parallel = NULL,
                          ncores,
                          ...){
 
@@ -64,45 +80,64 @@ get_contours <- function(shp,
     cli::cli_abort("{.arg grp_id} must be a variable, not a character string.")
   }
 
+  invalid_geom <- match.arg(invalid_geom)
+
+  grp_id <- substitute(grp_id)
   grp_id_str <- deparse(substitute(grp_id))
   period_id_str <- deparse(substitute(period_id))
 
   # Set progress bar options
-  progress_bar <- ifelse(progress, "timer", "none")
-  pboptions(char = "=", style = 1, type = progress_bar)
+  if (progress) {
+    old_handler <- progressr::handlers(progressr::handler_progress(
+      format = ":spin :bar :percent Elapsed: :elapsed, Remaining: ~:eta",
+      intrusiveness = 1
+    ))
+    on.exit(
+      if (is.null(old_handler)) progressr::handlers("void") else progressr::handlers(old_handler),
+      add = TRUE
+    )
+  }
+
+
+
+
 
   # Set parallel options
-  supportedByOS <- ifelse(.Platform$OS.type == "unix", TRUE, FALSE)
+  # supportedByOS <- ifelse(.Platform$OS.type == "unix", TRUE, FALSE)
+  #
+  # if (is.null(parallel)) {
+  #   if (supportedByOS) {
+  #     parallel <- TRUE
+  #   } else {
+  #     parallel <- FALSE
+  #   }
+  # }
 
-  if (is.null(parallel)) {
-    if (supportedByOS) {
-      parallel <- TRUE
-    } else {
-      parallel <- FALSE
-    }
-  }
-
-  if (parallel) {
-    if (supportedByOS) {
-      if (missing(ncores)) {
-        cl <- parallel::detectCores()-1
-      } else {
-        cl <- ncores
-      }
-      cli::cli_inform("Jobs running in parallel using forking (multicore)")
-    } else {
-      if (missing(ncores)) {
-        ncores <- parallel::detectCores()-1
-      }
-      ncores <- ncores
-      cl <- parallel::makeCluster(ncores)
-      on.exit(stopCluster(cl))
-      cli::cli_inform("Jobs running in parallel using multisession.")
-    }
-  } else {
-    cl <- NULL
-    cli::cli_inform("Jobs running sequentially.")
-  }
+  # if (parallel) {
+  #   if (supportedByOS) {
+  #     if(missing(ncores)) {
+  #       future::plan("multisession", workers = future::availableCores() - 1)
+  #     } else {
+  #       if (ncores >= 2) {
+  #         future::plan("multicore", workers = ncores)
+  #       } else{
+  #         future::plan("multicore")
+  #         if (progress) cli::cli_inform("Jobs running sequentially since {.arg ncores} is 1.")
+  #       }
+  #     }
+  #     if (progress) cli::cli_inform("Jobs running in parallel using forking (multicore)")
+  #   } else {
+  #     if (missing(ncores)) {
+  #       ncores <- future::availableCores() - 1
+  #     }
+  #     future::plan("multisession", workers = ncores)
+  #     if (progress) cli::cli_inform("Jobs running in parallel using multisession.")
+  #   }
+  # } else {
+  #   future::plan("sequential")
+  #   if (progress) cli::cli_inform("Jobs running sequentially.")
+  # }
+  # on.exit(future::plan("sequential"), add = TRUE)
 
 
   ## CREATE CONTOUR POLYGONS ACROSS ALL PERIODS
@@ -206,19 +241,111 @@ get_contours <- function(shp,
 
   }
 
+  # Set parallel options
+  multicore_support <- future::supportsMulticore()
+  future_global <- is(future::plan(), "multisession") | is(future::plan(), "multicore")
+
+  if (is.null(parallel)) {
+    if (length(shp_list) < 250) {
+      parallel <- FALSE
+    } else {
+      parallel <- TRUE
+    }
+  }
+
+  if (!parallel) {
+    if (future_global) {
+      old_plan <- future::plan("sequential")
+      on.exit(future::plan(old_plan), add = TRUE)
+      cli::cli_inform(c("Jobs running sequentially.",
+                      "i" = "Reverts to original plan after running."
+                      ))
+    }
+  }
+
+  if (parallel) {
+    if (!future_global) {
+      if (missing(ncores)) {
+        ncores <- future::availableCores() - 1
+      }
+
+      if (ncores < 2) {
+        old_plan <- future::plan("sequential")
+        on.exit(future::plan(old_plan), add = TRUE)
+        cli::cli_inform("Jobs running sequentially since {.arg ncores} is 1.")
+      }
+
+      if (ncores >= 2) {
+        if (multicore_support) {
+          old_plan <- future::plan("multicore", workers = ncores)
+          on.exit(future::plan(old_plan), add = TRUE)
+          cli::cli_inform(c("Jobs running in parallel using 'multicore' (forking).",
+                          "i" = "Reverts to original plan after running."
+                          ))
+        } else {
+          old_plan <- future::plan("multisession", workers = ncores)
+          on.exit(future::plan(old_plan), add = TRUE)
+          cli::cli_inform(c("Jobs running in parallel using 'multisession'.",
+                          "i" = "Reverts to original plan after running."
+                          ))
+        }
+      }
+    }
+  }
+
 
   ## APPLY CONTOUR FUNCTION OVER EACH GROUP OF GEOMETRIES
-  shp_contours <- pbapply::pblapply(
-    shp_list,
-    FUN = function(x) {
-      contour_polygons(
-        x, id_vars = c({{ grp_id }}, period),
-        nmap_threshold = nmap_threshold,
-        smoothing = smoothing,
-        ...)
-    },
-    cl = cl
-  ) %>% suppressWarnings()
+  if (by_period) {
+    progressr::with_progress({
+      p <- progressr::progressor(along = shp_list)
+
+      shp_contours <- furrr::future_map(
+        shp_list,
+        .f = function(x) {
+          p()
+          contour_polygons(
+            x, id_vars = c({{ grp_id }}, period),
+            nmap_threshold = nmap_threshold,
+            smoothing = smoothing,
+            invalid_geom = invalid_geom,
+            ...)
+        },
+        .options = furrr_options(seed = TRUE)
+      )
+    }, interrupts = TRUE)
+  } else {
+    progressr::with_progress({
+      p <- progressr::progressor(along = shp_list)
+
+      shp_contours <- furrr::future_map(
+        shp_list,
+        .f = function(x) {
+          p()
+          contour_polygons(
+            x, id_vars = c({{ grp_id }}),
+            nmap_threshold = nmap_threshold,
+            smoothing = smoothing,
+            invalid_geom = invalid_geom,
+            ...)
+        },
+        .options = furrr_options(seed = TRUE)
+      )
+    }, interrupts = TRUE)
+  }
+
+
+
+  # shp_contours <- pbapply::pblapply(
+  #   shp_list,
+  #   FUN = function(x) {
+  #     contour_polygons(
+  #       x, id_vars = c({{ grp_id }}, period),
+  #       nmap_threshold = nmap_threshold,
+  #       smoothing = smoothing,
+  #       ...)
+  #   },
+  #   cl = cl
+  # ) %>% suppressWarnings()
 
   # Check for errors
   contour_errors <- sapply(shp_contours, inherits, what = "try-error")

@@ -16,20 +16,25 @@ Imports:
     dplyr,
     dtplyr,
     fasterize,
-    parallel,
-    pbapply,
+    furrr,
+    future,
+    methods,
+    progressr,
+    purrr,
     raster,
     rlang,
     s2,
     sf,
     smoothr,
+    stats,
     terra,
     tibble,
     tidyr
 Suggests: 
     ggplot2,
     rnaturalearthdata,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    pbapply
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)

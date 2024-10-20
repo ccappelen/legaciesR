@@ -11,7 +11,7 @@ contour_polygons(
   res = 1/30,
   nmap_threshold = 2,
   smoothing = TRUE,
-  invalid_geom = c("none", "exclude", "fix_exclude", "fix_all"),
+  invalid_geom = c("stop", "fix", "exclude"),
   include_higher = TRUE
 )
 }
@@ -31,8 +31,10 @@ be returned unmodified.}
 
 \item{smoothing}{Logical, whether to apply smoothing after polygonizing raster. Default is \code{TRUE.}}
 
-\item{invalid_geom}{Character scalar, how invalid geometries are handled.
-Can be either "none" (default), "exclude", "fix_exclude", or "fix_all". See \emph{Invalid geometries} for details.}
+\item{invalid_geom}{Character, how to handle invalid geometries. If \code{"stop"}, returns an error
+if there are invalid geometries; if \code{"exclude"}, invalid geometries will be removed before
+calculating contours; if \code{"fix"}, invalid geometries will be rebuilt using \link{fix_invalid}.
+It is recommended to check for invalid geometries and run \link{fix_invalid} separately.}
 
 \item{include_higher}{logical, whether the contour polygons should include percentiles above current interval.
 If TRUE (default), the 50 \% polygon will include all areas covered by at least 50 \% of the shapes
@@ -46,13 +48,3 @@ or percentile, is stored in the columns \code{prob} and \code{label.}
 \description{
 This function creates contour polygons from multiple overlapping polygons.
 }
-\section{Invalid geometries}{
-
-The function attempts to rebuild invalid geometries using \code{\link[sf:valid]{sf::st_make_valid()}}. However, some geometries may be invalid even after attempting
-to rebuild. If "none" the function will return an error in case of invalid geometries (after attempting to rebuild). If "exclude", any invalid
-geometries will be removed. If "fix_exclude", invalid geometries will be rebuilt using default arguments and any remaining invalid
-geometries will be removed. If "fix_all", the function will attempt to rebuild invalid geometries by iteratively lowering the
-snapping precision (in \code{s2::s2_snap_precision()}). It will return an error if it fails to rebuild valid geometries.
-The use of "fix_all" is experimental and the result should be inspected manually.
-}
-

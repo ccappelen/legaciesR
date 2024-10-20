@@ -11,10 +11,11 @@ get_contours(
   interval = NULL,
   period_id,
   nmap_threshold = 5,
+  invalid_geom = c("stop", "fix", "exclude"),
   smoothing = TRUE,
   returnList = FALSE,
   progress = TRUE,
-  parallel = TRUE,
+  parallel = NULL,
   ncores,
   ...
 )
@@ -38,7 +39,12 @@ This argument is necessary if \code{by_period} is \code{TRUE.}}
 
 \item{nmap_threshold}{Integer, indicating the number of shapes requires within each group. Default is 5.}
 
-\item{smoothing}{Logical, whether to apply smoothing after polygonizing the raster. Default is TRUE.}
+\item{invalid_geom}{Character, how to handle invalid geometries. If \code{"stop"}, returns an error
+if there are invalid geometries; if \code{"exclude"}, invalid geometries will be removed before
+calculating contours; if \code{"fix"}, invalid geometries will be rebuilt using \link{fix_invalid}.
+It is recommended to check for invalid geometries and run \link{fix_invalid} separately.}
+
+\item{smoothing}{Logical, whether to apply smoothing after polygonizing the raster. Default is \code{TRUE}.}
 
 \item{returnList}{Logical, whether to return a list of geometries by group.
 Default is to return an sf dataframe containing all geometries.}
@@ -61,11 +67,20 @@ in combination with a time column.
 }
 \section{Support for parallel processing}{
 
-There are two ways of running jobs in parallel. Forked R processes or running multiple background
-R sessions. In the current setup, running multiple background processes (multisession) are slower than
-running the jobs sequentially due to the overhead associated with opening new R sessions. However,
-machines running on Microsoft Windows do not support forking (multicore) and will therefore default to
-a sequential plan unless \code{parallel} is set to \code{TRUE.} On Unix platforms (e.g., MacOS), it will default
-to parallel processing.
+Parallel processing is is implemented using the \link[future:future]{future::future} framework. There are two ways
+of running jobs in parallel: \code{multicore} which uses 'forking' to run multiple jobs in parallel with
+shared memory and \code{multisession} which launches a set of background R sessions. 'Forking' can be faster
+than multisession because of the larger overhead associated with copying the active environment to
+each background R session (whereas forking processes shares memory). However, 'forking' is not
+supported on Windows platforms and is considered unstable when running from within RStudio
+(on both Windows and Unix systems such as MacOS). The function will automatically determine
+whether \code{multicore} is supported by the platform and choose the appropriate plan.
+
+The greater overhead associated with \code{multisession} is primarily during the first parallel
+run in a given R session (since the background R sessions stays available for additional
+parallel jobs). It is possible to define a \code{\link[future:plan]{future::plan()}} in the global environment,
+which will minimize overhead in subsequent parallel jobs (apart from the first). The function will
+automatically detect if a \code{multisession} plan has been set globally and, thus, will not close
+background sessions after running.
 }
 

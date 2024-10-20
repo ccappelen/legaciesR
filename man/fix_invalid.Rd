@@ -54,11 +54,20 @@ lower the snapping precision if default options are inadequate.
 }
 \section{Support for parallel processing}{
 
-There are two ways of running jobs in parallel. Forked R processes or running multiple background
-R sessions. In the current setup, running multiple background processes (multisession) are slower than
-running the jobs sequentially due to the overhead associated with opening new R sessions. However,
-machines running on Microsoft Windows do not support forking (multicore) and will therefore default to
-a sequential plan unless \code{parallel} is set to \code{TRUE.} On Unix platforms (e.g., MacOS), it will default
-to parallel processing.
+Parallel processing is is implemented using the \link[future:future]{future::future} framework. There are two ways
+of running jobs in parallel: \code{multicore} which uses 'forking' to run multiple jobs in parallel with
+shared memory and \code{multisession} which launches a set of background R sessions. 'Forking' can be faster
+than multisession because of the larger overhead associated with copying the active environment to
+each background R session (whereas forking processes shares memory). However, 'forking' is not
+supported on Windows platforms and is considered unstable when running from within RStudio
+(on both Windows and Unix systems such as MacOS). The function will automatically determine
+whether \code{multicore} is supported by the platform and choose the appropriate plan.
+
+The greater overhead associated with \code{multisession} is primarily during the first parallel
+run in a given R session (since the background R sessions stays available for additional
+parallel jobs). It is possible to define a \code{\link[future:plan]{future::plan()}} in the global environment,
+which will minimize overhead in subsequent parallel jobs (apart from the first). The function will
+automatically detect if a \code{multisession} plan has been set globally and, thus, will not close
+background sessions after running.
 }
 
