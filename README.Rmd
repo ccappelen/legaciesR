@@ -15,11 +15,11 @@ knitr::opts_chunk$set(
 
 # legaciesr
 
-<!-- badges: start -->
+<!-- <!-- badges: start --> -->
 
-[![Codecov test coverage](https://codecov.io/gh/ccappelen/legaciesR/graph/badge.svg)](https://app.codecov.io/gh/ccappelen/legaciesR)
-[![R-CMD-check](https://github.com/ccappelen/legaciesR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/ccappelen/legaciesR/actions/workflows/R-CMD-check.yaml)
-<!-- badges: end -->
+<!-- [![Codecov test coverage](https://codecov.io/gh/ccappelen/legaciesR/graph/badge.svg)](https://app.codecov.io/gh/ccappelen/legaciesR) -->
+<!-- [![R-CMD-check](https://github.com/ccappelen/legaciesR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/ccappelen/legaciesR/actions/workflows/R-CMD-check.yaml) -->
+<!-- <!-- badges: end --> -->
 
 The `legaciesr` package provides a set of functions used to aggregate and summarize the mapping data collected in the [LEGACIES](https://www.legacies-project.com) project. It allows users to, i.a., (1) create contour polygons capturing the territorial extent of historical states at different probability thresholds, (2) create a grid with various summary measures of historical state presence, and (3) add a range of commonly used covariates to the polygon and grid data.
 

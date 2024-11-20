@@ -3,12 +3,15 @@
 
 # legaciesr
 
-<!-- badges: start -->
+<!-- <!-- badges: start -->
 
-[![Codecov test
-coverage](https://codecov.io/gh/ccappelen/legaciesR/graph/badge.svg)](https://app.codecov.io/gh/ccappelen/legaciesR)
-[![R-CMD-check](https://github.com/ccappelen/legaciesR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/ccappelen/legaciesR/actions/workflows/R-CMD-check.yaml)
-<!-- badges: end -->
+–\>
+
+<!-- [![Codecov test coverage](https://codecov.io/gh/ccappelen/legaciesR/graph/badge.svg)](https://app.codecov.io/gh/ccappelen/legaciesR) -->
+<!-- [![R-CMD-check](https://github.com/ccappelen/legaciesR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/ccappelen/legaciesR/actions/workflows/R-CMD-check.yaml) -->
+<!-- <!-- badges: end -->
+
+–\>
 
 The `legaciesr` package provides a set of functions used to aggregate
 and summarize the mapping data collected in the
