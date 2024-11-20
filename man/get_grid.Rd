@@ -7,12 +7,15 @@
 get_grid(
   shp,
   ras,
-  raster_from_shp = F,
+  raster_from_shp = TRUE,
   res = 1/2,
-  by_grp = T,
+  by_grp = TRUE,
   id_var,
+  output,
+  subset = NULL,
   updates = T,
-  return = c("list", "data")
+  return = c("list", "data"),
+  fix_invalid = FALSE
 )
 }
 \arguments{
@@ -20,7 +23,9 @@ get_grid(
 
 \item{ras}{Raster}
 
-\item{raster_from_shp}{Logical}
+\item{raster_from_shp}{Logical, if TRUE, using extent of shp to define grid. If FALSE, and \code{ras} is missing,
+grid is generated based on extent of \code{rnaturalearthdata::countries50}. If \code{FALSE} and \code{ras} is not missing,
+\code{ras} will be used.}
 
 \item{res}{Resolution}
 
@@ -28,12 +33,24 @@ get_grid(
 
 \item{id_var}{ID variable name}
 
+\item{output}{Character vector. See details.}
+
+\item{subset}{A one-sided formula. If provided, the resulting grid data will be based only on observations
+defined by this argument. For example, \code{subset = ~ year > 1850}.}
+
 \item{updates}{Logical}
 
 \item{return}{List or data.frame}
+
+\item{fix_invalid}{Logical}
 }
 \value{
-Data frame of grid cell-by-state (or grid cell-by-state-by-year).
+Data frame of grid cell-by-state (or grid cell-by-state-by-year) with several summary measures
+of the polygons in \code{shp}. By default, all summary measures are calculated, but it is also possible
+to specify which measures to calculate with the argument \code{output}, which takes a character vector
+as input. The following summary measures are available:
+\item{\code{share_largest_count}}{Share of polygons for the state with the largest number of polygons in total.}
+\item{\code{share_largest_area}}{Share of polygons for the state with the largest area.}
 }
 \description{
 Create gridded data by group (or group and year) summarizing the number of
