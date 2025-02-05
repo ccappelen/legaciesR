@@ -49,8 +49,10 @@ Data frame of grid cell-by-state (or grid cell-by-state-by-year) with several su
 of the polygons in \code{shp}. By default, all summary measures are calculated, but it is also possible
 to specify which measures to calculate with the argument \code{output}, which takes a character vector
 as input. The following summary measures are available:
+\item{\code{count_across}}{Number of polygons intersecting a grid cell and number of distinct states intersecting a grid cell.}
 \item{\code{share_largest_count}}{Share of polygons for the state with the largest number of polygons in total.}
 \item{\code{share_largest_area}}{Share of polygons for the state with the largest area.}
+\item{\code{share_largest_share}}{Share of polygons for the state with the largest share in a grid cell.}
 }
 \description{
 Create gridded data by group (or group and year) summarizing the number of

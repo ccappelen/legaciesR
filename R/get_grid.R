@@ -38,8 +38,10 @@
 #'  of the polygons in `shp`. By default, all summary measures are calculated, but it is also possible
 #'  to specify which measures to calculate with the argument `output`, which takes a character vector
 #'  as input. The following summary measures are available:
+#'  \item{`count_across`}{Number of polygons intersecting a grid cell and number of distinct states intersecting a grid cell.}
 #'  \item{`share_largest_count`}{Share of polygons for the state with the largest number of polygons in total.}
 #'  \item{`share_largest_area`}{Share of polygons for the state with the largest area.}
+#'  \item{`share_largest_share`}{Share of polygons for the state with the largest share in a grid cell.}
 #'
 #'
 #' @export
@@ -67,8 +69,7 @@ get_grid <- function(shp, ras,
     cli::cli_abort("{.arg id_var} must be a variable, not a character string.")
   }
 
-  # output_args <- c("share_largest_count", "share_largest_area", "share_largest_share")
-  output_args <- c("share_largest_count", "share_largest_area")
+  output_args <- c("count_across", "share_largest_count", "share_largest_area", "share_largest_share", "share_mean", "borders", "contested")
   if (missing(output)) {
     output <- output_args
   } else {
@@ -121,7 +122,6 @@ get_grid <- function(shp, ras,
   step <- step + 1
   ### STEP 1: PREPARING GRID
   cli::cli_progress_step("{step}/{steps}: Preparing grid")
-  Sys.sleep(3)
 
   ## Create base grid
   if(raster_from_shp){
@@ -172,20 +172,60 @@ get_grid <- function(shp, ras,
   ### STEP 2: RASTERIZE SHAPE
   step <- step + 1
   cli::cli_progress_step("{step}/{steps}: Rasterizing polygons")
-  Sys.sleep(3)
 
 
-  r_poly_count <- fasterize::fasterize(shp, raster::raster(r), fun = "count", background = NA, by = deparse(substitute(id_var))) |>
-    terra::rast()
+  # r_poly_count <- fasterize::fasterize(shp, raster::raster(r), fun = "count", background = NA, by = deparse(substitute(id_var))) |>
+  #   terra::rast()
+  #
+  # poly_count_df <- as.data.frame(r_poly_count) |>
+  #   tibble::rownames_to_column(var = "id") |>
+  #   dplyr::mutate(id = as.numeric(id)) |>
+  #   dtplyr::lazy_dt() |>
+  #   tidyr::pivot_longer(cols = -id, names_to = deparse(substitute(id_var)), values_to = "poly_count") |>
+  #   dplyr::mutate({{ id_var }} := stringr::str_replace_all({{ id_var }}, "\\.", " ")) |>
+  #   dplyr::filter(!is.na(poly_count)) |>
+  #   data.table::as.data.table()
 
-  poly_count_df <- as.data.frame(r_poly_count) |>
+  r_poly <- terra::as.polygons(r) |>
+    sf::st_as_sf()
+
+  shp_list <- split(shp, f = shp[[deparse(substitute(id_var))]])
+
+  r_poly_count <- lapply(
+    shp_list,
+    FUN = function(x) {
+      polycount <- as.data.frame(r, na.rm = FALSE) |>
+        tibble::rownames_to_column(var = "id") |>
+        dplyr::mutate(id = as.numeric(id)) |>
+        dplyr::select(id) |>
+        suppressWarnings()
+      polycount$count <- sf::st_intersects(r_poly, x) |>
+        sapply(FUN = length)
+      polycount <- polycount |>
+        dplyr::filter(count > 0)
+    }) |>
+    bind_rows(.id = deparse(substitute(id_var)))
+
+  poly_count_df <- as.data.frame(r, na.rm = FALSE) |>
+    suppressWarnings() |>
     tibble::rownames_to_column(var = "id") |>
     dplyr::mutate(id = as.numeric(id)) |>
-    dtplyr::lazy_dt() |>
-    tidyr::pivot_longer(cols = -id, names_to = deparse(substitute(id_var)), values_to = "poly_count") |>
-    dplyr::mutate(name = stringr::str_replace_all(name, "\\.", " ")) |>
-    filter(!is.na(poly_count)) |>
-    as.data.table()
+    dplyr::select(id) |>
+    dplyr::left_join(r_poly_count, by = "id") |>
+    dplyr::rename(poly_count = count)
+
+
+  ## Total number of polygons for each state
+  max_poly <- shp |>
+    sf::st_drop_geometry() |>
+    dplyr::group_by({{ id_var }}) |>
+    dplyr::summarise(max_poly = n()) |>
+    dplyr::ungroup() |>
+    select({{ id_var }}, max_poly)
+
+  poly_count_df <- poly_count_df |>
+    dplyr::left_join(max_poly, by = deparse(substitute(id_var)))
+  rm(max_poly)
 
 
   ### STEP 3: CALCULATE SUMMARY MEASURES
@@ -193,47 +233,57 @@ get_grid <- function(shp, ras,
   # if(updates) message("2. Calculating summary measures.")
 
   cli::cli_progress_done()
-  ### 3A: Share based on largest total number of polygons
+  ### 3A: Count features and distinct states
+  if ("count_across" %in% output) {
+    step <- step + 1
+    cli::cli_progress_step("{step}/{steps}: Calculating summary measures - number of features across states and number of distinct states")
+
+    count_across_df <- poly_count_df |>
+      dtplyr::lazy_dt() |>
+      dplyr::group_by(id) |>
+      dplyr::summarise(polysum_across = sum(poly_count),
+                       statesum_across = n_distinct(deparse(substitute(id_var)))) |>
+      dplyr::ungroup() |>
+      dplyr::select(id, polysum_across, statesum_across) |>
+      as.data.table() |>
+      suppressMessages()
+
+    df <- df |>
+      dplyr::left_join(count_across_df, by = "id")
+    rm(count_across_df)
+  }
+
+
+
+  cli::cli_progress_done()
+  ### 3B: Share based on largest total number of polygons
   if ("share_largest_count" %in% output) {
     step <- step + 1
     cli::cli_progress_step("{step}/{steps}: Calculating summary measures - share based on highest total number of polygons")
-    Sys.sleep(3)
-
-
-    ## Total number of polygons for each state
-    max_poly <- shp |>
-      sf::st_drop_geometry() |>
-      dplyr::group_by({{ id_var }}) |>
-      dplyr::summarise(max_poly = n()) |>
-      dplyr::ungroup() |>
-      select({{ id_var }}, max_poly)
 
     max_count_df <- poly_count_df |>
-      dplyr::left_join(max_poly, by = deparse(substitute(id_var)))
-
-    max_count_df <- max_count_df |>
       dtplyr::lazy_dt() |>
       dplyr::group_by(id) |>
       dplyr::filter(max_poly == max(max_poly)) |>
       dplyr::ungroup() |>
       dplyr::mutate(polysh_largest_count = poly_count / max_poly) |>
       dplyr::select(id, name_largest_count = name, polysh_largest_count, polysum_largest_count = poly_count, polymax_largest_count = max_poly) |>
-      as.data.table()
+      as.data.table() |>
+      suppressMessages()
 
     df <- df |>
-      left_join(max_count_df, by = "id")
+      dplyr::left_join(max_count_df, by = "id")
     rm(max_count_df)
 
   }
 
   cli::cli_progress_done()
-  ### 3B: Share based on largest area of polygons
+  ### 3C: Share based on largest area of polygons
   #! How should we operationalize this? (1) Largest of any individual polygons, (2) Largest union area, (3) Largest median area, etc.
 
   if ("share_largest_area" %in% output) {
     step <- step + 1
     cli::cli_progress_step("{step}/{steps}: Calculating summary measures - share based on state with largest area")
-    Sys.sleep(3)
 
 
     shp$area <- sf::st_area(shp) |>
@@ -260,9 +310,149 @@ get_grid <- function(shp, ras,
       suppressMessages()
 
     df <- df |>
-      left_join(max_area_df, by = "id")
+      dplyr::left_join(max_area_df, by = "id")
     rm(max_area_df)
   }
+
+
+  cli::cli_progress_done()
+  ### 3D: Share based on state with largest share
+
+  if ("share_largest_share" %in% output) {
+    step <- step + 1
+    cli::cli_progress_step("{step}/{steps}: Calculating summary measures - share based on state with largest share of polygons")
+
+    max_share_df <- poly_count_df |>
+      dtplyr::lazy_dt() |>
+      dplyr::mutate(polysh_largest_share = poly_count / max_poly) |>
+      dplyr::group_by(id) |>
+      dplyr::filter(polysh_largest_share == max(polysh_largest_share)) |>
+      dplyr::ungroup() |>
+      dplyr::select(id, name_largest_share = name, polysh_largest_share, polysum_largest_share = poly_count, polymax_largest_share = max_poly) |>
+      as.data.table() |>
+      suppressMessages()
+
+    df <- df |>
+      dplyr::left_join(max_share_df, by = "id")
+    rm(max_share_df)
+  }
+
+
+  cli::cli_progress_done()
+  ### 3E: Average share of polygons across states in a grid cell
+
+  if ("share_mean" %in% output) {
+    step <- step + 1
+    cli::cli_progress_step("{step}/{steps}: Calculating summary measures - average share of polygons across states")
+
+    mean_share_df <- poly_count_df |>
+      dtplyr::lazy_dt() |>
+      dplyr::mutate(polysh = poly_count / max_poly) |>
+      dplyr::group_by(id) |>
+      dplyr::summarise(polysh_mean = mean(polysh, na.rm = T),
+                       polysum_across = sum(poly_count),
+                       polymax_across = sum(max_poly)) |>
+      dplyr::mutate(polysh_mean_share = polysh_mean,
+                    polysh_across = polysum_across / polymax_across) |>
+      dplyr::ungroup() |>
+      dplyr::select(id, polysh_mean_share, polysh_across) |>
+      as.data.table() |>
+      suppressMessages()
+
+    df <- df |>
+      dplyr::left_join(mean_share_df, by = "id")
+    rm(mean_share_df)
+  }
+
+
+
+  cli::cli_progress_done()
+  ## 3F: Borders
+
+  if ("borders" %in% output) {
+    step <- step + 1
+    cli::cli_progress_step("{step}/{steps}: Calculating summary measures - borders")
+
+    shp_borders <- shp |>
+      sf::st_cast("MULTILINESTRING")
+
+    # r_border <- terra::rasterize(terra::vect(shp_borders), r, fun = "count")
+    # border_count_df <- as.data.frame(r_border, na.rm = FALSE) |>
+    #   tibble::rownames_to_column(var = "id") |>
+    #   dplyr::mutate(id = as.numeric(id)) |>
+    #   dplyr::rename(border_count = layer) |>
+    #   data.table::as.data.table()
+
+    r_poly <- terra::as.polygons(r, aggregate = FALSE) |>
+      sf::st_as_sf()
+
+    # shp_list <- split(shp_borders, f = shp[[deparse(substitute(id_var))]])
+    #
+    # r_border <- lapply(
+    #   shp_list,
+    #   FUN = function(x) {
+    #     polycount <- as.data.frame(r, na.rm = FALSE) |>
+    #       tibble::rownames_to_column(var = "id") |>
+    #       dplyr::mutate(id = as.numeric(id)) |>
+    #       dplyr::select(id) |>
+    #       suppressWarnings()
+    #     polycount$count <- sf::st_intersects(r_poly, x) |>
+    #       sapply(FUN = length)
+    #     polycount <- polycount |>
+    #       dplyr::filter(count > 0)
+    # }) |>
+    # bind_rows(.id = deparse(substitute(id_var)))
+
+    border_count_df <- as.data.frame(r, na.rm = FALSE) |>
+      suppressWarnings() |>
+      tibble::rownames_to_column(var = "id") |>
+      dplyr::mutate(id = as.numeric(id)) |>
+      dplyr::select(id)
+
+    border_count_df$border_count <- sf::st_intersects(r_poly, shp_borders) |>
+      sapply(FUN = length)
+
+    # border_count_df <- as.data.frame(r, na.rm = FALSE) |>
+    #   suppressWarnings() |>
+    #   tibble::rownames_to_column(var = "id") |>
+    #   dplyr::mutate(id = as.numeric(id)) |>
+    #   dplyr::select(id) |>
+    #   dplyr::left_join(r_border, by = "id") |>
+    #   # dplyr::rename(border_count = count) |>
+    #   dplyr::group_by(id) |>
+    #   dplyr::summarise(border_count = sum(count)) |>
+    #   dplyr::ungroup() |>
+    #   dplyr::select(id, border_count)
+
+    df <- df |>
+      dplyr::left_join(border_count_df, by = "id") |>
+      dplyr::mutate(border_share = border_count / polysum_across)
+    rm(border_count_df, r_border, shp_borders)
+  }
+
+
+
+  cli::cli_progress_done()
+  ## 3G: Contested territory
+
+  if ("contested" %in% output) {
+    step <- step + 1
+    cli::cli_progress_step("{step}/{steps}: Calculating summary measures - contested teritory")
+
+    contested_df <- poly_count_df |>
+      dtplyr::lazy_dt() |>
+      dplyr::mutate(polysh = poly_count / max_poly) |>
+      dplyr::mutate(polysh_ln = ifelse(poly_count == 0, 0, log(polysh))) |>
+      dplyr::mutate(polyshw = polysh*polysh_ln) |>
+      dplyr::group_by(id) |>
+      dplyr::summarise(contested = -sum(polyshw)) |>
+      data.table::as.data.table()
+
+    df <- df |>
+      dplyr::left_join(contested_df, by = "id")
+    rm(contested_df)
+  }
+
 
 
   cli::cli_progress_done()
@@ -271,7 +461,6 @@ get_grid <- function(shp, ras,
   # if(updates) message("3. Finalizing data.")
   step <- step + 1
   cli::cli_progress_step("{step}/{steps}: Finalizing data")
-  Sys.sleep(3)
 
   if(return == "list"){
     out <- list()
@@ -288,95 +477,4 @@ get_grid <- function(shp, ras,
 }
 
 
-## Progress updates cannot show at the same time as progress bar (the bar overwrites the progress update)
-# foo <- function(df, vars) {
-#
-#   handlers("txtprogressbar")
-#   on.exit(handlers("void"), add = T)
-#
-#   # INITIAL TASK
-#   cli::cli_progress_step("Preparing data")
-#   df <- df |>
-#     mutate(across(.cols = all_of(vars),
-#                   .fns = ~ .x^2,
-#                   .names = "{.col}_sq"))
-#   out <- df |>
-#     group_by(group) |>
-#     summarise(n = n())
-#   Sys.sleep(2)
-#
-#
-#   # FIRST TASK
-#   prog <- cli::cli_progress_step("Calculating group means for 'a'", .auto_close = FALSE)
-#   Sys.sleep(2)
-#   if ("a" %in% vars) {
-#     with_progress({
-#       temp_ls <- split(df, df$group)
-#       p <- progressor(along = temp_ls)
-#       tmp_out <- future_map(
-#         temp_ls,
-#         .f = function(x) {
-#           Sys.sleep(runif(1, 0.01, 0.1))
-#           p()
-#           mean(x[["a"]])
-#         },
-#         .options = furrr_options(seed = TRUE)
-#       ) |>
-#         unlist()
-#       out <- cbind(out, "a" = tmp_out)
-#     })
-#
-#   }
-#
-#
-#   # SECOND TASK
-#   cli::cli_progress_step("Calculating group means for 'b'")
-#   Sys.sleep(2)
-#   if ("b" %in% vars) {
-#     with_progress({
-#       temp_ls <- split(df, df$group)
-#       p <- progressor(along = temp_ls)
-#
-#       tmp_out <- future_map(
-#         temp_ls,
-#         .f = function(x) {
-#           Sys.sleep(runif(1, 0.01, .1))
-#           p()
-#           mean(x[["b"]])
-#         },
-#         .options = furrr_options(seed = TRUE)
-#       ) |>
-#         unlist()
-#       out <- cbind(out, "b" = tmp_out)
-#     })
-#
-#   }
-#
-#
-#   # SECOND TASK
-#   cli::cli_progress_step("Calculating group means for 'c'")
-#   Sys.sleep(2)
-#   if ("c" %in% vars) {
-#     with_progress({
-#       temp_ls <- split(df, df$group)
-#       p <- progressor(along = temp_ls)
-#       tmp_out <- future_map(
-#         temp_ls,
-#         .f = function(x) {
-#           Sys.sleep(runif(1, 0.01, .1))
-#           p()
-#           mean(x[["c"]])
-#         },
-#         .options = furrr_options(seed = TRUE)
-#       ) |>
-#         unlist()
-#       out <- cbind(out, "c" = tmp_out)
-#     })
-#
-#   }
-#
-#   cli::cli_progress_step("Finalizing data")
-#   return(out)
-#
-# }
 
