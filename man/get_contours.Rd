@@ -10,6 +10,8 @@ get_contours(
   by_period = FALSE,
   interval = NULL,
   period_id,
+  cuts = 4,
+  include_higher = TRUE,
   nmap_threshold = 5,
   invalid_geom = c("stop", "fix", "exclude"),
   smoothing = TRUE,
@@ -37,7 +39,15 @@ start of the first interval and end of the last interval.}
 \item{period_id}{Name of the period variable to be used for time grouping.
 This argument is necessary if \code{by_period} is \code{TRUE.}}
 
-\item{nmap_threshold}{Integer, indicating the number of shapes requires within each group. Default is 5.}
+\item{cuts}{Integer of length 1 specifying the number of (equally spaced) contour polygons to be returned.
+For example, if \code{cuts = 10} the function will return 10 polygons representing the 10 deciles (0-0.1, 0.1-0.2, ...).}
+
+\item{include_higher}{logical, whether the contour polygons should include percentiles above current interval.
+If TRUE (default), the 50 \% polygon will include all areas covered by at least 50 \% of the shapes
+(and not just within the specified interval, e.g., 0.75-1, 0.50-1, 0.25-1...). If FALSE, the polygon will include only areas
+within the specified interval (e.g., 0.75-1, 0.50-0.75, 0.25-0.50...).}
+
+\item{nmap_threshold}{Integer, indicating the number of shapes required within each group. Default is 5.}
 
 \item{invalid_geom}{Character, how to handle invalid geometries. If \code{"stop"}, returns an error
 if there are invalid geometries; if \code{"exclude"}, invalid geometries will be removed before

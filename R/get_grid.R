@@ -267,7 +267,8 @@ get_grid <- function(shp, ras,
       dplyr::filter(max_poly == max(max_poly)) |>
       dplyr::ungroup() |>
       dplyr::mutate(polysh_largest_count = poly_count / max_poly) |>
-      dplyr::select(id, name_largest_count = name, polysh_largest_count, polysum_largest_count = poly_count, polymax_largest_count = max_poly) |>
+      dplyr::select(id, name_largest_count = {{ id_var }}, polysh_largest_count, polysum_largest_count = poly_count, polymax_largest_count = max_poly) |>
+      dplyr::distinct(id, .keep_all = TRUE) |>
       as.data.table() |>
       suppressMessages()
 
@@ -304,8 +305,8 @@ get_grid <- function(shp, ras,
       dplyr::group_by(id) |>
       dplyr::filter(max_area == max(max_area)) |>
       dplyr::ungroup() |>
-      dplyr::mutate(polysh_largest_area = poly_count / max_area) |>
-      dplyr::select(id, name_largest_area = name, polysh_largest_area, polysum_largest_area = poly_count, polymax_largest_area = max_area) |>
+      dplyr::mutate(polysh_largest_area = poly_count / max_poly) |>
+      dplyr::select(id, name_largest_area = {{ id_var }}, polysh_largest_area, polysum_largest_area = poly_count, polymax_largest_area = max_area) |>
       as.data.table() |>
       suppressMessages()
 
@@ -328,7 +329,7 @@ get_grid <- function(shp, ras,
       dplyr::group_by(id) |>
       dplyr::filter(polysh_largest_share == max(polysh_largest_share)) |>
       dplyr::ungroup() |>
-      dplyr::select(id, name_largest_share = name, polysh_largest_share, polysum_largest_share = poly_count, polymax_largest_share = max_poly) |>
+      dplyr::select(id, name_largest_share = {{ id_var }}, polysh_largest_share, polysum_largest_share = poly_count, polymax_largest_share = max_poly) |>
       as.data.table() |>
       suppressMessages()
 

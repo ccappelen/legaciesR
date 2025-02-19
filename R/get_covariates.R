@@ -64,22 +64,22 @@ get_covariates <- function(x,
     coords <- c("lon", "lat")
   }
 
-  if (!(is.list(x) || "data.frame" %in% class(df_grid$data))) {
+  if (!(is.list(x) || "data.frame" %in% class(x$data))) {
     cli::cli_abort("{.arg x} must be either (1) an object of class {.code data.frame} or a
                      list containing an object named {.code r} of class {.code SpatRaster} AND
                      a {.code data.frame} named {.code data}.")
   }
 
   if (is.list(x)) {
-    if ("r" %in% names(df_grid) && class(df_grid$r) == "SpatRaster") {
-      r <- df_grid$r
+    if ("r" %in% names(x) && class(x$r) == "SpatRaster") {
+      r <- x$r
     } else {
       cli::cli_abort("{.arg x} must be either (1) an object of class {.code data.frame} or a
                      list containing an object named {.code r} of class {.code SpatRaster} AND
                      a {.code data.frame} named {.code data}.")
     }
-    if ("data" %in% names(df_grid) && "data.frame" %in% class(df_grid$data)) {
-      df <- df_grid$data |>
+    if ("data" %in% names(x) && "data.frame" %in% class(x$data)) {
+      df <- x$data |>
         dplyr::distinct(id, .keep_all = TRUE) |>
         dplyr::select(id, lon, lat)
     } else {
@@ -91,12 +91,12 @@ get_covariates <- function(x,
 
   if ("data.frame" %in% class(x)) {
 
-    if (!coords %in% names(df_grid$data)) {
+    if (!coords %in% names(x$data)) {
       cli::cli_abort("{.arg x} must contain longitude and latitude. Variable names can be specified
                      in {.arg coords}")
     }
 
-    r <- terra::rast(df_grid$data[,coords], crs = "epsg:4326", type = "xyz")
+    r <- terra::rast(x$data[,coords], crs = "epsg:4326", type = "xyz")
     df <- x |>
       dplyr::distinct(coords, .keep_all = TRUE) |>
       dplyr::select(coords)
@@ -122,8 +122,8 @@ get_covariates <- function(x,
     elev <- terra::resample(elev, r, method = "average")
     tri <- terra::resample(tri, r, method = "average")
 
-    df$elevation <- terra::values(elev)
-    df$ruggedness <- terra::values(tri)
+    df$elevation <- terra::values(elev) |> as.vector()
+    df$ruggedness <- terra::values(tri) |> as.vector()
 
     rm(elev, tri)
     cli::cli_progress_done()
@@ -141,7 +141,7 @@ get_covariates <- function(x,
     tropical <- terra::ifel(climate <= 3, 1, 0)
     tropical <- terra::resample(tropical, r, method = "average")
 
-    df$tropical <- terra::values(tropical)
+    df$tropical <- terra::values(tropical) |> as.vector()
 
     rm(climate, tropical)
     cli::cli_progress_done()

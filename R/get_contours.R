@@ -14,8 +14,10 @@
 #'   (in which case the full range is used), or a vector specifying the exact breaks, including both the
 #'   start of the first interval and end of the last interval.
 #' @inheritParams contour_polygons
+# @param cuts Integer of length 1 specifying the number of (equally spaced) contour polygons to be returned.
+#   For example, if `cuts = 10` the function will return 10 polygons representing the 10 deciles (0-0.1, 0.1-0.2, ...).
 #' @param smoothing Logical, whether to apply smoothing after polygonizing the raster. Default is `TRUE`.
-#' @param nmap_threshold Integer, indicating the number of shapes requires within each group. Default is 5.
+#' @param nmap_threshold Integer, indicating the number of shapes required within each group. Default is 5.
 #' @param returnList Logical, whether to return a list of geometries by group.
 #'   Default is to return an sf dataframe containing all geometries.
 #' @param progress Logical, whether to show a progress bar.
@@ -62,6 +64,8 @@ get_contours <- function(shp,
                          by_period = FALSE,
                          interval = NULL,
                          period_id,
+                         cuts = 4,
+                         include_higher = TRUE,
                          nmap_threshold = 5,
                          invalid_geom = c("stop", "fix", "exclude"),
                          smoothing = TRUE,
@@ -308,6 +312,8 @@ get_contours <- function(shp,
             nmap_threshold = nmap_threshold,
             smoothing = smoothing,
             invalid_geom = invalid_geom,
+            include_higher = include_higher,
+            cuts = cuts,
             ...)
         },
         .options = furrr_options(seed = TRUE)
@@ -326,6 +332,8 @@ get_contours <- function(shp,
             nmap_threshold = nmap_threshold,
             smoothing = smoothing,
             invalid_geom = invalid_geom,
+            include_higher = include_higher,
+            cuts = cuts,
             ...)
         },
         .options = furrr_options(seed = TRUE)
