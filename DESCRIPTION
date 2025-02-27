@@ -27,12 +27,16 @@ Imports:
     sf,
     smoothr,
     stats,
-    terra,
+    terra (>= 1.8.0),
     tibble,
-    tidyr
+    tidyr,
+    nngeo,
+    rnaturalearthdata,
+    stringr,
+    units,
+    glue
 Suggests: 
     ggplot2,
-    rnaturalearthdata,
     testthat (>= 3.0.0),
     pbapply
 Encoding: UTF-8

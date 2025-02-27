@@ -9,8 +9,11 @@ get_grid(
   ras,
   raster_from_shp = TRUE,
   res = 1/2,
-  by_grp = TRUE,
+  by_period = FALSE,
   id_var,
+  period_var,
+  period_interval,
+  nmap_threshold = 5,
   output,
   subset = NULL,
   updates = T,
@@ -29,9 +32,19 @@ grid is generated based on extent of \code{rnaturalearthdata::countries50}. If \
 
 \item{res}{Resolution}
 
-\item{by_grp}{By group}
+\item{by_period}{Whether to group by period}
 
 \item{id_var}{ID variable name}
+
+\item{period_var}{Period variable name}
+
+\item{period_interval}{Scalar or vector indicating the intervals to group by. If \code{NULL} (default), the
+intervals will automatically be set to 20 (years) and include the full range (i.e. \code{seq(min, max, 20)}).
+For user specification, the value can be either a scalar, indicating the length of intervals
+(in which case the full range is used), or a vector specifying the exact breaks, including both the
+start of the first interval and end of the last interval.}
+
+\item{nmap_threshold}{Integer, indicating the number of shapes required within each group. Default is 5.}
 
 \item{output}{Character vector. See details.}
 

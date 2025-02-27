@@ -185,6 +185,9 @@ get_contours <- function(shp,
       year_seq_char <- paste0(year_seq[-length(year_seq)], "-", year_seq[-1])
 
       shp <- shp |>
+        filter({{ period_id }} >= min(year_seq) & {{ period_id }} <= max(year_seq))
+
+      shp <- shp |>
         dplyr::mutate(
           period = cut({{ period_id }}, breaks = year_seq, labels = year_seq_char, include.lowest = T)
           )
@@ -215,13 +218,17 @@ get_contours <- function(shp,
       year_seq_char <- paste0(year_seq[-length(year_seq)], "-", year_seq[-1])
 
       shp <- shp |>
+        filter({{ period_id }} >= min(year_seq) & {{ period_id }} <= max(year_seq))
+
+      shp <- shp |>
         dplyr::mutate(
           period = cut({{ period_id }}, breaks = year_seq, labels = year_seq_char, include.lowest = T)
           )
 
       shp <- shp |>
         dplyr::group_by({{ grp_id }}, .data$period) |>
-        dplyr::filter(n() >= nmap_threshold)
+        dplyr::filter(n() >= nmap_threshold) |>
+        dplyr::ungroup()
 
       shp_list <- split(shp, list(shp[[grp_id_str]], shp[["period"]]), drop = T)
 
@@ -235,9 +242,17 @@ get_contours <- function(shp,
       year_seq_char <- paste0(year_seq[-length(year_seq)], "-", year_seq[-1])
 
       shp <- shp |>
+        filter({{ period_id }} >= min(year_seq) & {{ period_id }} <= max(year_seq))
+
+      shp <- shp |>
         dplyr::mutate(
           period = cut({{ period_id }}, breaks = year_seq, labels = year_seq_char, include.lowest = T)
           )
+
+      shp <- shp |>
+        dplyr::group_by({{ grp_id }}, .data$period) |>
+        dplyr::filter(n() >= nmap_threshold) |>
+        dplyr::ungroup()
 
       shp_list <- split(shp, list(shp[[grp_id_str]], shp[["period"]]), drop = T)
 

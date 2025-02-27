@@ -15,10 +15,16 @@
 #'
 #' @import dplyr
 #' @import sf
-#' @import terra
+#' @importFrom terra rast
+#' @importFrom terra terrain
+#' @importFrom terra values
+#' @importFrom terra ifel
+#' @importFrom terra resample
+#' @importFrom terra rasterize
 #' @import cli
 #' @import rnaturalearthdata
 #' @import stringr
+#' @import nngeo
 #'
 #' @return
 #' Data frame or list of data frame and SpatRaster. By default, all covariates are included,
@@ -38,6 +44,10 @@ get_covariates <- function(x,
                            progress = TRUE,
                            parallel = FALSE,
                            coords){
+
+
+  ## Set internal variables (to pass R CMD check)
+  featurecla <- NULL
 
   output_args <- c("terrain", "climate", "crops", "rivers", "coast")
   if (missing(vars)) {
@@ -64,24 +74,24 @@ get_covariates <- function(x,
     coords <- c("lon", "lat")
   }
 
-  if (!(is.list(x) || "data.frame" %in% class(x$data))) {
+  if (!(is.list(x) || inherits(x$data, "data.frame"))) {
     cli::cli_abort("{.arg x} must be either (1) an object of class {.code data.frame} or a
                      list containing an object named {.code r} of class {.code SpatRaster} AND
                      a {.code data.frame} named {.code data}.")
   }
 
   if (is.list(x)) {
-    if ("r" %in% names(x) && class(x$r) == "SpatRaster") {
+    if ("r" %in% names(x) && inherits(x$r, "SpatRaster")) {
       r <- x$r
     } else {
       cli::cli_abort("{.arg x} must be either (1) an object of class {.code data.frame} or a
                      list containing an object named {.code r} of class {.code SpatRaster} AND
                      a {.code data.frame} named {.code data}.")
     }
-    if ("data" %in% names(x) && "data.frame" %in% class(x$data)) {
+    if ("data" %in% names(x) && inherits(x$data, "data.frame")) {
       df <- x$data |>
         dplyr::distinct(id, .keep_all = TRUE) |>
-        dplyr::select(id, lon, lat)
+        dplyr::select(id, coords)
     } else {
       cli::cli_abort("{.arg x} must be either (1) an object of class {.code data.frame} or a
                      list containing an object named {.code r} of class {.code SpatRaster} AND
@@ -179,15 +189,21 @@ get_covariates <- function(x,
     #   k = nrow(rivers),
     #   returnDist = TRUE,
     #   parallel = 8)
-    riverdist <- terra::distance(r, rivers, progress = 0)
-    riverdist <- riverdist / 1000
-    df$dist2river <- terra::values(riverdist)
+    # riverdist <- terra::distance(r, rivers, progress = 0)
+    # riverdist <- riverdist / 1000
+    # df$dist2river <- terra::values(riverdist)
+    riverdist <- nngeo::st_nn(x$data |> sf::st_as_sf(coords = coords, crs = 4326), rivers,
+                       k = 1, returnDist = TRUE, parallel = future::availableCores()) |>
+      suppressMessages()
+    riverdist <- riverdist$dist |>
+      unlist()
+    df$dist2river <- riverdist / 1000
 
     riverflow <- terra::rast(paste0(path, "HydroSHEDS/hyd_glo_acc_15s.tif"))
     riverflow <- terra::resample(riverflow, r, method = "average")
     df$riverflow_ln <- log(terra::values(riverflow))
 
-    rm(riverflow, rivers, riverdist)
+    # rm(riverflow, rivers, riverdist)
     cli::cli_progress_done()
   }
 
@@ -200,9 +216,15 @@ get_covariates <- function(x,
     cli::cli_progress_step("{step}/{steps}: Extracing covariates - Coast")
 
     coast <- rnaturalearthdata::coastline50
-    coastdist <- terra::distance(r, rivers, progress = 0)
-    coastdist <- coastdist / 1000
-    df$dist2coast <- terra::values(coastdist)
+    # coastdist <- terra::distance(r, rivers, progress = 0)
+    coastdist <- nngeo::st_nn(x$data |> sf::st_as_sf(coords = coords, crs = 4326), coast,
+                              k = 1, returnDist = TRUE, parallel = future::availableCores()) |>
+      suppressMessages()
+    coastdist <- coastdist$dist |>
+      unlist()
+    df$dist2coast <- coastdist / 1000
+    # coastdist <- coastdist / 1000
+    # df$dist2coast <- terra::values(coastdist)
 
     rm(coast, coastdist)
     cli::cli_progress_done()

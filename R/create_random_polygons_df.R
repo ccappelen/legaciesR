@@ -128,7 +128,7 @@ create_random_polygons_df <- function(
       .f = function(x) {
         p()
         sample_polygon(x, n.pnts = 10)
-      }
+      }, .options = furrr_options(seed = TRUE)
     ) |>
       dplyr::bind_rows()
 
