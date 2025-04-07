@@ -6,17 +6,22 @@
 \usage{
 detect_errors(
   shp,
+  capital_data,
   id_var,
   period_var,
   errors,
   dist,
   parallel = TRUE,
   ncores,
-  report = FALSE
+  report = TRUE,
+  returnList = TRUE
 )
 }
 \arguments{
 \item{shp}{An sf dataframe containing all geometries}
+
+\item{capital_data}{Dataframe containing information on capitals (by year). Should have the same
+\code{id_var} and \code{period_var} names as \code{shp}.}
 
 \item{id_var}{Name of grouping variable (e.g., COWID)}
 
@@ -32,14 +37,21 @@ detect_errors(
 
 \item{report}{Whether the output should be a report of potential errors. Default is an sf dataframe
 with columns for each error detection.}
+
+\item{returnList}{Whether to return a list containing the full sf data frame AND separate data frames
+for each error type (default) or just the full sf data frame. The full sf data frame will either way
+include columns indicating potential errors for each type.}
 }
 \value{
 Data frame
+\item{\code{id_duplicates}}{Whether COWID and COWNUM do not align, i.e. are there duplicate COWIDs with different COWNUMs?}
+\item{\code{missing_id}}{Whether there are geometries with missing \code{id_var}.}
 \item{\code{singles}}{Whether there are COWIDs with only one map (may indicate wrong COWID).}
 \item{\code{year}}{Whether there are polygons with years outside the study window (i.e. 1750-1920) or if year is missing.}
 \item{\code{overlap}}{Whether there are COWIDs for which one or more polygons do not overlap with any of the other polygons.}
 \item{\code{capital}}{Whether any of the capitals associated with a COWID falls outside ALL polygons. The option \code{dist} can be
 used to specify a minimum allowable distance.}
+\item{\code{empty}}{Check whether there are empty geometries.}
 }
 \description{
 Detect potential errors in maps

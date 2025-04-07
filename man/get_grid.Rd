@@ -16,6 +16,8 @@ get_grid(
   nmap_threshold = 5,
   output,
   subset = NULL,
+  parallel = TRUE,
+  ncores,
   updates = T,
   return = c("list", "data"),
   fix_invalid = FALSE
@@ -51,6 +53,10 @@ start of the first interval and end of the last interval.}
 \item{subset}{A one-sided formula. If provided, the resulting grid data will be based only on observations
 defined by this argument. For example, \code{subset = ~ year > 1850}.}
 
+\item{parallel}{Logical, whether to use parallel processing with \code{ncores} number of cores.}
+
+\item{ncores}{Integer, the number of cores to use for parallel processing. Default is all available cores minus 1.}
+
 \item{updates}{Logical}
 
 \item{return}{List or data.frame}
@@ -66,6 +72,11 @@ as input. The following summary measures are available:
 \item{\code{share_largest_count}}{Share of polygons for the state with the largest number of polygons in total.}
 \item{\code{share_largest_area}}{Share of polygons for the state with the largest area.}
 \item{\code{share_largest_share}}{Share of polygons for the state with the largest share in a grid cell.}
+\item{\code{share_mean}}{Average share of polygons across all states intersecting a grid cell.}
+\item{\code{borders}}{Total number of state borders intersecting a grid cell and the share of borders relative to
+the total number of states intersecting.}
+\item{\code{contested}}{Entropy-based measure of contested territory calculated using the equation \eqn{E = -\sum{}p*ln(p)}, where \eqn{p} is the
+state-specific share of polygons intersecting a grid cell.}
 }
 \description{
 Create gridded data by group (or group and year) summarizing the number of

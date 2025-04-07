@@ -21,6 +21,8 @@
 #' @param output Character vector. See details.
 #' @param subset A one-sided formula. If provided, the resulting grid data will be based only on observations
 #'  defined by this argument. For example, `subset = ~ year > 1850`.
+#' @param parallel Logical, whether to use parallel processing with `ncores` number of cores.
+#' @param ncores Integer, the number of cores to use for parallel processing. Default is all available cores minus 1.
 #' @param updates Logical
 #' @param return List or data.frame
 #' @param fix_invalid Logical
@@ -51,6 +53,11 @@
 #'  \item{`share_largest_count`}{Share of polygons for the state with the largest number of polygons in total.}
 #'  \item{`share_largest_area`}{Share of polygons for the state with the largest area.}
 #'  \item{`share_largest_share`}{Share of polygons for the state with the largest share in a grid cell.}
+#'  \item{`share_mean`}{Average share of polygons across all states intersecting a grid cell.}
+#'  \item{`borders`}{Total number of state borders intersecting a grid cell and the share of borders relative to
+#'  the total number of states intersecting.}
+#'  \item{`contested`}{Entropy-based measure of contested territory calculated using the equation \eqn{E = -\sum{}p*ln(p)}, where \eqn{p} is the
+#'  state-specific share of polygons intersecting a grid cell.}
 #'
 #'
 #' @export
@@ -65,6 +72,8 @@ get_grid <- function(shp, ras,
                      nmap_threshold = 5,
                      output,
                      subset = NULL,
+                     parallel = TRUE,
+                     ncores,
                      updates = T,
                      return = c("list", "data"),
                      fix_invalid = FALSE){
@@ -443,10 +452,10 @@ get_grid <- function(shp, ras,
       cli::cli_progress_update(.envir = e)
       return(polycount)
     }) |>
-    bind_rows(.id = "grp") |>
-    mutate(period = stringr::str_extract(grp, "(?<=_).*"),
-           # id_period = paste(id, period, sep = "_"),
-           grp_id = stringr::str_extract(grp, ".*(?=_)"))
+    dplyr::bind_rows(.id = "grp") |>
+    dplyr::mutate(period = stringr::str_extract(grp, "(?<=_).*"),
+                  # id_period = paste(id, period, sep = "_"),
+                  grp_id = stringr::str_extract(grp, ".*(?=_)"))
 
   msg <- ""
   cli::cli_progress_update()
@@ -478,11 +487,11 @@ get_grid <- function(shp, ras,
   rm(max_poly)
 
 
+  cli::cli_progress_done()
   ### STEP 3: CALCULATE SUMMARY MEASURES
   ## Calculate summary statistics for each grid cell
   # if(updates) message("2. Calculating summary measures.")
 
-  cli::cli_progress_done()
   ### 3A: Count features and distinct states
   if ("count_across" %in% output) {
     step <- step + 1
@@ -622,7 +631,7 @@ get_grid <- function(shp, ras,
 
   if ("borders" %in% output) {
     step <- step + 1
-    cli::cli_progress_step("{step}/{steps}: Calculating summary measures - borders")
+    cli::cli_progress_step("{step}/{steps}: Calculating summary measures - borders{msg}", spinner = TRUE)
 
     shp_borders <- shp |>
       sf::st_cast("MULTILINESTRING")
@@ -637,46 +646,42 @@ get_grid <- function(shp, ras,
     r_poly <- terra::as.polygons(r, aggregate = FALSE) |>
       sf::st_as_sf()
 
-    # shp_list <- split(shp_borders, f = shp[[deparse(substitute(id_var))]])
-    #
-    # r_border <- lapply(
-    #   shp_list,
-    #   FUN = function(x) {
-    #     polycount <- as.data.frame(r, na.rm = FALSE) |>
-    #       tibble::rownames_to_column(var = "id") |>
-    #       dplyr::mutate(id = as.numeric(id)) |>
-    #       dplyr::select(id) |>
-    #       suppressWarnings()
-    #     polycount$count <- sf::st_intersects(r_poly, x) |>
-    #       sapply(FUN = length)
-    #     polycount <- polycount |>
-    #       dplyr::filter(count > 0)
-    # }) |>
-    # bind_rows(.id = deparse(substitute(id_var)))
+    shp_list <- split(shp_borders, f = shp_borders[["period"]])
 
-    border_count_df <- as.data.frame(r, na.rm = FALSE) |>
-      suppressWarnings() |>
-      tibble::rownames_to_column(var = "gid") |>
-      dplyr::mutate(gid = as.numeric(gid)) |>
-      dplyr::select(gid)
+    border_count_df <- lapply(
+      shp_list,
+      FUN = function(x) {
+        polycount <- as.data.frame(r, na.rm = FALSE) |>
+          tibble::rownames_to_column(var = "gid") |>
+          dplyr::mutate(gid = as.numeric(gid)) |>
+          dplyr::select(gid) |>
+          suppressWarnings()
+        polycount$border_count <- sf::st_intersects(r_poly, shp_borders) |>
+          sapply(FUN = length)
 
-    border_count_df$border_count <- sf::st_intersects(r_poly, shp_borders) |>
-      sapply(FUN = length)
+        .step_id <- x[["period"]][1]
+        e$msg <- glue::glue(": {.step_id}")
+        cli::cli_progress_update(.envir = e)
+        return(polycount)
+      }) |>
+      dplyr::bind_rows(.id = "period") |>
+      dplyr::mutate(gid_period = paste0(gid, period, sep = "_"))
+
+    msg <- ""
+    cli::cli_progress_update()
 
     # border_count_df <- as.data.frame(r, na.rm = FALSE) |>
     #   suppressWarnings() |>
-    #   tibble::rownames_to_column(var = "id") |>
-    #   dplyr::mutate(id = as.numeric(id)) |>
-    #   dplyr::select(id) |>
-    #   dplyr::left_join(r_border, by = "id") |>
-    #   # dplyr::rename(border_count = count) |>
-    #   dplyr::group_by(id) |>
-    #   dplyr::summarise(border_count = sum(count)) |>
-    #   dplyr::ungroup() |>
-    #   dplyr::select(id, border_count)
+    #   tibble::rownames_to_column(var = "gid") |>
+    #   dplyr::mutate(gid = as.numeric(gid)) |>
+    #   dplyr::select(gid)
+    #
+    # border_count_df$border_count <- sf::st_intersects(r_poly, shp_borders) |>
+    #   sapply(FUN = length)
+
 
     df <- df |>
-      dplyr::left_join(border_count_df, by = "gid") |>
+      dplyr::left_join(border_count_df, by = "gid_period") |>
       dplyr::mutate(border_share = border_count / polysum_across)
     rm(border_count_df, r_border, shp_borders)
   }
@@ -690,17 +695,20 @@ get_grid <- function(shp, ras,
     step <- step + 1
     cli::cli_progress_step("{step}/{steps}: Calculating summary measures - contested teritory")
 
+
+    ## Should we normalize based on the number of states? Maybe not - cause more states indicate higher contestednedd (but does the measure also reflect that?)
+
     contested_df <- poly_count_df |>
       dtplyr::lazy_dt() |>
       dplyr::mutate(polysh = poly_count / max_poly) |>
       dplyr::mutate(polysh_ln = ifelse(poly_count == 0, 0, log(polysh))) |>
       dplyr::mutate(polyshw = polysh*polysh_ln) |>
-      dplyr::group_by(gid) |>
+      dplyr::group_by(gid_period) |>
       dplyr::summarise(contested = -sum(polyshw)) |>
       data.table::as.data.table()
 
     df <- df |>
-      dplyr::left_join(contested_df, by = "gid")
+      dplyr::left_join(contested_df, by = "gid_period")
     rm(contested_df)
   }
 
