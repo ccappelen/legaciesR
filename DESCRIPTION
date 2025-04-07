@@ -1,7 +1,7 @@
 Type: Package
 Package: legaciesr
 Title: Data management for the LEGACIES data project
-Version: 0.5.0
+Version: 0.6.0
 Authors@R: 
     person("Christoffer", "Cappelen", , "christoffer.cappelen@gmail.com", role = c("aut", "cre"))
 Description: Contains functions for aggregating overlapping polygons.
