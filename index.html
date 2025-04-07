@@ -48,12 +48,10 @@
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header"><h1 id="legaciesr">legaciesr<a class="anchor" aria-label="anchor" href="#legaciesr"></a>
 </h1></div>
-<!-- <!-- badges: start -->
-<p>–&gt;</p>
+<!-- badges: start -->
 <!-- [![Codecov test coverage](https://codecov.io/gh/ccappelen/legaciesR/graph/badge.svg)](https://app.codecov.io/gh/ccappelen/legaciesR) -->
 <!-- [![R-CMD-check](https://github.com/ccappelen/legaciesR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/ccappelen/legaciesR/actions/workflows/R-CMD-check.yaml) -->
-<!-- <!-- badges: end -->
-<p>–&gt;</p>
+<!-- badges: end -->
 <p>The <code>legaciesr</code> package provides a set of functions used to aggregate and summarize the mapping data collected in the <a href="https://www.legacies-project.com" class="external-link">LEGACIES</a> project. It allows users to, i.a., (1) create contour polygons capturing the territorial extent of historical states at different probability thresholds, (2) create a grid with various summary measures of historical state presence, and (3) add a range of commonly used covariates to the polygon and grid data.</p>
 <p>NB: The package is still experimental and no functions should be considered stable.</p>
 <div class="section level2">
@@ -96,13 +94,13 @@
 <span><span class="co">#&gt; Simple feature collection with 4 features and 4 fields</span></span>
 <span><span class="co">#&gt; Geometry type: GEOMETRY</span></span>
 <span><span class="co">#&gt; Dimension:     XY</span></span>
-<span><span class="co">#&gt; Bounding box:  xmin: -10.55116 ymin: 6.086814 xmax: -1.417828 ymax: 13.82015</span></span>
+<span><span class="co">#&gt; Bounding box:  xmin: -10.55116 ymin: 6.086814 xmax: -1.423012 ymax: 13.81136</span></span>
 <span><span class="co">#&gt; Geodetic CRS:  WGS 84</span></span>
 <span><span class="co">#&gt;      name prob  label nmaps                       geometry</span></span>
-<span><span class="co">#&gt; 1 Genovia 0.00    0-1   191 POLYGON ((-4.726162 13.8201...</span></span>
-<span><span class="co">#&gt; 2 Genovia 0.25 0.25-1   191 POLYGON ((-5.182412 12.9201...</span></span>
-<span><span class="co">#&gt; 3 Genovia 0.50  0.5-1   191 POLYGON ((-5.774078 12.3201...</span></span>
-<span><span class="co">#&gt; 4 Genovia 0.75 0.75-1   191 MULTIPOLYGON (((-4.451162 9...</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 Genovia 0.00    0-1   191 POLYGON ((-4.821082 13.7967...</span></span>
+<span><span class="co">#&gt; 2 Genovia 0.25 0.25-1   191 POLYGON ((-5.220855 12.9311...</span></span>
+<span><span class="co">#&gt; 3 Genovia 0.50  0.5-1   191 POLYGON ((-5.220855 12.3317...</span></span>
+<span><span class="co">#&gt; 4 Genovia 0.75 0.75-1   191 MULTIPOLYGON (((-4.454624 1...</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="create-contour-polygons-across-all-groups">Create contour polygons across all groups<a class="anchor" aria-label="anchor" href="#create-contour-polygons-across-all-groups"></a>
@@ -113,20 +111,20 @@
 <span><span class="co">#&gt; Simple feature collection with 88 features and 4 fields</span></span>
 <span><span class="co">#&gt; Geometry type: GEOMETRY</span></span>
 <span><span class="co">#&gt; Dimension:     XY</span></span>
-<span><span class="co">#&gt; Bounding box:  xmin: -10.55116 ymin: -23.1782 xmax: 46.4739 ymax: 35.56434</span></span>
+<span><span class="co">#&gt; Bounding box:  xmin: -10.55116 ymin: -23.1782 xmax: 46.48245 ymax: 35.56343</span></span>
 <span><span class="co">#&gt; Geodetic CRS:  WGS 84</span></span>
 <span><span class="co">#&gt; First 10 features:</span></span>
 <span><span class="co">#&gt;           name prob  label nmaps                       geometry</span></span>
-<span><span class="co">#&gt; 1  Absurdistan 0.00    0-1    70 POLYGON ((0.03238625 15.087...</span></span>
-<span><span class="co">#&gt; 2  Absurdistan 0.25 0.25-1    70 POLYGON ((-0.5613637 14.420...</span></span>
-<span><span class="co">#&gt; 3  Absurdistan 0.50  0.5-1    70 POLYGON ((-0.3717804 13.920...</span></span>
-<span><span class="co">#&gt; 4  Absurdistan 0.75 0.75-1    70 POLYGON ((-0.2821971 13.287...</span></span>
-<span><span class="co">#&gt; 5      Agrabah 0.00    0-1   129 POLYGON ((22.72428 31.9423,...</span></span>
-<span><span class="co">#&gt; 6      Agrabah 0.25 0.25-1   129 MULTIPOLYGON (((23.22845 30...</span></span>
-<span><span class="co">#&gt; 7      Agrabah 0.50  0.5-1   129 MULTIPOLYGON (((23.89511 29...</span></span>
-<span><span class="co">#&gt; 8      Agrabah 0.75 0.75-1   129 MULTIPOLYGON (((23.69511 28...</span></span>
-<span><span class="co">#&gt; 9    Arendelle 0.00    0-1    70 POLYGON ((8.23251 19.67039,...</span></span>
-<span><span class="co">#&gt; 10   Arendelle 0.25 0.25-1    70 POLYGON ((9.028344 19.13706...</span></span></code></pre></div>
+<span><span class="co">#&gt; 1  Absurdistan 0.00    0-1    70 POLYGON ((-0.1282136 15.058...</span></span>
+<span><span class="co">#&gt; 2  Absurdistan 0.25 0.25-1    70 POLYGON ((-0.5950196 14.426...</span></span>
+<span><span class="co">#&gt; 3  Absurdistan 0.50  0.5-1    70 POLYGON ((-0.3616166 13.927...</span></span>
+<span><span class="co">#&gt; 4  Absurdistan 0.75 0.75-1    70 MULTIPOLYGON (((-0.29493 13...</span></span>
+<span><span class="co">#&gt; 5      Agrabah 0.00    0-1   129 POLYGON ((22.69547 31.91306...</span></span>
+<span><span class="co">#&gt; 6      Agrabah 0.25 0.25-1   129 POLYGON ((23.49557 30.80692...</span></span>
+<span><span class="co">#&gt; 7      Agrabah 0.50  0.5-1   129 MULTIPOLYGON (((25.62919 29...</span></span>
+<span><span class="co">#&gt; 8      Agrabah 0.75 0.75-1   129 MULTIPOLYGON (((25.39583 28...</span></span>
+<span><span class="co">#&gt; 9    Arendelle 0.00    0-1    70 POLYGON ((7.970548 19.65083...</span></span>
+<span><span class="co">#&gt; 10   Arendelle 0.25 0.25-1    70 MULTIPOLYGON (((6.934863 15...</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="create-contour-polygons-across-all-groups-and-by-period">Create contour polygons across all groups and by period<a class="anchor" aria-label="anchor" href="#create-contour-polygons-across-all-groups-and-by-period"></a>
@@ -136,20 +134,20 @@
 <span><span class="co">#&gt; Simple feature collection with 440 features and 5 fields</span></span>
 <span><span class="co">#&gt; Geometry type: GEOMETRY</span></span>
 <span><span class="co">#&gt; Dimension:     XY</span></span>
-<span><span class="co">#&gt; Bounding box:  xmin: -10.55116 ymin: -23.1782 xmax: 46.47936 ymax: 35.56969</span></span>
+<span><span class="co">#&gt; Bounding box:  xmin: -10.55116 ymin: -23.1782 xmax: 46.48245 ymax: 35.56343</span></span>
 <span><span class="co">#&gt; Geodetic CRS:  WGS 84</span></span>
 <span><span class="co">#&gt; First 10 features:</span></span>
 <span><span class="co">#&gt;           name    period prob  label nmaps                       geometry</span></span>
-<span><span class="co">#&gt; 1  Absurdistan 1800-1820 0.00    0-1    17 POLYGON ((0.4857152 15.0526...</span></span>
-<span><span class="co">#&gt; 2  Absurdistan 1800-1820 0.25 0.25-1    17 MULTIPOLYGON (((-0.5142848 ...</span></span>
-<span><span class="co">#&gt; 3  Absurdistan 1800-1820 0.50  0.5-1    17 MULTIPOLYGON (((-4.139285 1...</span></span>
-<span><span class="co">#&gt; 4  Absurdistan 1800-1820 0.75 0.75-1    17 MULTIPOLYGON (((-0.01011809...</span></span>
-<span><span class="co">#&gt; 5      Agrabah 1800-1820 0.00    0-1    37 POLYGON ((23.00267 31.9298,...</span></span>
-<span><span class="co">#&gt; 6      Agrabah 1800-1820 0.25 0.25-1    37 MULTIPOLYGON (((23.24017 30...</span></span>
-<span><span class="co">#&gt; 7      Agrabah 1800-1820 0.50  0.5-1    37 POLYGON ((24.42142 29.79646...</span></span>
-<span><span class="co">#&gt; 8      Agrabah 1800-1820 0.75 0.75-1    37 MULTIPOLYGON (((25.1735 27....</span></span>
-<span><span class="co">#&gt; 9    Arendelle 1800-1820 0.00    0-1    16 POLYGON ((6.828344 19.50865...</span></span>
-<span><span class="co">#&gt; 10   Arendelle 1800-1820 0.25 0.25-1    16 MULTIPOLYGON (((7.403344 19...</span></span></code></pre></div>
+<span><span class="co">#&gt; 1  Absurdistan 1800-1820 0.00    0-1    17 POLYGON ((0.4913785 15.0530...</span></span>
+<span><span class="co">#&gt; 2  Absurdistan 1800-1820 0.25 0.25-1    17 MULTIPOLYGON (((-0.541555 1...</span></span>
+<span><span class="co">#&gt; 3  Absurdistan 1800-1820 0.50  0.5-1    17 MULTIPOLYGON (((0.4913785 1...</span></span>
+<span><span class="co">#&gt; 4  Absurdistan 1800-1820 0.75 0.75-1    17 MULTIPOLYGON (((-0.00842805...</span></span>
+<span><span class="co">#&gt; 5      Agrabah 1800-1820 0.00    0-1    37 POLYGON ((22.97841 31.92655...</span></span>
+<span><span class="co">#&gt; 6      Agrabah 1800-1820 0.25 0.25-1    37 MULTIPOLYGON (((23.21214 30...</span></span>
+<span><span class="co">#&gt; 7      Agrabah 1800-1820 0.50  0.5-1    37 POLYGON ((24.41419 29.7902,...</span></span>
+<span><span class="co">#&gt; 8      Agrabah 1800-1820 0.75 0.75-1    37 MULTIPOLYGON (((24.31402 28...</span></span>
+<span><span class="co">#&gt; 9    Arendelle 1800-1820 0.00    0-1    16 POLYGON ((6.567361 19.49756...</span></span>
+<span><span class="co">#&gt; 10   Arendelle 1800-1820 0.25 0.25-1    16 MULTIPOLYGON (((7.335773 14...</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="support-for-parallel-processing">Support for parallel processing:<a class="anchor" aria-label="anchor" href="#support-for-parallel-processing"></a>
