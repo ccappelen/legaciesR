@@ -88,7 +88,7 @@ isd <- readxl::read_xlsx(isd_path)
 rm(isd_path)
 ```
 
-```{r read data hidden, eval = TRUE, echo = FALSE, message = FALSE, warnings = FALSE}
+```{r read data hidden, eval = TRUE, echo = FALSE, message = FALSE, warning = FALSE}
 shp <- read_sf("data_private", "master_shapefile")
 isd <- readxl::read_xlsx("data_private/legacies_polity_years_reduced.xlsx")
 ```

@@ -107,12 +107,6 @@ isd <- readxl::read_xlsx(isd_path)
 rm(isd_path)
 ```
 
-    #> Warning in CPL_read_ogr(dsn, layer, query, as.character(options), quiet, : GDAL
-    #> Message 1: /Users/christoffercappelen/Library/Mobile
-    #> Documents/com~apple~CloudDocs/RESEARCH/GitHub/legaciesR/data_private/master_shapefile.shp
-    #> contains polygon(s) with rings with invalid winding order. Autocorrecting them,
-    #> but that shapefile should be corrected using ogr2ogr for example.
-
 ## Invalid geometries
 
 Some maps in the raw data may be “invalid” which will result in errors
@@ -156,22 +150,22 @@ shp <- prepare_shapes(shp = shp, state_data = isd,
                       )
 #> ! Geometries with missing `id_var`: Geometries with missing `id_var` are assigned to the value '99999'.
 #> ℹ 1/6: Fix three-digit years
-#> ✔ 1/6: Fix three-digit years [188ms]
+#> ✔ 1/6: Fix three-digit years [9ms]
 #> 
 #> ℹ 2/6: Exclude maps with no date
 #> ✔ 2/6: Exclude maps with no date [15ms]
 #> 
 #> ℹ 3/6: Expand range
-#> ✔ 3/6: Expand range [467ms]
+#> ✔ 3/6: Expand range [465ms]
 #> 
 #> ℹ 4/6: Matching capitals
-#> ✔ 4/6: Matching capitals [30.9s]
+#> ✔ 4/6: Matching capitals [30.5s]
 #> 
 #> ℹ 5/6: Exclude incomplete
-#> ✔ 5/6: Exclude incomplete [28ms]
+#> ✔ 5/6: Exclude incomplete [34ms]
 #> 
 #> ⠙ 6/6: Exclude non-sovereign maps
-#> ✔ 6/6: Exclude non-sovereign maps [264ms]
+#> ✔ 6/6: Exclude non-sovereign maps [255ms]
 #> 
 ```
 
@@ -184,10 +178,10 @@ errors <- detect_errors(shp = shp, capital_data = isd,
 #> ✔ 1/7: Checking for empty geometries [6ms]
 #> 
 #> ℹ 2/7: COWID duplicates
-#> ✔ 2/7: COWID duplicates [8ms]
+#> ✔ 2/7: COWID duplicates [7ms]
 #> 
 #> ℹ 3/7: Missing ID
-#> ✔ 3/7: Missing ID [9ms]
+#> ✔ 3/7: Missing ID [5ms]
 #> 
 #> ℹ 4/7: COWIDs with only 1 map
 #> ✔ 4/7: COWIDs with only 1 map [8ms]
@@ -199,10 +193,10 @@ errors <- detect_errors(shp = shp, capital_data = isd,
 #> ✔ 6/7: COWIDs with polygons not overlapping [2.3s]
 #> 
 #> ⠙ 7/7: Whether the capital falls outside all polygons
-#> ⠹ 7/7: Whether the capital falls outside all polygons: BNE
-#> ⠸ 7/7: Whether the capital falls outside all polygons: KAT
-#> ⠼ 7/7: Whether the capital falls outside all polygons: TOK
-#> ✔ 7/7: Whether the capital falls outside all polygons [9.9s]
+#> ⠹ 7/7: Whether the capital falls outside all polygons: BRG
+#> ⠸ 7/7: Whether the capital falls outside all polygons: KNO
+#> ⠼ 7/7: Whether the capital falls outside all polygons: YAU
+#> ✔ 7/7: Whether the capital falls outside all polygons [10s]
 #> 
 #> 
 #> POTENTIAL ERRORS:
