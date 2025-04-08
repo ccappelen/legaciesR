@@ -104,18 +104,13 @@
 <span></span>
 <span><span class="va">isd</span> <span class="op">&lt;-</span> <span class="fu">readxl</span><span class="fu">::</span><span class="fu">read_xlsx</span><span class="op">(</span><span class="va">isd_path</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">isd_path</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb6"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co">#&gt; Warning in CPL_read_ogr(dsn, layer, query, as.character(options), quiet, : GDAL</span></span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="co">#&gt; Message 1: /Users/christoffercappelen/Library/Mobile</span></span>
-<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="co">#&gt; Documents/com~apple~CloudDocs/RESEARCH/GitHub/legaciesR/data_private/master_shapefile.shp</span></span>
-<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="co">#&gt; contains polygon(s) with rings with invalid winding order. Autocorrecting them,</span></span>
-<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="co">#&gt; but that shapefile should be corrected using ogr2ogr for example.</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="invalid-geometries">Invalid geometries<a class="anchor" aria-label="anchor" href="#invalid-geometries"></a>
 </h2>
 <p>Some maps in the raw data may be “invalid” which will result in errors in many spatial data analyses. This can happen for all kinds of reasons; typically it is the result of crossing boundaries. <code><a href="reference/fix_invalid.html">fix_invalid()</a></code> attempts to detect and fix these invalid geometries. It is a wrapper around the <code><a href="https://r-spatial.github.io/sf/reference/valid.html" class="external-link">sf::st_make_valid()</a></code> function that attempts to reiteratively lower the allowed precision to rebuild valid geometries. The function will return the same data set with fixed geometries (if it was able to fix them). The returned data set will include three columns describing the status of the geometry, e.g., whether it was invalid and whether it was successfully fixed. It will also (by default) print a summary of how many geometries were invalid, how many were fixed, and how many were unsuccessful.</p>
 <p>Because invalid geometries can happen for many reasons that may point to other data errors as well, it is recommended to check for valid geometries and run the <code><a href="reference/fix_invalid.html">legaciesr::fix_invalid()</a></code> to identify potential issues.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">shp</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/fix_invalid.html">fix_invalid</a></span><span class="op">(</span><span class="va">shp</span><span class="op">)</span></span>
 <span><span class="co">#&gt; 447 (3.3 %) geometries were successfully rebuilt.</span></span>
 <span><span class="co">#&gt; 0 (0 %) geometries failed to rebuild as valid.</span></span>
@@ -129,7 +124,7 @@
 <div class="section level2">
 <h2 id="preprocessing">Preprocessing<a class="anchor" aria-label="anchor" href="#preprocessing"></a>
 </h2>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">shp</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/prepare_shapes.html">prepare_shapes</a></span><span class="op">(</span>shp <span class="op">=</span> <span class="va">shp</span>, state_data <span class="op">=</span> <span class="va">isd</span>,</span>
 <span>                      id_var <span class="op">=</span> <span class="va">COWID</span>, period_var <span class="op">=</span> <span class="va">year</span>,</span>
 <span>                      range_min <span class="op">=</span> <span class="va">lyear</span>, range_max <span class="op">=</span> <span class="va">hyear</span>,</span>
@@ -138,38 +133,38 @@
 <span>                      <span class="op">)</span></span>
 <span><span class="co">#&gt; ! Geometries with missing `id_var`: Geometries with missing `id_var` are assigned to the value '99999'.</span></span>
 <span><span class="co">#&gt; ℹ 1/6: Fix three-digit years</span></span>
-<span><span class="co">#&gt; ✔ 1/6: Fix three-digit years [188ms]</span></span>
+<span><span class="co">#&gt; ✔ 1/6: Fix three-digit years [9ms]</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ℹ 2/6: Exclude maps with no date</span></span>
 <span><span class="co">#&gt; ✔ 2/6: Exclude maps with no date [15ms]</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ℹ 3/6: Expand range</span></span>
-<span><span class="co">#&gt; ✔ 3/6: Expand range [467ms]</span></span>
+<span><span class="co">#&gt; ✔ 3/6: Expand range [465ms]</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ℹ 4/6: Matching capitals</span></span>
-<span><span class="co">#&gt; ✔ 4/6: Matching capitals [30.9s]</span></span>
+<span><span class="co">#&gt; ✔ 4/6: Matching capitals [30.5s]</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ℹ 5/6: Exclude incomplete</span></span>
-<span><span class="co">#&gt; ✔ 5/6: Exclude incomplete [28ms]</span></span>
+<span><span class="co">#&gt; ✔ 5/6: Exclude incomplete [34ms]</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ⠙ 6/6: Exclude non-sovereign maps</span></span>
-<span><span class="co">#&gt; ✔ 6/6: Exclude non-sovereign maps [264ms]</span></span>
+<span><span class="co">#&gt; ✔ 6/6: Exclude non-sovereign maps [255ms]</span></span>
 <span><span class="co">#&gt; </span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="detecing-errors">Detecing errors<a class="anchor" aria-label="anchor" href="#detecing-errors"></a>
 </h2>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">errors</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/detect_errors.html">detect_errors</a></span><span class="op">(</span>shp <span class="op">=</span> <span class="va">shp</span>, capital_data <span class="op">=</span> <span class="va">isd</span>,</span>
 <span>                        id_var <span class="op">=</span> <span class="va">COWID</span>, period_var <span class="op">=</span> <span class="va">year</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ℹ 1/7: Checking for empty geometries</span></span>
 <span><span class="co">#&gt; ✔ 1/7: Checking for empty geometries [6ms]</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ℹ 2/7: COWID duplicates</span></span>
-<span><span class="co">#&gt; ✔ 2/7: COWID duplicates [8ms]</span></span>
+<span><span class="co">#&gt; ✔ 2/7: COWID duplicates [7ms]</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ℹ 3/7: Missing ID</span></span>
-<span><span class="co">#&gt; ✔ 3/7: Missing ID [9ms]</span></span>
+<span><span class="co">#&gt; ✔ 3/7: Missing ID [5ms]</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ℹ 4/7: COWIDs with only 1 map</span></span>
 <span><span class="co">#&gt; ✔ 4/7: COWIDs with only 1 map [8ms]</span></span>
@@ -181,10 +176,10 @@
 <span><span class="co">#&gt; ✔ 6/7: COWIDs with polygons not overlapping [2.3s]</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ⠙ 7/7: Whether the capital falls outside all polygons</span></span>
-<span><span class="co">#&gt; ⠹ 7/7: Whether the capital falls outside all polygons: BNE</span></span>
-<span><span class="co">#&gt; ⠸ 7/7: Whether the capital falls outside all polygons: KAT</span></span>
-<span><span class="co">#&gt; ⠼ 7/7: Whether the capital falls outside all polygons: TOK</span></span>
-<span><span class="co">#&gt; ✔ 7/7: Whether the capital falls outside all polygons [9.9s]</span></span>
+<span><span class="co">#&gt; ⠹ 7/7: Whether the capital falls outside all polygons: BRG</span></span>
+<span><span class="co">#&gt; ⠸ 7/7: Whether the capital falls outside all polygons: KNO</span></span>
+<span><span class="co">#&gt; ⠼ 7/7: Whether the capital falls outside all polygons: YAU</span></span>
+<span><span class="co">#&gt; ✔ 7/7: Whether the capital falls outside all polygons [10s]</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; POTENTIAL ERRORS:</span></span>
