@@ -52,108 +52,159 @@
 <!-- [![Codecov test coverage](https://codecov.io/gh/ccappelen/legaciesR/graph/badge.svg)](https://app.codecov.io/gh/ccappelen/legaciesR) -->
 <!-- [![R-CMD-check](https://github.com/ccappelen/legaciesR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/ccappelen/legaciesR/actions/workflows/R-CMD-check.yaml) -->
 <!-- badges: end -->
-<p>The <code>legaciesr</code> package provides a set of functions used to aggregate and summarize the mapping data collected in the <a href="https://www.legacies-project.com" class="external-link">LEGACIES</a> project. It allows users to, i.a., (1) create contour polygons capturing the territorial extent of historical states at different probability thresholds, (2) create a grid with various summary measures of historical state presence, and (3) add a range of commonly used covariates to the polygon and grid data.</p>
-<p>NB: The package is still experimental and no functions should be considered stable.</p>
+<p>The <code>legaciesr</code> package provides a set of functions used to aggregate and summarize the mapping and ID data collected in the <a href="https://www.legacies-project.com" class="external-link">LEGACIES</a> project. It allows users to, i.a., (1) create contour polygons capturing the territorial extent of historical states at different probability thresholds, (2) create a grid with various summary measures of historical state presence, and (3) add a range of commonly used covariates to the polygon and grid data.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <p>You can install the development version of legaciesr from <a href="https://github.com/" class="external-link">GitHub</a> with:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># install.packages("devtools")</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"ccappelen/legaciesR"</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://www.legacies-project.com" class="external-link">legaciesr</a></span><span class="op">)</span> </span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://www.legacies-project.com" class="external-link">legaciesr</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://r-spatial.github.io/sf/" class="external-link">sf</a></span><span class="op">)</span> </span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="errors-in-current-master_shapefile">Errors in current master_shapefile<a class="anchor" aria-label="anchor" href="#errors-in-current-master_shapefile"></a>
+<h2 id="package-overview-and-workflow">Package overview and workflow<a class="anchor" aria-label="anchor" href="#package-overview-and-workflow"></a>
 </h2>
-<p>Currently, one geometry (COWID = “EGY”) fails to rebuild due to crossing edges. However, a few other COWIDs result in invalid geometries when creating contour polygons. For now, these are omitted:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="va">df</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> </span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="op">!</span><span class="va">COWID</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"EGY"</span>, <span class="st">"LUN"</span>, <span class="st">"KUN"</span>, <span class="st">"SAF"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="handling-of-invalid-geometries">Handling of invalid geometries<a class="anchor" aria-label="anchor" href="#handling-of-invalid-geometries"></a>
-</h2>
-<p>The functions in <code>legaciesr</code> will (by default) attempt to fix invalid geometries which would otherwise return an error. The fixes rely on <code><a href="reference/fix_invalid.html">legaciesr::fix_invalid()</a></code> which is a wrapper around the <code><a href="https://r-spatial.github.io/sf/reference/valid.html" class="external-link">sf::st_make_valid()</a></code> function that attempts to reiteratively lower the allowed precision to rebuild valid geometries. However, because invalid geometries can happen for many reasons that may point to other data errors as well, it is recommended to check for valid geometries and run the <code><a href="reference/fix_invalid.html">legaciesr::fix_invalid()</a></code> to identify potential issues. See package documentation for further information on the use of this function.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="va">example_df</span> <span class="co"># Load example data set (based on random data)</span></span>
-<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/fix_invalid.html">fix_invalid</a></span><span class="op">(</span><span class="va">df</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 1 (0 %) geometries were successfully rebuilt.</span></span>
-<span><span class="co">#&gt; 0 (0 %) geometries failed to rebuild as valid.</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="create-contour-polygons-for-a-single-group">Create contour polygons for a single group<a class="anchor" aria-label="anchor" href="#create-contour-polygons-for-a-single-group"></a>
-</h2>
-<p>See documentation for additional arguments (e.g., threshold for number of maps, the number of contour polygons, resolution of raster, and handling of invalid geometries).</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">df1</span> <span class="op">&lt;-</span> <span class="va">df</span><span class="op">[</span><span class="va">df</span><span class="op">$</span><span class="va">name</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">df</span><span class="op">$</span><span class="va">name</span><span class="op">)</span><span class="op">[</span><span class="fl">8</span><span class="op">]</span>, <span class="op">]</span></span>
-<span><span class="fu"><a href="reference/contour_polygons.html">contour_polygons</a></span><span class="op">(</span><span class="va">df1</span>, id_vars <span class="op">=</span> <span class="va">name</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Simple feature collection with 4 features and 4 fields</span></span>
-<span><span class="co">#&gt; Geometry type: GEOMETRY</span></span>
-<span><span class="co">#&gt; Dimension:     XY</span></span>
-<span><span class="co">#&gt; Bounding box:  xmin: -10.55116 ymin: 6.086814 xmax: -1.423012 ymax: 13.81136</span></span>
-<span><span class="co">#&gt; Geodetic CRS:  WGS 84</span></span>
-<span><span class="co">#&gt;      name prob  label nmaps                       geometry</span></span>
-<span><span class="co">#&gt; 1 Genovia 0.00    0-1   191 POLYGON ((-4.821082 13.7967...</span></span>
-<span><span class="co">#&gt; 2 Genovia 0.25 0.25-1   191 POLYGON ((-5.220855 12.9311...</span></span>
-<span><span class="co">#&gt; 3 Genovia 0.50  0.5-1   191 POLYGON ((-5.220855 12.3317...</span></span>
-<span><span class="co">#&gt; 4 Genovia 0.75 0.75-1   191 MULTIPOLYGON (((-4.454624 1...</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="create-contour-polygons-across-all-groups">Create contour polygons across all groups<a class="anchor" aria-label="anchor" href="#create-contour-polygons-across-all-groups"></a>
-</h2>
-<p>See documentation for additional arguments (e.g., specifying the period intervals to group by, thresholds for number of maps within a group, etc.).</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="reference/get_contours.html">get_contours</a></span><span class="op">(</span><span class="va">df</span>, grp_id <span class="op">=</span> <span class="va">name</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Simple feature collection with 88 features and 4 fields</span></span>
-<span><span class="co">#&gt; Geometry type: GEOMETRY</span></span>
-<span><span class="co">#&gt; Dimension:     XY</span></span>
-<span><span class="co">#&gt; Bounding box:  xmin: -10.55116 ymin: -23.1782 xmax: 46.48245 ymax: 35.56343</span></span>
-<span><span class="co">#&gt; Geodetic CRS:  WGS 84</span></span>
-<span><span class="co">#&gt; First 10 features:</span></span>
-<span><span class="co">#&gt;           name prob  label nmaps                       geometry</span></span>
-<span><span class="co">#&gt; 1  Absurdistan 0.00    0-1    70 POLYGON ((-0.1282136 15.058...</span></span>
-<span><span class="co">#&gt; 2  Absurdistan 0.25 0.25-1    70 POLYGON ((-0.5950196 14.426...</span></span>
-<span><span class="co">#&gt; 3  Absurdistan 0.50  0.5-1    70 POLYGON ((-0.3616166 13.927...</span></span>
-<span><span class="co">#&gt; 4  Absurdistan 0.75 0.75-1    70 MULTIPOLYGON (((-0.29493 13...</span></span>
-<span><span class="co">#&gt; 5      Agrabah 0.00    0-1   129 POLYGON ((22.69547 31.91306...</span></span>
-<span><span class="co">#&gt; 6      Agrabah 0.25 0.25-1   129 POLYGON ((23.49557 30.80692...</span></span>
-<span><span class="co">#&gt; 7      Agrabah 0.50  0.5-1   129 MULTIPOLYGON (((25.62919 29...</span></span>
-<span><span class="co">#&gt; 8      Agrabah 0.75 0.75-1   129 MULTIPOLYGON (((25.39583 28...</span></span>
-<span><span class="co">#&gt; 9    Arendelle 0.00    0-1    70 POLYGON ((7.970548 19.65083...</span></span>
-<span><span class="co">#&gt; 10   Arendelle 0.25 0.25-1    70 MULTIPOLYGON (((6.934863 15...</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="create-contour-polygons-across-all-groups-and-by-period">Create contour polygons across all groups and by period<a class="anchor" aria-label="anchor" href="#create-contour-polygons-across-all-groups-and-by-period"></a>
-</h2>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="reference/get_contours.html">get_contours</a></span><span class="op">(</span><span class="va">df</span>, by_period <span class="op">=</span> <span class="cn">T</span>, grp_id <span class="op">=</span> <span class="va">name</span>, period_id <span class="op">=</span> <span class="va">year</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Simple feature collection with 440 features and 5 fields</span></span>
-<span><span class="co">#&gt; Geometry type: GEOMETRY</span></span>
-<span><span class="co">#&gt; Dimension:     XY</span></span>
-<span><span class="co">#&gt; Bounding box:  xmin: -10.55116 ymin: -23.1782 xmax: 46.48245 ymax: 35.56343</span></span>
-<span><span class="co">#&gt; Geodetic CRS:  WGS 84</span></span>
-<span><span class="co">#&gt; First 10 features:</span></span>
-<span><span class="co">#&gt;           name    period prob  label nmaps                       geometry</span></span>
-<span><span class="co">#&gt; 1  Absurdistan 1800-1820 0.00    0-1    17 POLYGON ((0.4913785 15.0530...</span></span>
-<span><span class="co">#&gt; 2  Absurdistan 1800-1820 0.25 0.25-1    17 MULTIPOLYGON (((-0.541555 1...</span></span>
-<span><span class="co">#&gt; 3  Absurdistan 1800-1820 0.50  0.5-1    17 MULTIPOLYGON (((0.4913785 1...</span></span>
-<span><span class="co">#&gt; 4  Absurdistan 1800-1820 0.75 0.75-1    17 MULTIPOLYGON (((-0.00842805...</span></span>
-<span><span class="co">#&gt; 5      Agrabah 1800-1820 0.00    0-1    37 POLYGON ((22.97841 31.92655...</span></span>
-<span><span class="co">#&gt; 6      Agrabah 1800-1820 0.25 0.25-1    37 MULTIPOLYGON (((23.21214 30...</span></span>
-<span><span class="co">#&gt; 7      Agrabah 1800-1820 0.50  0.5-1    37 POLYGON ((24.41419 29.7902,...</span></span>
-<span><span class="co">#&gt; 8      Agrabah 1800-1820 0.75 0.75-1    37 MULTIPOLYGON (((24.31402 28...</span></span>
-<span><span class="co">#&gt; 9    Arendelle 1800-1820 0.00    0-1    16 POLYGON ((6.567361 19.49756...</span></span>
-<span><span class="co">#&gt; 10   Arendelle 1800-1820 0.25 0.25-1    16 MULTIPOLYGON (((7.335773 14...</span></span></code></pre></div>
+<p>The legaciesr package is composed of a number of functions designed to process and match the raw mapping and state data collected in the LEGACIES project. While they can, in most cases, be run independently of each other, they are mostly meant to be used in the workflow described in the remainder of this README. In short, it consists of <!-- (1) fixing invalid geometries in the map data, (2) preprocess the map data and match with information in the ISD state data, (3) detect potential errors in the data set, (4) generate contour polygons from the raw map data, (5) generate a grid cell data set with various summary measures of historical statehood, and (6) match the grid cell data with numerous other data sources commonly used in empirical applications.  --></p>
+<ol style="list-style-type: decimal">
+<li>Detecting and fixing invalid geometries in the map data.</li>
+<li>Preprocessing the map data and match with information in the ISD state data.</li>
+<li>Detecting potential errors in the data set.</li>
+<li>Generating contour polygons from the raw map data. (Optional)</li>
+<li>Generating a grid cell data set with various summary measures of historical statehood.</li>
+<li>Matching the grid cell data with numerous other data sources commonly used in empirical applications.</li>
+</ol>
+<p>Each function (corresponding to each of the six steps) is further documented in their respective help documentation. This guide will outline the basic features of the functions and their intended usage.</p>
 </div>
 <div class="section level2">
 <h2 id="support-for-parallel-processing">Support for parallel processing:<a class="anchor" aria-label="anchor" href="#support-for-parallel-processing"></a>
 </h2>
-<p>Parallel processing is is implemented using the [future::future] framework. There are two ways of running jobs in parallel: <code>multicore</code> which uses ‘forking’ to run multiple jobs in parallel with shared memory and <code>multisession</code> which launches a set of background R sessions. ‘Forking’ can be faster than multisession because of the larger overhead associated with copying the active environment to each background R session (whereas forking processes shares memory). However, ‘forking’ is not supported on Windows platforms and is considered unstable when running from within RStudio (on both Windows and Unix systems such as MacOS). The function will automatically determine whether <code>multicore</code> is supported by the platform and choose the appropriate plan.</p>
+<p>Some functions enable parallel processing to speed up intensive tasks. Parallel processing is is implemented using the [future::future] framework. There are two ways of running jobs in parallel: <code>multicore</code> which uses ‘forking’ to run multiple jobs in parallel with shared memory and <code>multisession</code> which launches a set of background R sessions. ‘Forking’ can be faster than multisession because of the larger overhead associated with copying the active environment to each background R session (whereas forking processes shares memory). However, ‘forking’ is not supported on Windows platforms and is considered unstable when running from within RStudio (on both Windows and Unix systems such as MacOS). The function will automatically determine whether <code>multicore</code> is supported by the platform and choose the appropriate plan.</p>
 <p>The greater overhead associated with <code>multisession</code> is primarily during the first parallel run in a given R session (since the background R sessions stays available for additional parallel jobs). It is possible to define a [future::plan(“multisession”)] in the global environment, which will minimize overhead in subsequent parallel jobs (apart from the first). The function will automatically detect if a <code>multisession</code> plan has been set globally and, thus, will not close background sessions after running.</p>
+<p>It is therefore recommended to start the script by setting a [future::plan]:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">future</span><span class="fu">::</span><span class="fu"><a href="https://future.futureverse.org/reference/plan.html" class="external-link">plan</a></span><span class="op">(</span><span class="st">"multisession"</span>, workers <span class="op">=</span> <span class="fu">future</span><span class="fu">::</span><span class="fu"><a href="https://parallelly.futureverse.org/reference/availableCores.html" class="external-link">availableCores</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">## The above code sets up parallel processing on all available cores. </span></span>
+<span><span class="co">## This can be changed with the 'workers' option. </span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="reading-the-data">Reading the data<a class="anchor" aria-label="anchor" href="#reading-the-data"></a>
+</h2>
+<p>The raw map and ISD data is not currently included in the package and therefore has to be loaded from the user’s own directory:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">shp_folder</span> <span class="op">&lt;-</span> <span class="st">"path to map data folder"</span></span>
+<span><span class="va">shp_name</span> <span class="op">&lt;-</span> <span class="st">"name of shapefile"</span></span>
+<span><span class="va">isd_path</span> <span class="op">&lt;-</span> <span class="st">"file path to isd data"</span></span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">shp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_read.html" class="external-link">st_read</a></span><span class="op">(</span><span class="va">shp_path</span>, <span class="va">shp_name</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">shp_folder</span>, <span class="va">shp_name</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">isd</span> <span class="op">&lt;-</span> <span class="fu">readxl</span><span class="fu">::</span><span class="fu">read_xlsx</span><span class="op">(</span><span class="va">isd_path</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">isd_path</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co">#&gt; Reading layer `master_shapefile' from data source </span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="co">#&gt;   `/Users/christoffercappelen/Library/Mobile Documents/com~apple~CloudDocs/RESEARCH/GitHub/legaciesR/data_private' </span></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="co">#&gt;   using driver `ESRI Shapefile'</span></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="co">#&gt; Warning in CPL_read_ogr(dsn, layer, query, as.character(options), quiet, : GDAL</span></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="co">#&gt; Message 1: /Users/christoffercappelen/Library/Mobile</span></span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="co">#&gt; Documents/com~apple~CloudDocs/RESEARCH/GitHub/legaciesR/data_private/master_shapefile.shp</span></span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="co">#&gt; contains polygon(s) with rings with invalid winding order. Autocorrecting them,</span></span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a><span class="co">#&gt; but that shapefile should be corrected using ogr2ogr for example.</span></span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="co">#&gt; Simple feature collection with 13484 features and 19 fields (with 6 geometries empty)</span></span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a><span class="co">#&gt; Geometry type: MULTIPOLYGON</span></span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a><span class="co">#&gt; Dimension:     XY</span></span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a><span class="co">#&gt; Bounding box:  xmin: -17.95964 ymin: -35.43061 xmax: 158.122 ymax: 56.78339</span></span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a><span class="co">#&gt; Geodetic CRS:  WGS 84</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="invalid-geometries">Invalid geometries<a class="anchor" aria-label="anchor" href="#invalid-geometries"></a>
+</h2>
+<p>Some maps in the raw data may be “invalid” which will result in errors in many spatial data analyses. This can happen for all kinds of reasons; typically it is the result of crossing boundaries. <code><a href="reference/fix_invalid.html">fix_invalid()</a></code> attempts to detect and fix these invalid geometries. It is a wrapper around the <code><a href="https://r-spatial.github.io/sf/reference/valid.html" class="external-link">sf::st_make_valid()</a></code> function that attempts to reiteratively lower the allowed precision to rebuild valid geometries. The function will return the same data set with fixed geometries (if it was able to fix them). The returned data set will include three columns describing the status of the geometry, e.g., whether it was invalid and whether it was successfully fixed. It will also (by default) print a summary of how many geometries were invalid, how many were fixed, and how many were unsuccessful.</p>
+<p>Because invalid geometries can happen for many reasons that may point to other data errors as well, it is recommended to check for valid geometries and run the <code><a href="reference/fix_invalid.html">legaciesr::fix_invalid()</a></code> to identify potential issues.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">shp</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/fix_invalid.html">fix_invalid</a></span><span class="op">(</span><span class="va">shp</span><span class="op">)</span></span>
+<span><span class="co">#&gt; 447 (3.3 %) geometries were successfully rebuilt.</span></span>
+<span><span class="co">#&gt; 0 (0 %) geometries failed to rebuild as valid.</span></span>
+<span></span>
+<span><span class="co">## CROP SHP FOR NOW</span></span>
+<span><span class="va">shp</span> <span class="op">&lt;-</span> <span class="va">shp</span><span class="op">[</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_binary_pred.html" class="external-link">st_within</a></span><span class="op">(</span><span class="va">shp</span>,</span>
+<span>                     <span class="fu">rnaturalearthdata</span><span class="fu">::</span><span class="va"><a href="https://docs.ropensci.org/rnaturalearthdata/reference/countries.html" class="external-link">countries50</a></span> <span class="op">|&gt;</span></span>
+<span>                       <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">subregion</span> <span class="op">==</span> <span class="st">"Western Africa"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>                       <span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_combine.html" class="external-link">st_union</a></span><span class="op">(</span><span class="op">)</span>, sparse <span class="op">=</span> <span class="cn">F</span><span class="op">)</span>,<span class="op">]</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="preprocessing">Preprocessing<a class="anchor" aria-label="anchor" href="#preprocessing"></a>
+</h2>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">shp</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/prepare_shapes.html">prepare_shapes</a></span><span class="op">(</span>shp <span class="op">=</span> <span class="va">shp</span>, state_data <span class="op">=</span> <span class="va">isd</span>,</span>
+<span>                      id_var <span class="op">=</span> <span class="va">COWID</span>, period_var <span class="op">=</span> <span class="va">year</span>,</span>
+<span>                      range_min <span class="op">=</span> <span class="va">lyear</span>, range_max <span class="op">=</span> <span class="va">hyear</span>,</span>
+<span>                      crop_to_land <span class="op">=</span> <span class="cn">FALSE</span>, <span class="co">## 'get_contours' currently not working when cropped to land</span></span>
+<span>                      exclude_core <span class="op">=</span> <span class="cn">FALSE</span> <span class="co">## Currently errors in 'core' and 'Core.Great' coding.</span></span>
+<span>                      <span class="op">)</span></span>
+<span><span class="co">#&gt; ! Geometries with missing `id_var`: Geometries with missing `id_var` are assigned to the value '99999'.</span></span>
+<span><span class="co">#&gt; ℹ 1/6: Fix three-digit years</span></span>
+<span><span class="co">#&gt; ✔ 1/6: Fix three-digit years [9ms]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ℹ 2/6: Exclude maps with no date</span></span>
+<span><span class="co">#&gt; ✔ 2/6: Exclude maps with no date [15ms]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ℹ 3/6: Expand range</span></span>
+<span><span class="co">#&gt; ✔ 3/6: Expand range [621ms]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ℹ 4/6: Matching capitals</span></span>
+<span><span class="co">#&gt; ✔ 4/6: Matching capitals [30.3s]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ℹ 5/6: Exclude incomplete</span></span>
+<span><span class="co">#&gt; ✔ 5/6: Exclude incomplete [22ms]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ⠙ 6/6: Exclude non-sovereign maps</span></span>
+<span><span class="co">#&gt; ⠹ 6/6: Exclude non-sovereign maps: 99999</span></span>
+<span><span class="co">#&gt; ✔ 6/6: Exclude non-sovereign maps [257ms]</span></span>
+<span><span class="co">#&gt; </span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="detecing-errors">Detecing errors<a class="anchor" aria-label="anchor" href="#detecing-errors"></a>
+</h2>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">errors</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/detect_errors.html">detect_errors</a></span><span class="op">(</span>shp <span class="op">=</span> <span class="va">shp</span>, capital_data <span class="op">=</span> <span class="va">isd</span>,</span>
+<span>                        id_var <span class="op">=</span> <span class="va">COWID</span>, period_var <span class="op">=</span> <span class="va">year</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ℹ 1/7: Checking for empty geometries</span></span>
+<span><span class="co">#&gt; ✔ 1/7: Checking for empty geometries [5ms]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ℹ 2/7: COWID duplicates</span></span>
+<span><span class="co">#&gt; ✔ 2/7: COWID duplicates [7ms]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ℹ 3/7: Missing ID</span></span>
+<span><span class="co">#&gt; ✔ 3/7: Missing ID [5ms]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ℹ 4/7: COWIDs with only 1 map</span></span>
+<span><span class="co">#&gt; ✔ 4/7: COWIDs with only 1 map [7ms]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ℹ 5/7: Missing year or year outside 1750-1920</span></span>
+<span><span class="co">#&gt; ✔ 5/7: Missing year or year outside 1750-1920 [11ms]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ℹ 6/7: COWIDs with polygons not overlapping</span></span>
+<span><span class="co">#&gt; ✔ 6/7: COWIDs with polygons not overlapping [2.2s]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ⠙ 7/7: Whether the capital falls outside all polygons</span></span>
+<span><span class="co">#&gt; ⠹ 7/7: Whether the capital falls outside all polygons: 99999</span></span>
+<span><span class="co">#&gt; ⠸ 7/7: Whether the capital falls outside all polygons: FTO</span></span>
+<span><span class="co">#&gt; ⠼ 7/7: Whether the capital falls outside all polygons: OGD</span></span>
+<span><span class="co">#&gt; ⠴ 7/7: Whether the capital falls outside all polygons</span></span>
+<span><span class="co">#&gt; ✔ 7/7: Whether the capital falls outside all polygons [10s]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; POTENTIAL ERRORS:</span></span>
+<span><span class="co">#&gt; • 15 states with potentially duplicate COWIDs.</span></span>
+<span><span class="co">#&gt; • 0 shapes with empty geometries.</span></span>
+<span><span class="co">#&gt; • 1 shapes with missing IDs.</span></span>
+<span><span class="co">#&gt; • 26 COWIDs with only a single map.</span></span>
+<span><span class="co">#&gt; • 465 maps with years missing or outside 1750-1920.</span></span>
+<span><span class="co">#&gt; • 310 maps that do not overlap with other shapes with the same ID.</span></span>
+<span><span class="co">#&gt; • 482 maps where the capital falls outside the polygon.</span></span></code></pre></div>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">
