@@ -13,6 +13,7 @@ detect_errors(
   dist,
   parallel = TRUE,
   ncores,
+  progress = TRUE,
   report = TRUE,
   returnList = TRUE
 )
@@ -34,6 +35,8 @@ detect_errors(
 \item{parallel}{Whether to use parallel processing. Default is TRUE.}
 
 \item{ncores}{Number of cores to use for parallel processing. Default is to use all available cores.}
+
+\item{progress}{Whether to print progress updates. Default is TRUE.}
 
 \item{report}{Whether the output should be a report of potential errors. Default is an sf dataframe
 with columns for each error detection.}

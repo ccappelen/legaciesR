@@ -9,6 +9,7 @@
 #' @param dist Minimum allowable distance (in km) for which capitals can be outside polygons.
 #' @param parallel Whether to use parallel processing. Default is TRUE.
 #' @param ncores Number of cores to use for parallel processing. Default is to use all available cores.
+#' @param progress Whether to print progress updates. Default is TRUE.
 #' @param report Whether the output should be a report of potential errors. Default is an sf dataframe
 #'   with columns for each error detection.
 #' @param returnList Whether to return a list containing the full sf data frame AND separate data frames
@@ -45,6 +46,7 @@ detect_errors <- function(shp,
                           dist,
                           parallel = TRUE,
                           ncores,
+                          progress = TRUE,
                           report = TRUE,
                           returnList = TRUE){
 
@@ -145,7 +147,6 @@ detect_errors <- function(shp,
 
 
 
-
   steps <- length(errors)
   step <- 0
 
@@ -156,7 +157,9 @@ detect_errors <- function(shp,
   ## Check if there are empty geometries
   if ("empty" %in% errors) {
     step <- step + 1
-    cli::cli_progress_step("{step}/{steps}: Checking for empty geometries")
+    if (progress) {
+      cli::cli_progress_step("{step}/{steps}: Checking for empty geometries")
+    }
 
     shp <- shp |>
       dplyr::mutate(empty_geom = sf::st_is_empty(geometry))
@@ -171,7 +174,9 @@ detect_errors <- function(shp,
       error_list$empty_geom <- NULL
     }
 
-    cli::cli_progress_done()
+    if (progress) {
+      cli::cli_progress_done()
+    }
   }
 
 
@@ -179,7 +184,9 @@ detect_errors <- function(shp,
   ## Check if COWID and COWNUM do not align (i.e. COWID duplicates)
   if ("id_duplicates" %in% errors) {
     step <- step + 1
-    cli::cli_progress_step("{step}/{steps}: COWID duplicates")
+    if (progress) {
+      cli::cli_progress_step("{step}/{steps}: COWID duplicates")
+    }
     if (length(unique(shp[["COWID"]])) != length(unique(shp[["COWNUM"]]))) {
       # cli::cli_abort("The number of COWIDs and COWNUMs do not match up, indicating that there are duplicates of COWID with the same COWNUM.")
 
@@ -202,7 +209,9 @@ detect_errors <- function(shp,
       error_list$id_duplicates <- NULL
     }
 
-    cli::cli_progress_done()
+    if (progress) {
+      cli::cli_progress_done()
+    }
   }
 
 
@@ -210,7 +219,9 @@ detect_errors <- function(shp,
   ## Check for missing ID
   if ("missing_id" %in% errors) {
     step <- step + 1
-    cli::cli_progress_step("{step}/{steps}: Missing ID")
+    if (progress) {
+      cli::cli_progress_step("{step}/{steps}: Missing ID")
+    }
 
     shp <- shp |>
       dplyr::mutate(missing_id = is.na({{ id_var }}) | {{ id_var }} == "99999" | {{ id_var }} == 99999)
@@ -225,7 +236,9 @@ detect_errors <- function(shp,
       error_list$missing_id <- NULL
     }
 
-    cli::cli_progress_done()
+    if (progress) {
+      cli::cli_progress_done()
+    }
   }
 
 
@@ -233,7 +246,9 @@ detect_errors <- function(shp,
   ## Check if there are COWIDs with only one map
   if ("singles" %in% errors) {
     step <- step + 1
-    cli::cli_progress_step("{step}/{steps}: COWIDs with only 1 map")
+    if (progress) {
+      cli::cli_progress_step("{step}/{steps}: COWIDs with only 1 map")
+    }
     shp <- shp |>
       dplyr::group_by({{ id_var }}) |>
       dplyr::mutate(single_map = n() == 1)
@@ -248,14 +263,18 @@ detect_errors <- function(shp,
       error_list$single_map <- NULL
     }
 
-    cli::cli_progress_done()
+    if (progress) {
+      cli::cli_progress_done()
+    }
   }
 
 
   ## Check if there are maps with year outside study period or if there are years missing (including lyear/hyear)
   if ("year" %in% errors) {
     step <- step + 1
-    cli::cli_progress_step("{step}/{steps}: Missing year or year outside 1750-1920")
+    if (progress) {
+      cli::cli_progress_step("{step}/{steps}: Missing year or year outside 1750-1920")
+    }
     shp <- shp |>
       dplyr::mutate(year_outside = {{ period_var }} < 1750 | {{ period_var }} > 1920) |>
       dplyr::mutate(year_na = is.na({{ period_var }}))
@@ -270,7 +289,9 @@ detect_errors <- function(shp,
       error_list$year_error <- NULL
     }
 
-    cli::cli_progress_done()
+    if (progress) {
+      cli::cli_progress_done()
+    }
 
   }
 
@@ -278,7 +299,9 @@ detect_errors <- function(shp,
   ## Check if there are COWIDs with polygons not overlapping
   if ("overlap" %in% errors) {
     step <- step + 1
-    cli::cli_progress_step("{step}/{steps}: COWIDs with polygons not overlapping")
+    if (progress) {
+      cli::cli_progress_step("{step}/{steps}: COWIDs with polygons not overlapping")
+    }
 
     shp_list <- split(shp, shp[[id_var_str]])
     shp <- furrr::future_map(shp_list,
@@ -305,7 +328,9 @@ detect_errors <- function(shp,
       error_list$non_overlap <- NULL
     }
 
-    cli::cli_progress_done()
+    if (progress) {
+      cli::cli_progress_done()
+    }
   }
 
 
@@ -313,9 +338,12 @@ detect_errors <- function(shp,
   ## Check if there are capitals outside polygons
   if ("capital" %in% errors) {
     step <- step + 1
-    e <- environment()
-    msg <- ""
-    cli::cli_progress_step("{step}/{steps}: Whether the capital falls outside all polygons{msg}", spinner = TRUE)
+    if (progress) {
+      e <- environment()
+      msg <- ""
+      cli::cli_progress_step("{step}/{steps}: Whether the capital falls outside all polygons{msg}",
+                             spinner = TRUE)
+    }
 
     shp_list <- split(shp, 1:nrow(shp))
     shp <- lapply(shp_list,
@@ -353,9 +381,11 @@ detect_errors <- function(shp,
                      x$cap_outside_dist <- NA
                    }
 
-                   .step_id <- tmp_id
-                   e$msg <- glue::glue(": {.step_id}")
-                   cli::cli_progress_update(.envir = e)
+                   if (progress) {
+                     .step_id <- tmp_id
+                     e$msg <- glue::glue(": {.step_id}")
+                     cli::cli_progress_update(.envir = e)
+                   }
 
                    return(x)
                  }) |>
@@ -370,10 +400,11 @@ detect_errors <- function(shp,
       error_list$cap_outside <- NULL
     }
 
-    msg <- ""
-    cli::cli_progress_update()
-
-    cli::cli_progress_done()
+    if (progress) {
+      msg <- ""
+      cli::cli_progress_update()
+      cli::cli_progress_done()
+    }
   }
 
 

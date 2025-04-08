@@ -113,7 +113,7 @@ shp <- shp[st_within(shp,
 
 ## Preprocessing
 
-```{r preprocessing, eval = TRUE}
+```{r preprocessing, eval = TRUE, message = FALSE}
 shp <- prepare_shapes(shp = shp, state_data = isd,
                       id_var = COWID, period_var = year,
                       range_min = lyear, range_max = hyear,
@@ -125,9 +125,10 @@ shp <- prepare_shapes(shp = shp, state_data = isd,
 
 ## Detecing errors
 
-```{r error detection, eval = TRUE}
+```{r error detection, eval = TRUE, message = TRUE}
 errors <- detect_errors(shp = shp, capital_data = isd,
-                        id_var = COWID, period_var = year)
+                        id_var = COWID, period_var = year,
+                        progress = FALSE)
 ```
 
 

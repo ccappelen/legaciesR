@@ -148,56 +148,14 @@ shp <- prepare_shapes(shp = shp, state_data = isd,
                       crop_to_land = FALSE, ## 'get_contours' currently not working when cropped to land
                       exclude_core = FALSE ## Currently errors in 'core' and 'Core.Great' coding.
                       )
-#> ! Geometries with missing `id_var`: Geometries with missing `id_var` are assigned to the value '99999'.
-#> ℹ 1/6: Fix three-digit years
-#> ✔ 1/6: Fix three-digit years [9ms]
-#> 
-#> ℹ 2/6: Exclude maps with no date
-#> ✔ 2/6: Exclude maps with no date [15ms]
-#> 
-#> ℹ 3/6: Expand range
-#> ✔ 3/6: Expand range [465ms]
-#> 
-#> ℹ 4/6: Matching capitals
-#> ✔ 4/6: Matching capitals [30.5s]
-#> 
-#> ℹ 5/6: Exclude incomplete
-#> ✔ 5/6: Exclude incomplete [34ms]
-#> 
-#> ⠙ 6/6: Exclude non-sovereign maps
-#> ✔ 6/6: Exclude non-sovereign maps [255ms]
-#> 
 ```
 
 ## Detecing errors
 
 ``` r
 errors <- detect_errors(shp = shp, capital_data = isd,
-                        id_var = COWID, period_var = year)
-#> ℹ 1/7: Checking for empty geometries
-#> ✔ 1/7: Checking for empty geometries [6ms]
-#> 
-#> ℹ 2/7: COWID duplicates
-#> ✔ 2/7: COWID duplicates [7ms]
-#> 
-#> ℹ 3/7: Missing ID
-#> ✔ 3/7: Missing ID [5ms]
-#> 
-#> ℹ 4/7: COWIDs with only 1 map
-#> ✔ 4/7: COWIDs with only 1 map [8ms]
-#> 
-#> ℹ 5/7: Missing year or year outside 1750-1920
-#> ✔ 5/7: Missing year or year outside 1750-1920 [11ms]
-#> 
-#> ℹ 6/7: COWIDs with polygons not overlapping
-#> ✔ 6/7: COWIDs with polygons not overlapping [2.3s]
-#> 
-#> ⠙ 7/7: Whether the capital falls outside all polygons
-#> ⠹ 7/7: Whether the capital falls outside all polygons: BRG
-#> ⠸ 7/7: Whether the capital falls outside all polygons: KNO
-#> ⠼ 7/7: Whether the capital falls outside all polygons: YAU
-#> ✔ 7/7: Whether the capital falls outside all polygons [10s]
-#> 
+                        id_var = COWID, period_var = year,
+                        progress = FALSE)
 #> 
 #> POTENTIAL ERRORS:
 #> • 15 states with potentially duplicate COWIDs.
