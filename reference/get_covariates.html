@@ -38,7 +38,15 @@
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">get_covariates</span><span class="op">(</span><span class="va">x</span>, <span class="va">vars</span>, <span class="va">path</span>, progress <span class="op">=</span> <span class="cn">TRUE</span>, parallel <span class="op">=</span> <span class="cn">FALSE</span>, <span class="va">coords</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">get_covariates</span><span class="op">(</span></span>
+<span>  <span class="va">x</span>,</span>
+<span>  <span class="va">vars</span>,</span>
+<span>  grid_id <span class="op">=</span> <span class="va">gid</span>,</span>
+<span>  <span class="va">path</span>,</span>
+<span>  progress <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  parallel <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  <span class="va">coords</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -53,6 +61,11 @@ is returned by the <code>get_grid</code> function if <code>return = "list"</code
 
 <dt id="arg-vars">vars<a class="anchor" aria-label="anchor" href="#arg-vars"></a></dt>
 <dd><p>Covariate data to merge. Default includes all variables. See details below.</p></dd>
+
+
+<dt id="arg-grid-id">grid_id<a class="anchor" aria-label="anchor" href="#arg-grid-id"></a></dt>
+<dd><p>Name of column identifying the grid cell. Default is <code>gid</code> which follows convention
+in <code>get_grid</code>.</p></dd>
 
 
 <dt id="arg-path">path<a class="anchor" aria-label="anchor" href="#arg-path"></a></dt>

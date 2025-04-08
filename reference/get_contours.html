@@ -43,10 +43,10 @@ in combination with a time column.</p>
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">get_contours</span><span class="op">(</span></span>
 <span>  <span class="va">shp</span>,</span>
-<span>  <span class="va">grp_id</span>,</span>
+<span>  <span class="va">id_var</span>,</span>
 <span>  by_period <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  interval <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  <span class="va">period_id</span>,</span>
+<span>  <span class="va">period_var</span>,</span>
 <span>  cuts <span class="op">=</span> <span class="fl">4</span>,</span>
 <span>  include_higher <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  nmap_threshold <span class="op">=</span> <span class="fl">5</span>,</span>
@@ -68,7 +68,7 @@ in combination with a time column.</p>
 <dd><p>An sf dataframe containing all geometries (polygons).</p></dd>
 
 
-<dt id="arg-grp-id">grp_id<a class="anchor" aria-label="anchor" href="#arg-grp-id"></a></dt>
+<dt id="arg-id-var">id_var<a class="anchor" aria-label="anchor" href="#arg-id-var"></a></dt>
 <dd><p>Name of the grouping variable.</p></dd>
 
 
@@ -85,7 +85,7 @@ For user specification, the value can be either a scalar, indicating the length 
 start of the first interval and end of the last interval.</p></dd>
 
 
-<dt id="arg-period-id">period_id<a class="anchor" aria-label="anchor" href="#arg-period-id"></a></dt>
+<dt id="arg-period-var">period_var<a class="anchor" aria-label="anchor" href="#arg-period-var"></a></dt>
 <dd><p>Name of the period variable to be used for time grouping.
 This argument is necessary if <code>by_period</code> is <code>TRUE.</code></p></dd>
 

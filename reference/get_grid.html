@@ -49,13 +49,13 @@ polygons covering a given grid cell.</p>
 <span>  by_period <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  <span class="va">id_var</span>,</span>
 <span>  <span class="va">period_var</span>,</span>
-<span>  <span class="va">period_interval</span>,</span>
+<span>  interval <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  nmap_threshold <span class="op">=</span> <span class="fl">5</span>,</span>
 <span>  <span class="va">output</span>,</span>
 <span>  subset <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  parallel <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  <span class="va">ncores</span>,</span>
-<span>  updates <span class="op">=</span> <span class="cn">T</span>,</span>
+<span>  updates <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  return <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"list"</span>, <span class="st">"data"</span><span class="op">)</span>,</span>
 <span>  fix_invalid <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -95,7 +95,7 @@ grid is generated based on extent of <code><a href="https://docs.ropensci.org/rn
 <dd><p>Period variable name</p></dd>
 
 
-<dt id="arg-period-interval">period_interval<a class="anchor" aria-label="anchor" href="#arg-period-interval"></a></dt>
+<dt id="arg-interval">interval<a class="anchor" aria-label="anchor" href="#arg-interval"></a></dt>
 <dd><p>Scalar or vector indicating the intervals to group by. If <code>NULL</code> (default), the
 intervals will automatically be set to 20 (years) and include the full range (i.e. <code>seq(min, max, 20)</code>).
 For user specification, the value can be either a scalar, indicating the length of intervals
