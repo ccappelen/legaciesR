@@ -4,7 +4,15 @@
 \alias{get_covariates}
 \title{Merge LEGACIES data with covariates}
 \usage{
-get_covariates(x, vars, path, progress = TRUE, parallel = FALSE, coords)
+get_covariates(
+  x,
+  vars,
+  grid_id = gid,
+  path,
+  progress = TRUE,
+  parallel = FALSE,
+  coords
+)
 }
 \arguments{
 \item{x}{List with named elements \code{r}, object of class \code{SpatRaster}, and \code{data},
@@ -12,6 +20,9 @@ object of class \code{data.frame}, OR a named object of class \code{data.frame}.
 is returned by the \code{get_grid} function if \code{return = "list"}.}
 
 \item{vars}{Covariate data to merge. Default includes all variables. See details below.}
+
+\item{grid_id}{Name of column identifying the grid cell. Default is \code{gid} which follows convention
+in \code{get_grid}.}
 
 \item{path}{Character string specifying the path name for the LEGACIES team folder. Depends
 on the user's computer, but generally should be along the lines of

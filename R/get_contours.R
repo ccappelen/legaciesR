@@ -3,10 +3,10 @@
 #' in combination with a time column.
 
 #' @param shp An sf dataframe containing all geometries (polygons).
-#' @param grp_id Name of the grouping variable.
+#' @param id_var Name of the grouping variable.
 #' @param by_period Logical, indicating if shapes should be divided into groups by time in addition to IDs.
 #'   Default is `FALSE.`
-#' @param period_id Name of the period variable to be used for time grouping.
+#' @param period_var Name of the period variable to be used for time grouping.
 #'   This argument is necessary if `by_period` is `TRUE.`
 #' @param interval Scalar or vector indicating the intervals to group by. If `NULL` (default), the
 #'   intervals will automatically be set to 20 (years) and include the full range (i.e. `seq(min, max, 20)`).
@@ -35,7 +35,8 @@
 # #' @import parallel
 #' @import cli
 #' @import future
-#' @import furrr
+#' @importFrom furrr future_map
+#' @importFrom furrr furrr_options
 #' @importFrom purrr map
 #' @import progressr
 #' @importFrom methods is
@@ -60,10 +61,10 @@
 #' @export
 
 get_contours <- function(shp,
-                         grp_id,
+                         id_var,
                          by_period = FALSE,
                          interval = NULL,
-                         period_id,
+                         period_var,
                          cuts = 4,
                          include_higher = TRUE,
                          nmap_threshold = 5,
@@ -76,19 +77,19 @@ get_contours <- function(shp,
                          ...){
 
   # Check arguments
-  if (missing(grp_id)) {
-    cli::cli_abort("Missing {.arg grp_id}")
+  if (missing(id_var)) {
+    cli::cli_abort("Missing {.arg id_var}")
   }
 
-  if (is.character(substitute(grp_id))) {
-    cli::cli_abort("{.arg grp_id} must be a variable, not a character string.")
+  if (is.character(substitute(id_var))) {
+    cli::cli_abort("{.arg id_var} must be a variable, not a character string.")
   }
 
   invalid_geom <- match.arg(invalid_geom)
 
-  grp_id <- substitute(grp_id)
-  grp_id_str <- deparse(substitute(grp_id))
-  period_id_str <- deparse(substitute(period_id))
+  id_var <- substitute(id_var)
+  id_var_str <- deparse(substitute(id_var))
+  period_var_str <- deparse(substitute(period_var))
 
   # Set progress bar options
   if (progress) {
@@ -148,32 +149,32 @@ get_contours <- function(shp,
   if (by_period == FALSE) {
 
     shp <- shp |>
-      dplyr::group_by({{ grp_id }}) |>
+      dplyr::group_by({{ id_var }}) |>
       dplyr::filter(n() >= nmap_threshold) |>
       dplyr::ungroup()
 
-    shp_list <- split(shp, shp[[grp_id_str]], drop = T)
+    shp_list <- split(shp, shp[[id_var_str]], drop = T)
 
-    period_id <- NULL
+    period_var <- NULL
     period <- NULL
   }
 
   ## CREATE CONTOUR POLYGONS BY PERIOD
   if (by_period == TRUE) {
 
-    if (missing(period_id)) {
-      cli::cli_abort("Missing {.arg period_id}")
+    if (missing(period_var)) {
+      cli::cli_abort("Missing {.arg period_var}")
     }
 
-    if (is.character(substitute(period_id))) {
-      cli::cli_abort("{.arg period_id} must be a variable, not a character string.")
+    if (is.character(substitute(period_var))) {
+      cli::cli_abort("{.arg period_var} must be a variable, not a character string.")
     }
 
     ## USE DEFAULT INTERVAL
     if (is.null(interval)) {
 
-      interval_min <- min(shp[[period_id_str]], na.rm = T)
-      interval_max <- max(shp[[period_id_str]], na.rm = T)
+      interval_min <- min(shp[[period_var_str]], na.rm = T)
+      interval_max <- max(shp[[period_var_str]], na.rm = T)
       interval_length <- 20
 
       year_seq <- seq(interval_min, interval_max, interval_length)
@@ -185,19 +186,19 @@ get_contours <- function(shp,
       year_seq_char <- paste0(year_seq[-length(year_seq)], "-", year_seq[-1])
 
       shp <- shp |>
-        filter({{ period_id }} >= min(year_seq) & {{ period_id }} <= max(year_seq))
+        filter({{ period_var }} >= min(year_seq) & {{ period_var }} <= max(year_seq))
 
       shp <- shp |>
         dplyr::mutate(
-          period = cut({{ period_id }}, breaks = year_seq, labels = year_seq_char, include.lowest = T)
+          period = cut({{ period_var }}, breaks = year_seq, labels = year_seq_char, include.lowest = T)
           )
 
       shp <- shp |>
-        dplyr::group_by({{ grp_id }}, .data$period) |>
+        dplyr::group_by({{ id_var }}, .data$period) |>
         dplyr::filter(n() >= nmap_threshold) |>
         dplyr::ungroup()
 
-      shp_list <- split(shp, list(shp[[grp_id_str]], shp[["period"]]), drop = T)
+      shp_list <- split(shp, list(shp[[id_var_str]], shp[["period"]]), drop = T)
 
     }
 
@@ -205,8 +206,8 @@ get_contours <- function(shp,
     ## USE INTERVAL LENGTH DEFINED BY USER
     if (length(interval) == 1) {
 
-      interval_min <- min(shp[[period_id_str]], na.rm = T)
-      interval_max <- max(shp[[period_id_str]], na.rm = T)
+      interval_min <- min(shp[[period_var_str]], na.rm = T)
+      interval_max <- max(shp[[period_var_str]], na.rm = T)
       interval_length <- interval
 
       year_seq <- seq(interval_min, interval_max, interval_length)
@@ -218,19 +219,19 @@ get_contours <- function(shp,
       year_seq_char <- paste0(year_seq[-length(year_seq)], "-", year_seq[-1])
 
       shp <- shp |>
-        filter({{ period_id }} >= min(year_seq) & {{ period_id }} <= max(year_seq))
+        filter({{ period_var }} >= min(year_seq) & {{ period_var }} <= max(year_seq))
 
       shp <- shp |>
         dplyr::mutate(
-          period = cut({{ period_id }}, breaks = year_seq, labels = year_seq_char, include.lowest = T)
+          period = cut({{ period_var }}, breaks = year_seq, labels = year_seq_char, include.lowest = T)
           )
 
       shp <- shp |>
-        dplyr::group_by({{ grp_id }}, .data$period) |>
+        dplyr::group_by({{ id_var }}, .data$period) |>
         dplyr::filter(n() >= nmap_threshold) |>
         dplyr::ungroup()
 
-      shp_list <- split(shp, list(shp[[grp_id_str]], shp[["period"]]), drop = T)
+      shp_list <- split(shp, list(shp[[id_var_str]], shp[["period"]]), drop = T)
 
     }
 
@@ -242,19 +243,19 @@ get_contours <- function(shp,
       year_seq_char <- paste0(year_seq[-length(year_seq)], "-", year_seq[-1])
 
       shp <- shp |>
-        filter({{ period_id }} >= min(year_seq) & {{ period_id }} <= max(year_seq))
+        filter({{ period_var }} >= min(year_seq) & {{ period_var }} <= max(year_seq))
 
       shp <- shp |>
         dplyr::mutate(
-          period = cut({{ period_id }}, breaks = year_seq, labels = year_seq_char, include.lowest = T)
+          period = cut({{ period_var }}, breaks = year_seq, labels = year_seq_char, include.lowest = T)
           )
 
       shp <- shp |>
-        dplyr::group_by({{ grp_id }}, .data$period) |>
+        dplyr::group_by({{ id_var }}, .data$period) |>
         dplyr::filter(n() >= nmap_threshold) |>
         dplyr::ungroup()
 
-      shp_list <- split(shp, list(shp[[grp_id_str]], shp[["period"]]), drop = T)
+      shp_list <- split(shp, list(shp[[id_var_str]], shp[["period"]]), drop = T)
 
     }
 
@@ -323,7 +324,7 @@ get_contours <- function(shp,
         .f = function(x) {
           p()
           contour_polygons(
-            x, id_vars = c({{ grp_id }}, period),
+            x, id_vars = c({{ id_var }}, period),
             nmap_threshold = nmap_threshold,
             smoothing = smoothing,
             invalid_geom = invalid_geom,
@@ -343,7 +344,7 @@ get_contours <- function(shp,
         .f = function(x) {
           p()
           contour_polygons(
-            x, id_vars = c({{ grp_id }}),
+            x, id_vars = c({{ id_var }}),
             nmap_threshold = nmap_threshold,
             smoothing = smoothing,
             invalid_geom = invalid_geom,
@@ -362,7 +363,7 @@ get_contours <- function(shp,
   #   shp_list,
   #   FUN = function(x) {
   #     contour_polygons(
-  #       x, id_vars = c({{ grp_id }}, period),
+  #       x, id_vars = c({{ id_var }}, period),
   #       nmap_threshold = nmap_threshold,
   #       smoothing = smoothing,
   #       ...)

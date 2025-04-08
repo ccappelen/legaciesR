@@ -12,7 +12,7 @@
 #' @param by_period Whether to group by period
 #' @param id_var ID variable name
 #' @param period_var Period variable name
-#' @param period_interval Scalar or vector indicating the intervals to group by. If `NULL` (default), the
+#' @param interval Scalar or vector indicating the intervals to group by. If `NULL` (default), the
 #'   intervals will automatically be set to 20 (years) and include the full range (i.e. `seq(min, max, 20)`).
 #'   For user specification, the value can be either a scalar, indicating the length of intervals
 #'   (in which case the full range is used), or a vector specifying the exact breaks, including both the
@@ -68,13 +68,13 @@ get_grid <- function(shp, ras,
                      by_period = FALSE,
                      id_var,
                      period_var,
-                     period_interval,
+                     interval = NULL,
                      nmap_threshold = 5,
                      output,
                      subset = NULL,
                      parallel = TRUE,
                      ncores,
-                     updates = T,
+                     updates = TRUE,
                      return = c("list", "data"),
                      fix_invalid = FALSE){
 
@@ -193,7 +193,7 @@ get_grid <- function(shp, ras,
   if(by_period) {
 
     ## USE DEFAULT INTERVAL
-    if (is.null(period_interval)) {
+    if (is.null(interval)) {
 
       interval_min <- min(shp[[period_var_str]], na.rm = T)
       interval_max <- max(shp[[period_var_str]], na.rm = T)
@@ -235,11 +235,11 @@ get_grid <- function(shp, ras,
 
 
     ## USE INTERVAL LENGTH DEFINED BY USER
-    if (length(period_interval) == 1) {
+    if (length(interval) == 1) {
 
       interval_min <- min(shp[[period_var_str]], na.rm = T)
       interval_max <- max(shp[[period_var_str]], na.rm = T)
-      interval_length <- period_interval
+      interval_length <- interval
 
       year_seq <- seq(interval_min, interval_max, interval_length)
 
@@ -276,9 +276,9 @@ get_grid <- function(shp, ras,
 
 
     ## USE CUSTOM INTERVALS SPECIFIED BY USER
-    if (length(period_interval) > 1) {
+    if (length(interval) > 1) {
 
-      year_seq <- period_interval
+      year_seq <- interval
       year_seq_char <- paste0(year_seq[-length(year_seq)], "-", year_seq[-1])
 
       shp <- shp |>
@@ -388,7 +388,10 @@ get_grid <- function(shp, ras,
       dplyr::select(gid, period, gid_period, everything()) |>
       suppressWarnings()
 
-
+    ## ERROR CHECK:
+    if (ncell(r) %% nrow(df) == 0) {
+      cli::cli_abort("Number of rows is not a multiple of the number of grid cells.")
+    }
 
   ## Extract modern country names (iso codes) and to dataframe
   ccode_levels <- levels(factor(world$sov_a3))  |>
@@ -408,7 +411,10 @@ get_grid <- function(shp, ras,
     dplyr::mutate(cname = factor(ccode, levels = ccode_levels$ccode, labels = ccode_levels$label))  |>
     dplyr::mutate(cname = as.character(cname))
 
-
+  ## ERROR CHECK:
+  if (ncell(r) %% nrow(df) == 0) {
+    cli::cli_abort("Number of rows is not a multiple of the number of grid cells.")
+  }
 
   cli::cli_progress_done()
   ### STEP 2: RASTERIZE SHAPE
@@ -512,6 +518,10 @@ get_grid <- function(shp, ras,
     rm(count_across_df)
   }
 
+  ## ERROR CHECK:
+  if (ncell(r) %% nrow(df) == 0) {
+    cli::cli_abort("Number of rows is not a multiple of the number of grid cells.")
+  }
 
   cli::cli_progress_done()
   ### 3B: Share based on largest total number of polygons
@@ -536,6 +546,10 @@ get_grid <- function(shp, ras,
 
   }
 
+  ## ERROR CHECK:
+  if (ncell(r) %% nrow(df) == 0) {
+    cli::cli_abort("Number of rows is not a multiple of the number of grid cells.")
+  }
 
   cli::cli_progress_done()
   ### 3C: Share based on largest area of polygons
@@ -555,6 +569,7 @@ get_grid <- function(shp, ras,
       dplyr::group_by(grp) |>
       dplyr::filter(area == max(area)) |>
       dplyr::ungroup() |>
+      dplyr::distinct(grp, .keep_all = TRUE) |>
       dplyr::select(grp, max_area = area)
 
     max_area_df <- poly_count_df |>
@@ -573,6 +588,10 @@ get_grid <- function(shp, ras,
     rm(max_area_df)
   }
 
+  ## ERROR CHECK:
+  if (ncell(r) %% nrow(df) == 0) {
+    cli::cli_abort("Number of rows is not a multiple of the number of grid cells.")
+  }
 
   cli::cli_progress_done()
   ### 3D: Share based on state with largest share
@@ -597,6 +616,10 @@ get_grid <- function(shp, ras,
     rm(max_share_df)
   }
 
+  ## ERROR CHECK:
+  if (ncell(r) %% nrow(df) == 0) {
+    cli::cli_abort("Number of rows is not a multiple of the number of grid cells.")
+  }
 
   cli::cli_progress_done()
   ### 3E: Average share of polygons across states in a grid cell
@@ -624,7 +647,10 @@ get_grid <- function(shp, ras,
     rm(mean_share_df)
   }
 
-  # if(1 == 1) {return(df)}
+  ## ERROR CHECK:
+  if (ncell(r) %% nrow(df) == 0) {
+    cli::cli_abort("Number of rows is not a multiple of the number of grid cells.")
+  }
 
   cli::cli_progress_done()
   ## 3F: Borders
@@ -665,7 +691,8 @@ get_grid <- function(shp, ras,
         return(polycount)
       }) |>
       dplyr::bind_rows(.id = "period") |>
-      dplyr::mutate(gid_period = paste0(gid, period, sep = "_"))
+      dplyr::mutate(gid_period = paste0(gid, period, sep = "_")) |>
+      dplyr::select(gid_period, border_count)
 
     msg <- ""
     cli::cli_progress_update()
@@ -686,7 +713,10 @@ get_grid <- function(shp, ras,
     rm(border_count_df, r_border, shp_borders)
   }
 
-
+  ## ERROR CHECK:
+  if (ncell(r) %% nrow(df) == 0) {
+    cli::cli_abort("Number of rows is not a multiple of the number of grid cells.")
+  }
 
   cli::cli_progress_done()
   ## 3G: Contested territory
@@ -712,7 +742,10 @@ get_grid <- function(shp, ras,
     rm(contested_df)
   }
 
-
+  ## ERROR CHECK:
+  if (ncell(r) %% nrow(df) == 0) {
+    cli::cli_abort("Number of rows is not a multiple of the number of grid cells.")
+  }
 
   cli::cli_progress_done()
   ### STEP 4: FINALIZE DATA
@@ -729,6 +762,11 @@ get_grid <- function(shp, ras,
     out$data <- df |> dplyr::as_tibble()
   }else{
     out <- df |> dplyr::as_tibble()
+  }
+
+  ## ERROR CHECK:
+  if (ncell(r) %% nrow(df) == 0) {
+    cli::cli_abort("Number of rows is not a multiple of the number of grid cells.")
   }
 
   return(out)

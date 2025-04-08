@@ -18,7 +18,7 @@
 #' @import sf
 #' @import cli
 #' @import future
-#' @import furrr
+#' @importFrom furrr future_map
 #' @import dplyr
 #'
 #' @returns
@@ -32,6 +32,7 @@
 #'  used to specify a minimum allowable distance.}
 #'  \item{`empty`}{Check whether there are empty geometries.}
 #'
+#' @export
 
 
 
@@ -212,7 +213,7 @@ detect_errors <- function(shp,
     cli::cli_progress_step("{step}/{steps}: Missing ID")
 
     shp <- shp |>
-      dplyr::mutate(missing_id = is.na({{ id_var }}))
+      dplyr::mutate(missing_id = is.na({{ id_var }}) | {{ id_var }} == "99999" | {{ id_var }} == 99999)
 
     missing_id <- shp |>
       dplyr::select({{ id_var }}, missing_id) |>

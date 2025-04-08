@@ -32,6 +32,7 @@
 #' @import cli
 #' @import future
 #' @importFrom furrr future_map
+#' @importFrom furrr furrr_options
 #' @import progressr
 
 #' @section Support for parallel processing:

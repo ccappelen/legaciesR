@@ -6,10 +6,10 @@
 \usage{
 get_contours(
   shp,
-  grp_id,
+  id_var,
   by_period = FALSE,
   interval = NULL,
-  period_id,
+  period_var,
   cuts = 4,
   include_higher = TRUE,
   nmap_threshold = 5,
@@ -25,7 +25,7 @@ get_contours(
 \arguments{
 \item{shp}{An sf dataframe containing all geometries (polygons).}
 
-\item{grp_id}{Name of the grouping variable.}
+\item{id_var}{Name of the grouping variable.}
 
 \item{by_period}{Logical, indicating if shapes should be divided into groups by time in addition to IDs.
 Default is \code{FALSE.}}
@@ -36,7 +36,7 @@ For user specification, the value can be either a scalar, indicating the length 
 (in which case the full range is used), or a vector specifying the exact breaks, including both the
 start of the first interval and end of the last interval.}
 
-\item{period_id}{Name of the period variable to be used for time grouping.
+\item{period_var}{Name of the period variable to be used for time grouping.
 This argument is necessary if \code{by_period} is \code{TRUE.}}
 
 \item{cuts}{Integer of length 1 specifying the number of (equally spaced) contour polygons to be returned.

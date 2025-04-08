@@ -42,6 +42,7 @@
 #' \item{`exclude_sovereign`}{Excludes maps for states that are not sovereign. If the year of the map is within
 #' 5 years of a state being sovereign, the map is still included.}
 #'
+#' @export
 
 
 prepare_shapes <- function(shp,
@@ -139,7 +140,10 @@ prepare_shapes <- function(shp,
 
   ## CHECK IF THERE ARE GEOMETRIES WITH MISSING ID (WILL PRODUCE AN ERROR)
   if (any(is.na(shp[[id_var_str]]))) {
-    cli::cli_abort("Geometries with missing {.arg id_var}. Either drop geometries or fix errors.")
+    cli::cli_alert_warning("Geometries with missing {.arg id_var}: Geometries with missing {.arg id_var} are assigned to the value '99999'.")
+
+    shp <- shp |>
+      mutate({{ id_var }} := ifelse(is.na({{ id_var }}), 99999, {{ id_var }}))
   }
 
 
@@ -367,6 +371,7 @@ prepare_shapes <- function(shp,
 
   ## Exclude incomplete
   if (exclude_incomplete) {
+    step <- step + 1
     cli::cli_progress_step("{step}/{steps}: Exclude incomplete")
 
     shp <- shp |>
@@ -461,6 +466,7 @@ prepare_shapes <- function(shp,
 
     world_land_fixed <- legaciesr::fix_invalid(world_land,
                                                report = FALSE,
+                                               reportColumns = FALSE,
                                                parallel = FALSE) |>
       suppressMessages()
 

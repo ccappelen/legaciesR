@@ -12,13 +12,13 @@ get_grid(
   by_period = FALSE,
   id_var,
   period_var,
-  period_interval,
+  interval = NULL,
   nmap_threshold = 5,
   output,
   subset = NULL,
   parallel = TRUE,
   ncores,
-  updates = T,
+  updates = TRUE,
   return = c("list", "data"),
   fix_invalid = FALSE
 )
@@ -40,7 +40,7 @@ grid is generated based on extent of \code{rnaturalearthdata::countries50}. If \
 
 \item{period_var}{Period variable name}
 
-\item{period_interval}{Scalar or vector indicating the intervals to group by. If \code{NULL} (default), the
+\item{interval}{Scalar or vector indicating the intervals to group by. If \code{NULL} (default), the
 intervals will automatically be set to 20 (years) and include the full range (i.e. \code{seq(min, max, 20)}).
 For user specification, the value can be either a scalar, indicating the length of intervals
 (in which case the full range is used), or a vector specifying the exact breaks, including both the

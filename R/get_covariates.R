@@ -3,6 +3,8 @@
 #' @param x List with named elements `r`, object of class `SpatRaster`, and `data`,
 #'  object of class `data.frame`, OR a named object of class `data.frame`. The list object
 #'  is returned by the `get_grid` function if `return = "list"`.
+#' @param grid_id Name of column identifying the grid cell. Default is `gid` which follows convention
+#' in `get_grid`.
 #' @param vars Covariate data to merge. Default includes all variables. See details below.
 #' @param path Character string specifying the path name for the LEGACIES team folder. Depends
 #'  on the user's computer, but generally should be along the lines of
@@ -40,10 +42,16 @@
 
 get_covariates <- function(x,
                            vars,
+                           grid_id = gid,
                            path,
                            progress = TRUE,
                            parallel = FALSE,
                            coords){
+
+
+
+  ## Define grid id var
+  grid_id_str <- deparse(substitute(grid_id))
 
 
   ## Set internal variables (to pass R CMD check)
@@ -90,8 +98,8 @@ get_covariates <- function(x,
     }
     if ("data" %in% names(x) && inherits(x$data, "data.frame")) {
       df <- x$data |>
-        dplyr::distinct(id, .keep_all = TRUE) |>
-        dplyr::select(id, coords)
+        dplyr::distinct({{ grid_id }}, .keep_all = TRUE) |>
+        dplyr::select({{ grid_id }}, coords)
     } else {
       cli::cli_abort("{.arg x} must be either (1) an object of class {.code data.frame} or a
                      list containing an object named {.code r} of class {.code SpatRaster} AND
@@ -234,12 +242,12 @@ get_covariates <- function(x,
   ## MERGE
   if (is.list(x)) {
     x$data <- x$data |>
-      dplyr::left_join(df |> dplyr::select(-c(coords)), by = "id")
+      dplyr::left_join(df |> dplyr::select(-c(coords)), by = grid_id_str)
   }
 
   if ("data.frame" %in% x) {
     x <- x |>
-      dplyr::left_join(df |> dplyr::select(-c(coords)), by = "id")
+      dplyr::left_join(df |> dplyr::select(-c(coords)), by = grid_id_str)
   }
 
   return(x)
