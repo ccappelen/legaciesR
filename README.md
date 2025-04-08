@@ -9,15 +9,12 @@
 <!-- badges: end -->
 
 The `legaciesr` package provides a set of functions used to aggregate
-and summarize the mapping data collected in the
+and summarize the mapping and ID data collected in the
 [LEGACIES](https://www.legacies-project.com) project. It allows users
 to, i.a., (1) create contour polygons capturing the territorial extent
 of historical states at different probability thresholds, (2) create a
 grid with various summary measures of historical state presence, and (3)
 add a range of commonly used covariates to the polygon and grid data.
-
-NB: The package is still experimental and no functions should be
-considered stable.
 
 ## Installation
 
@@ -25,119 +22,42 @@ You can install the development version of legaciesr from
 [GitHub](https://github.com/) with:
 
 ``` r
-# install.packages("devtools")
+install.packages("devtools")
 devtools::install_github("ccappelen/legaciesR")
 ```
 
 ``` r
-library(legaciesr) 
+library(legaciesr)
 library(sf) 
 library(dplyr)
 ```
 
-## Errors in current master_shapefile
+## Package overview and workflow
 
-Currently, one geometry (COWID = “EGY”) fails to rebuild due to crossing
-edges. However, a few other COWIDs result in invalid geometries when
-creating contour polygons. For now, these are omitted:
+The legaciesr package is composed of a number of functions designed to
+process and match the raw mapping and state data collected in the
+LEGACIES project. While they can, in most cases, be run independently of
+each other, they are mostly meant to be used in the workflow described
+in the remainder of this README. In short, it consists of
+<!-- (1) fixing invalid geometries in the map data, (2) preprocess the map data and match with information in the ISD state data, (3) detect potential errors in the data set, (4) generate contour polygons from the raw map data, (5) generate a grid cell data set with various summary measures of historical statehood, and (6) match the grid cell data with numerous other data sources commonly used in empirical applications.  -->
 
-``` r
-df <- df %>% 
-  filter(!COWID %in% c("EGY", "LUN", "KUN", "SAF"))
-```
+1.  Detecting and fixing invalid geometries in the map data.
+2.  Preprocessing the map data and match with information in the ISD
+    state data.
+3.  Detecting potential errors in the data set.
+4.  Generating contour polygons from the raw map data. (Optional)
+5.  Generating a grid cell data set with various summary measures of
+    historical statehood.
+6.  Matching the grid cell data with numerous other data sources
+    commonly used in empirical applications.
 
-## Handling of invalid geometries
-
-The functions in `legaciesr` will (by default) attempt to fix invalid
-geometries which would otherwise return an error. The fixes rely on
-`legaciesr::fix_invalid()` which is a wrapper around the
-`sf::st_make_valid()` function that attempts to reiteratively lower the
-allowed precision to rebuild valid geometries. However, because invalid
-geometries can happen for many reasons that may point to other data
-errors as well, it is recommended to check for valid geometries and run
-the `legaciesr::fix_invalid()` to identify potential issues. See package
-documentation for further information on the use of this function.
-
-``` r
-df <- example_df # Load example data set (based on random data)
-df <- fix_invalid(df)
-#> 1 (0 %) geometries were successfully rebuilt.
-#> 0 (0 %) geometries failed to rebuild as valid.
-```
-
-## Create contour polygons for a single group
-
-See documentation for additional arguments (e.g., threshold for number
-of maps, the number of contour polygons, resolution of raster, and
-handling of invalid geometries).
-
-``` r
-df1 <- df[df$name == unique(df$name)[8], ]
-contour_polygons(df1, id_vars = name)
-#> Simple feature collection with 4 features and 4 fields
-#> Geometry type: GEOMETRY
-#> Dimension:     XY
-#> Bounding box:  xmin: -10.55116 ymin: 6.086814 xmax: -1.423012 ymax: 13.81136
-#> Geodetic CRS:  WGS 84
-#>      name prob  label nmaps                       geometry
-#> 1 Genovia 0.00    0-1   191 POLYGON ((-4.821082 13.7967...
-#> 2 Genovia 0.25 0.25-1   191 POLYGON ((-5.220855 12.9311...
-#> 3 Genovia 0.50  0.5-1   191 POLYGON ((-5.220855 12.3317...
-#> 4 Genovia 0.75 0.75-1   191 MULTIPOLYGON (((-4.454624 1...
-```
-
-## Create contour polygons across all groups
-
-See documentation for additional arguments (e.g., specifying the period
-intervals to group by, thresholds for number of maps within a group,
-etc.).
-
-``` r
-get_contours(df, grp_id = name)
-#> Simple feature collection with 88 features and 4 fields
-#> Geometry type: GEOMETRY
-#> Dimension:     XY
-#> Bounding box:  xmin: -10.55116 ymin: -23.1782 xmax: 46.48245 ymax: 35.56343
-#> Geodetic CRS:  WGS 84
-#> First 10 features:
-#>           name prob  label nmaps                       geometry
-#> 1  Absurdistan 0.00    0-1    70 POLYGON ((-0.1282136 15.058...
-#> 2  Absurdistan 0.25 0.25-1    70 POLYGON ((-0.5950196 14.426...
-#> 3  Absurdistan 0.50  0.5-1    70 POLYGON ((-0.3616166 13.927...
-#> 4  Absurdistan 0.75 0.75-1    70 MULTIPOLYGON (((-0.29493 13...
-#> 5      Agrabah 0.00    0-1   129 POLYGON ((22.69547 31.91306...
-#> 6      Agrabah 0.25 0.25-1   129 POLYGON ((23.49557 30.80692...
-#> 7      Agrabah 0.50  0.5-1   129 MULTIPOLYGON (((25.62919 29...
-#> 8      Agrabah 0.75 0.75-1   129 MULTIPOLYGON (((25.39583 28...
-#> 9    Arendelle 0.00    0-1    70 POLYGON ((7.970548 19.65083...
-#> 10   Arendelle 0.25 0.25-1    70 MULTIPOLYGON (((6.934863 15...
-```
-
-## Create contour polygons across all groups and by period
-
-``` r
-get_contours(df, by_period = T, grp_id = name, period_id = year)
-#> Simple feature collection with 440 features and 5 fields
-#> Geometry type: GEOMETRY
-#> Dimension:     XY
-#> Bounding box:  xmin: -10.55116 ymin: -23.1782 xmax: 46.48245 ymax: 35.56343
-#> Geodetic CRS:  WGS 84
-#> First 10 features:
-#>           name    period prob  label nmaps                       geometry
-#> 1  Absurdistan 1800-1820 0.00    0-1    17 POLYGON ((0.4913785 15.0530...
-#> 2  Absurdistan 1800-1820 0.25 0.25-1    17 MULTIPOLYGON (((-0.541555 1...
-#> 3  Absurdistan 1800-1820 0.50  0.5-1    17 MULTIPOLYGON (((0.4913785 1...
-#> 4  Absurdistan 1800-1820 0.75 0.75-1    17 MULTIPOLYGON (((-0.00842805...
-#> 5      Agrabah 1800-1820 0.00    0-1    37 POLYGON ((22.97841 31.92655...
-#> 6      Agrabah 1800-1820 0.25 0.25-1    37 MULTIPOLYGON (((23.21214 30...
-#> 7      Agrabah 1800-1820 0.50  0.5-1    37 POLYGON ((24.41419 29.7902,...
-#> 8      Agrabah 1800-1820 0.75 0.75-1    37 MULTIPOLYGON (((24.31402 28...
-#> 9    Arendelle 1800-1820 0.00    0-1    16 POLYGON ((6.567361 19.49756...
-#> 10   Arendelle 1800-1820 0.25 0.25-1    16 MULTIPOLYGON (((7.335773 14...
-```
+Each function (corresponding to each of the six steps) is further
+documented in their respective help documentation. This guide will
+outline the basic features of the functions and their intended usage.
 
 ## Support for parallel processing:
 
+Some functions enable parallel processing to speed up intensive tasks.
 Parallel processing is is implemented using the \[future::future\]
 framework. There are two ways of running jobs in parallel: `multicore`
 which uses ‘forking’ to run multiple jobs in parallel with shared memory
@@ -158,3 +78,149 @@ which will minimize overhead in subsequent parallel jobs (apart from the
 first). The function will automatically detect if a `multisession` plan
 has been set globally and, thus, will not close background sessions
 after running.
+
+It is therefore recommended to start the script by setting a
+\[future::plan\]:
+
+``` r
+future::plan("multisession", workers = future::availableCores())
+## The above code sets up parallel processing on all available cores. 
+## This can be changed with the 'workers' option. 
+```
+
+## Reading the data
+
+The raw map and ISD data is not currently included in the package and
+therefore has to be loaded from the user’s own directory:
+
+``` r
+shp_folder <- "path to map data folder"
+shp_name <- "name of shapefile"
+isd_path <- "file path to isd data"
+```
+
+``` r
+shp <- st_read(shp_path, shp_name)
+rm(shp_folder, shp_name)
+
+isd <- readxl::read_xlsx(isd_path)
+rm(isd_path)
+```
+
+    #> Reading layer `master_shapefile' from data source 
+    #>   `/Users/christoffercappelen/Library/Mobile Documents/com~apple~CloudDocs/RESEARCH/GitHub/legaciesR/data_private' 
+    #>   using driver `ESRI Shapefile'
+    #> Warning in CPL_read_ogr(dsn, layer, query, as.character(options), quiet, : GDAL
+    #> Message 1: /Users/christoffercappelen/Library/Mobile
+    #> Documents/com~apple~CloudDocs/RESEARCH/GitHub/legaciesR/data_private/master_shapefile.shp
+    #> contains polygon(s) with rings with invalid winding order. Autocorrecting them,
+    #> but that shapefile should be corrected using ogr2ogr for example.
+    #> Simple feature collection with 13484 features and 19 fields (with 6 geometries empty)
+    #> Geometry type: MULTIPOLYGON
+    #> Dimension:     XY
+    #> Bounding box:  xmin: -17.95964 ymin: -35.43061 xmax: 158.122 ymax: 56.78339
+    #> Geodetic CRS:  WGS 84
+
+## Invalid geometries
+
+Some maps in the raw data may be “invalid” which will result in errors
+in many spatial data analyses. This can happen for all kinds of reasons;
+typically it is the result of crossing boundaries. `fix_invalid()`
+attempts to detect and fix these invalid geometries. It is a wrapper
+around the `sf::st_make_valid()` function that attempts to reiteratively
+lower the allowed precision to rebuild valid geometries. The function
+will return the same data set with fixed geometries (if it was able to
+fix them). The returned data set will include three columns describing
+the status of the geometry, e.g., whether it was invalid and whether it
+was successfully fixed. It will also (by default) print a summary of how
+many geometries were invalid, how many were fixed, and how many were
+unsuccessful.
+
+Because invalid geometries can happen for many reasons that may point to
+other data errors as well, it is recommended to check for valid
+geometries and run the `legaciesr::fix_invalid()` to identify potential
+issues.
+
+``` r
+shp <- fix_invalid(shp)
+#> 447 (3.3 %) geometries were successfully rebuilt.
+#> 0 (0 %) geometries failed to rebuild as valid.
+
+## CROP SHP FOR NOW
+shp <- shp[st_within(shp,
+                     rnaturalearthdata::countries50 |>
+                       filter(subregion == "Western Africa") |>
+                       st_union(), sparse = F),]
+```
+
+## Preprocessing
+
+``` r
+shp <- prepare_shapes(shp = shp, state_data = isd,
+                      id_var = COWID, period_var = year,
+                      range_min = lyear, range_max = hyear,
+                      crop_to_land = FALSE, ## 'get_contours' currently not working when cropped to land
+                      exclude_core = FALSE ## Currently errors in 'core' and 'Core.Great' coding.
+                      )
+#> ! Geometries with missing `id_var`: Geometries with missing `id_var` are assigned to the value '99999'.
+#> ℹ 1/6: Fix three-digit years
+#> ✔ 1/6: Fix three-digit years [9ms]
+#> 
+#> ℹ 2/6: Exclude maps with no date
+#> ✔ 2/6: Exclude maps with no date [15ms]
+#> 
+#> ℹ 3/6: Expand range
+#> ✔ 3/6: Expand range [621ms]
+#> 
+#> ℹ 4/6: Matching capitals
+#> ✔ 4/6: Matching capitals [30.3s]
+#> 
+#> ℹ 5/6: Exclude incomplete
+#> ✔ 5/6: Exclude incomplete [22ms]
+#> 
+#> ⠙ 6/6: Exclude non-sovereign maps
+#> ⠹ 6/6: Exclude non-sovereign maps: 99999
+#> ✔ 6/6: Exclude non-sovereign maps [257ms]
+#> 
+```
+
+## Detecing errors
+
+``` r
+errors <- detect_errors(shp = shp, capital_data = isd,
+                        id_var = COWID, period_var = year)
+#> ℹ 1/7: Checking for empty geometries
+#> ✔ 1/7: Checking for empty geometries [5ms]
+#> 
+#> ℹ 2/7: COWID duplicates
+#> ✔ 2/7: COWID duplicates [7ms]
+#> 
+#> ℹ 3/7: Missing ID
+#> ✔ 3/7: Missing ID [5ms]
+#> 
+#> ℹ 4/7: COWIDs with only 1 map
+#> ✔ 4/7: COWIDs with only 1 map [7ms]
+#> 
+#> ℹ 5/7: Missing year or year outside 1750-1920
+#> ✔ 5/7: Missing year or year outside 1750-1920 [11ms]
+#> 
+#> ℹ 6/7: COWIDs with polygons not overlapping
+#> ✔ 6/7: COWIDs with polygons not overlapping [2.2s]
+#> 
+#> ⠙ 7/7: Whether the capital falls outside all polygons
+#> ⠹ 7/7: Whether the capital falls outside all polygons: 99999
+#> ⠸ 7/7: Whether the capital falls outside all polygons: FTO
+#> ⠼ 7/7: Whether the capital falls outside all polygons: OGD
+#> ⠴ 7/7: Whether the capital falls outside all polygons
+#> ✔ 7/7: Whether the capital falls outside all polygons [10s]
+#> 
+#> 
+#> POTENTIAL ERRORS:
+#> • 15 states with potentially duplicate COWIDs.
+#> • 0 shapes with empty geometries.
+#> • 1 shapes with missing IDs.
+#> • 26 COWIDs with only a single map.
+#> • 465 maps with years missing or outside 1750-1920.
+#> • 310 maps that do not overlap with other shapes with the same ID.
+#> • 482 maps where the capital falls outside the polygon.
+```
