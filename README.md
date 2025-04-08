@@ -107,19 +107,11 @@ isd <- readxl::read_xlsx(isd_path)
 rm(isd_path)
 ```
 
-    #> Reading layer `master_shapefile' from data source 
-    #>   `/Users/christoffercappelen/Library/Mobile Documents/com~apple~CloudDocs/RESEARCH/GitHub/legaciesR/data_private' 
-    #>   using driver `ESRI Shapefile'
     #> Warning in CPL_read_ogr(dsn, layer, query, as.character(options), quiet, : GDAL
     #> Message 1: /Users/christoffercappelen/Library/Mobile
     #> Documents/com~apple~CloudDocs/RESEARCH/GitHub/legaciesR/data_private/master_shapefile.shp
     #> contains polygon(s) with rings with invalid winding order. Autocorrecting them,
     #> but that shapefile should be corrected using ogr2ogr for example.
-    #> Simple feature collection with 13484 features and 19 fields (with 6 geometries empty)
-    #> Geometry type: MULTIPOLYGON
-    #> Dimension:     XY
-    #> Bounding box:  xmin: -17.95964 ymin: -35.43061 xmax: 158.122 ymax: 56.78339
-    #> Geodetic CRS:  WGS 84
 
 ## Invalid geometries
 
@@ -164,23 +156,22 @@ shp <- prepare_shapes(shp = shp, state_data = isd,
                       )
 #> ! Geometries with missing `id_var`: Geometries with missing `id_var` are assigned to the value '99999'.
 #> ℹ 1/6: Fix three-digit years
-#> ✔ 1/6: Fix three-digit years [9ms]
+#> ✔ 1/6: Fix three-digit years [188ms]
 #> 
 #> ℹ 2/6: Exclude maps with no date
 #> ✔ 2/6: Exclude maps with no date [15ms]
 #> 
 #> ℹ 3/6: Expand range
-#> ✔ 3/6: Expand range [621ms]
+#> ✔ 3/6: Expand range [467ms]
 #> 
 #> ℹ 4/6: Matching capitals
-#> ✔ 4/6: Matching capitals [30.3s]
+#> ✔ 4/6: Matching capitals [30.9s]
 #> 
 #> ℹ 5/6: Exclude incomplete
-#> ✔ 5/6: Exclude incomplete [22ms]
+#> ✔ 5/6: Exclude incomplete [28ms]
 #> 
 #> ⠙ 6/6: Exclude non-sovereign maps
-#> ⠹ 6/6: Exclude non-sovereign maps: 99999
-#> ✔ 6/6: Exclude non-sovereign maps [257ms]
+#> ✔ 6/6: Exclude non-sovereign maps [264ms]
 #> 
 ```
 
@@ -190,29 +181,28 @@ shp <- prepare_shapes(shp = shp, state_data = isd,
 errors <- detect_errors(shp = shp, capital_data = isd,
                         id_var = COWID, period_var = year)
 #> ℹ 1/7: Checking for empty geometries
-#> ✔ 1/7: Checking for empty geometries [5ms]
+#> ✔ 1/7: Checking for empty geometries [6ms]
 #> 
 #> ℹ 2/7: COWID duplicates
-#> ✔ 2/7: COWID duplicates [7ms]
+#> ✔ 2/7: COWID duplicates [8ms]
 #> 
 #> ℹ 3/7: Missing ID
-#> ✔ 3/7: Missing ID [5ms]
+#> ✔ 3/7: Missing ID [9ms]
 #> 
 #> ℹ 4/7: COWIDs with only 1 map
-#> ✔ 4/7: COWIDs with only 1 map [7ms]
+#> ✔ 4/7: COWIDs with only 1 map [8ms]
 #> 
 #> ℹ 5/7: Missing year or year outside 1750-1920
 #> ✔ 5/7: Missing year or year outside 1750-1920 [11ms]
 #> 
 #> ℹ 6/7: COWIDs with polygons not overlapping
-#> ✔ 6/7: COWIDs with polygons not overlapping [2.2s]
+#> ✔ 6/7: COWIDs with polygons not overlapping [2.3s]
 #> 
 #> ⠙ 7/7: Whether the capital falls outside all polygons
-#> ⠹ 7/7: Whether the capital falls outside all polygons: 99999
-#> ⠸ 7/7: Whether the capital falls outside all polygons: FTO
-#> ⠼ 7/7: Whether the capital falls outside all polygons: OGD
-#> ⠴ 7/7: Whether the capital falls outside all polygons
-#> ✔ 7/7: Whether the capital falls outside all polygons [10s]
+#> ⠹ 7/7: Whether the capital falls outside all polygons: BNE
+#> ⠸ 7/7: Whether the capital falls outside all polygons: KAT
+#> ⠼ 7/7: Whether the capital falls outside all polygons: TOK
+#> ✔ 7/7: Whether the capital falls outside all polygons [9.9s]
 #> 
 #> 
 #> POTENTIAL ERRORS:

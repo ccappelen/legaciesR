@@ -89,7 +89,7 @@ rm(isd_path)
 ```
 
 ```{r read data hidden, eval = TRUE, echo = FALSE, message = FALSE, warnings = FALSE}
-shp <- st_read("data_private", "master_shapefile")
+shp <- read_sf("data_private", "master_shapefile")
 isd <- readxl::read_xlsx("data_private/legacies_polity_years_reduced.xlsx")
 ```
 
