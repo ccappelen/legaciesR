@@ -124,6 +124,8 @@
 <div class="section level2">
 <h2 id="preprocessing">Preprocessing<a class="anchor" aria-label="anchor" href="#preprocessing"></a>
 </h2>
+<p>The next step is to prepare the map data to be in a suitable format for creating grid data, matching with data from the ISD data, etc. It is therefore also necessary to provide the ISD data in order to match the two data sets. By default, the function will (1) expand the data to have one row per year for maps that are assigned a range of years, (2) fix potential issues such as three-digit years due to approximate dating, (3) exclude maps without your assignment, (4) add information on capitals (names and coordinates), (5) crop all geometries to coastlines*, (6) exclude maps marked as “incomplete”, (7) exclude maps of core regions (if they are marked as such)**, and (8) exclude maps for years in which a state is not considered sovereign (in the ISD data)***. Each of these options can be disabled. It is also possible to exclude maps based on the hierarchy coding of states, i.e., if states are coded as tributary and/or dependency.</p>
+<p>* The cropped geometries currently result in errors when creating contour polygons (but work for grid data) ** There are currently errors in the coding of core regions. *** By default, maps are included if they fall within a 5-year window of when a state is considered sovereign. The size of the window can be changed with the <code>margin_sovereign</code> option.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">shp</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/prepare_shapes.html">prepare_shapes</a></span><span class="op">(</span>shp <span class="op">=</span> <span class="va">shp</span>, state_data <span class="op">=</span> <span class="va">isd</span>,</span>
 <span>                      id_var <span class="op">=</span> <span class="va">COWID</span>, period_var <span class="op">=</span> <span class="va">year</span>,</span>
@@ -135,6 +137,8 @@
 <div class="section level2">
 <h2 id="detecing-errors">Detecing errors<a class="anchor" aria-label="anchor" href="#detecing-errors"></a>
 </h2>
+<p>To identify potential errors in the map data, the function <code>detect_errors</code> checks for various issues in the data set, such as the existence of duplicate COWIDs, missing COWIDs, errors in year assignment (e.g., outside study range), if there are geometries not overlapping with other geometries of the same COWID, and if there are capitals falling outside the geometry of a given COWID. All these CAN indicate errors, but it does not mean that it is necessarily an error. The function should therefore be used primarily as an easy way to identify potential issues with the map data that should be investigated further.</p>
+<p>The function returns various objects for easy identification of errors. First, it prints a report detailing whether and how many potential issues there are for a given type of error.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">errors</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/detect_errors.html">detect_errors</a></span><span class="op">(</span>shp <span class="op">=</span> <span class="va">shp</span>, capital_data <span class="op">=</span> <span class="va">isd</span>,</span>
 <span>                        id_var <span class="op">=</span> <span class="va">COWID</span>, period_var <span class="op">=</span> <span class="va">year</span>,</span>
@@ -148,6 +152,37 @@
 <span><span class="co">#&gt; • 465 maps with years missing or outside 1750-1920.</span></span>
 <span><span class="co">#&gt; • 310 maps that do not overlap with other shapes with the same ID.</span></span>
 <span><span class="co">#&gt; • 482 maps where the capital falls outside the polygon.</span></span></code></pre></div>
+<p>Second, it returns a list composed of (1) the original data with columns indicating potential issues for each error type and (2) separate subsets of the data set including only observations identified as a potential issue for each of the error types. For instance, the code below returns only those COWIDs for which there are geometries not overlapping with other geometries of the same COWID (which might indicate either erroneous COWID assignment or erroneous geocoding of the map).</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">shp_non_overlap</span> <span class="op">&lt;-</span> <span class="va">errors</span><span class="op">$</span><span class="va">report</span><span class="op">$</span><span class="va">non_overlap</span></span>
+<span><span class="va">shp_non_overlap</span></span>
+<span><span class="co">#&gt; Simple feature collection with 310 features and 32 fields</span></span>
+<span><span class="co">#&gt; Active geometry column: geometry</span></span>
+<span><span class="co">#&gt; Geometry type: GEOMETRY</span></span>
+<span><span class="co">#&gt; Dimension:     XY</span></span>
+<span><span class="co">#&gt; Bounding box:  xmin: -16.94491 ymin: 4.957359 xmax: 15.37766 ymax: 20.90528</span></span>
+<span><span class="co">#&gt; Geodetic CRS:  WGS 84</span></span>
+<span><span class="co">#&gt; # A tibble: 310 × 34</span></span>
+<span><span class="co">#&gt; # Groups:   COWID [40]</span></span>
+<span><span class="co">#&gt;     year COWID COWNUM name         lyear hyear coder note   coasterror cityerror</span></span>
+<span><span class="co">#&gt;  * &lt;dbl&gt; &lt;chr&gt;  &lt;int&gt; &lt;chr&gt;        &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;       &lt;int&gt;     &lt;dbl&gt;</span></span>
+<span><span class="co">#&gt;  1  1870 99999     NA Liptako       1870  1870 cm    &lt;NA&gt;           NA        12</span></span>
+<span><span class="co">#&gt;  2  1870 AGA     4783 Agaie         1870  1870 cm    &lt;NA&gt;           NA        16</span></span>
+<span><span class="co">#&gt;  3  1790 AIR     4361 Agades        1790  1790 ss    &lt;NA&gt;           NA        NA</span></span>
+<span><span class="co">#&gt;  4  2019 AIR     4361 Asben         2019  2019 ss    Borde…         NA        NA</span></span>
+<span><span class="co">#&gt;  5  2019 AIR     4361 Asben         2019  2019 ss    Borde…         NA        NA</span></span>
+<span><span class="co">#&gt;  6  1874 AIR     4361 Air or Asben  1874  1874 ss    &lt;NA&gt;           NA        37</span></span>
+<span><span class="co">#&gt;  7  1967 AIR     4361 Aïr           1967  1967 ss    &lt;NA&gt;           NA        NA</span></span>
+<span><span class="co">#&gt;  8  1811 AIR     4361 Agades        1811  1811 ss    &lt;NA&gt;           NA        NA</span></span>
+<span><span class="co">#&gt;  9  1814 AIR     4361 Agades        1814  1814 ss    &lt;NA&gt;           NA        NA</span></span>
+<span><span class="co">#&gt; 10  1818 AIR     4361 Agades        1818  1818 ss    &lt;NA&gt;           NA        NA</span></span>
+<span><span class="co">#&gt; # ℹ 300 more rows</span></span>
+<span><span class="co">#&gt; # ℹ 24 more variables: sourcetype &lt;int&gt;, `Core/Great` &lt;int&gt;, source &lt;chr&gt;,</span></span>
+<span><span class="co">#&gt; #   core &lt;int&gt;, id &lt;dbl&gt;, layer &lt;chr&gt;, path &lt;chr&gt;, lyear_str &lt;chr&gt;,</span></span>
+<span><span class="co">#&gt; #   core_str &lt;chr&gt;, geometry &lt;MULTIPOLYGON [°]&gt;, geom_valid &lt;lgl&gt;,</span></span>
+<span><span class="co">#&gt; #   rebuilt &lt;lgl&gt;, snap_precision &lt;dbl&gt;, capital_names &lt;chr&gt;,</span></span>
+<span><span class="co">#&gt; #   capital_coords &lt;MULTIPOINT [°]&gt;, incomplete &lt;lgl&gt;, in_spell &lt;lgl&gt;,</span></span>
+<span><span class="co">#&gt; #   empty_geom &lt;lgl&gt;, missing_id &lt;lgl&gt;, single_map &lt;lgl&gt;, year_outside &lt;lgl&gt;, …</span></span></code></pre></div>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">
