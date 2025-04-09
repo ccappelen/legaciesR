@@ -141,6 +141,28 @@ shp <- shp[st_within(shp,
 
 ## Preprocessing
 
+The next step is to prepare the map data to be in a suitable format for
+creating grid data, matching with data from the ISD data, etc. It is
+therefore also necessary to provide the ISD data in order to match the
+two data sets. By default, the function will (1) expand the data to have
+one row per year for maps that are assigned a range of years, (2) fix
+potential issues such as three-digit years due to approximate dating,
+(3) exclude maps without your assignment, (4) add information on
+capitals (names and coordinates), (5) crop all geometries to
+coastlines\*, (6) exclude maps marked as “incomplete”, (7) exclude maps
+of core regions (if they are marked as such)\*\*, and (8) exclude maps
+for years in which a state is not considered sovereign (in the ISD
+data)\*\*\*. Each of these options can be disabled. It is also possible
+to exclude maps based on the hierarchy coding of states, i.e., if states
+are coded as tributary and/or dependency.
+
+\* The cropped geometries currently result in errors when creating
+contour polygons (but work for grid data) \*\* There are currently
+errors in the coding of core regions. \*\*\* By default, maps are
+included if they fall within a 5-year window of when a state is
+considered sovereign. The size of the window can be changed with the
+`margin_sovereign` option.
+
 ``` r
 shp <- prepare_shapes(shp = shp, state_data = isd,
                       id_var = COWID, period_var = year,
@@ -151,6 +173,20 @@ shp <- prepare_shapes(shp = shp, state_data = isd,
 ```
 
 ## Detecing errors
+
+To identify potential errors in the map data, the function
+`detect_errors` checks for various issues in the data set, such as the
+existence of duplicate COWIDs, missing COWIDs, errors in year assignment
+(e.g., outside study range), if there are geometries not overlapping
+with other geometries of the same COWID, and if there are capitals
+falling outside the geometry of a given COWID. All these CAN indicate
+errors, but it does not mean that it is necessarily an error. The
+function should therefore be used primarily as an easy way to identify
+potential issues with the map data that should be investigated further.
+
+The function returns various objects for easy identification of errors.
+First, it prints a report detailing whether and how many potential
+issues there are for a given type of error.
 
 ``` r
 errors <- detect_errors(shp = shp, capital_data = isd,
@@ -165,4 +201,44 @@ errors <- detect_errors(shp = shp, capital_data = isd,
 #> • 465 maps with years missing or outside 1750-1920.
 #> • 310 maps that do not overlap with other shapes with the same ID.
 #> • 482 maps where the capital falls outside the polygon.
+```
+
+Second, it returns a list composed of (1) the original data with columns
+indicating potential issues for each error type and (2) separate subsets
+of the data set including only observations identified as a potential
+issue for each of the error types. For instance, the code below returns
+only those COWIDs for which there are geometries not overlapping with
+other geometries of the same COWID (which might indicate either
+erroneous COWID assignment or erroneous geocoding of the map).
+
+``` r
+shp_non_overlap <- errors$report$non_overlap
+shp_non_overlap
+#> Simple feature collection with 310 features and 32 fields
+#> Active geometry column: geometry
+#> Geometry type: GEOMETRY
+#> Dimension:     XY
+#> Bounding box:  xmin: -16.94491 ymin: 4.957359 xmax: 15.37766 ymax: 20.90528
+#> Geodetic CRS:  WGS 84
+#> # A tibble: 310 × 34
+#> # Groups:   COWID [40]
+#>     year COWID COWNUM name         lyear hyear coder note   coasterror cityerror
+#>  * <dbl> <chr>  <int> <chr>        <dbl> <dbl> <chr> <chr>       <int>     <dbl>
+#>  1  1870 99999     NA Liptako       1870  1870 cm    <NA>           NA        12
+#>  2  1870 AGA     4783 Agaie         1870  1870 cm    <NA>           NA        16
+#>  3  1790 AIR     4361 Agades        1790  1790 ss    <NA>           NA        NA
+#>  4  2019 AIR     4361 Asben         2019  2019 ss    Borde…         NA        NA
+#>  5  2019 AIR     4361 Asben         2019  2019 ss    Borde…         NA        NA
+#>  6  1874 AIR     4361 Air or Asben  1874  1874 ss    <NA>           NA        37
+#>  7  1967 AIR     4361 Aïr           1967  1967 ss    <NA>           NA        NA
+#>  8  1811 AIR     4361 Agades        1811  1811 ss    <NA>           NA        NA
+#>  9  1814 AIR     4361 Agades        1814  1814 ss    <NA>           NA        NA
+#> 10  1818 AIR     4361 Agades        1818  1818 ss    <NA>           NA        NA
+#> # ℹ 300 more rows
+#> # ℹ 24 more variables: sourcetype <int>, `Core/Great` <int>, source <chr>,
+#> #   core <int>, id <dbl>, layer <chr>, path <chr>, lyear_str <chr>,
+#> #   core_str <chr>, geometry <MULTIPOLYGON [°]>, geom_valid <lgl>,
+#> #   rebuilt <lgl>, snap_precision <dbl>, capital_names <chr>,
+#> #   capital_coords <MULTIPOINT [°]>, incomplete <lgl>, in_spell <lgl>,
+#> #   empty_geom <lgl>, missing_id <lgl>, single_map <lgl>, year_outside <lgl>, …
 ```

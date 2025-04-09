@@ -113,6 +113,12 @@ shp <- shp[st_within(shp,
 
 ## Preprocessing
 
+The next step is to prepare the map data to be in a suitable format for creating grid data, matching with data from the ISD data, etc. It is therefore also necessary to provide the ISD data in order to match the two data sets. By default, the function will (1) expand the data to have one row per year for maps that are assigned a range of years, (2) fix potential issues such as three-digit years due to approximate dating, (3) exclude maps without your assignment, (4) add information on capitals (names and coordinates), (5) crop all geometries to coastlines\*, (6) exclude maps marked as "incomplete", (7) exclude maps of core regions (if they are marked as such)\*\*, and (8) exclude maps for years in which a state is not considered sovereign (in the ISD data)\*\*\*. Each of these options can be disabled. It is also possible to exclude maps based on the hierarchy coding of states, i.e., if states are coded as tributary and/or dependency. 
+
+\* The cropped geometries currently result in errors when creating contour polygons (but work for grid data)
+\*\* There are currently errors in the coding of core regions. 
+\*\*\* By default, maps are included if they fall within a 5-year window of when a state is considered sovereign. The size of the window can be changed with the `margin_sovereign` option. 
+
 ```{r preprocessing, eval = TRUE, message = FALSE}
 shp <- prepare_shapes(shp = shp, state_data = isd,
                       id_var = COWID, period_var = year,
@@ -125,13 +131,22 @@ shp <- prepare_shapes(shp = shp, state_data = isd,
 
 ## Detecing errors
 
+To identify potential errors in the map data, the function `detect_errors` checks for various issues in the data set, such as the existence of duplicate COWIDs, missing COWIDs, errors in year assignment (e.g., outside study range), if there are geometries not overlapping with other geometries of the same COWID, and if there are capitals falling outside the geometry of a given COWID. All these CAN indicate errors, but it does not mean that it is necessarily an error. The function should therefore be used primarily as an easy way to identify potential issues with the map data that should be investigated further. 
+
+The function returns various objects for easy identification of errors. First, it prints a report detailing whether and how many potential issues there are for a given type of error. 
+
 ```{r error detection, eval = TRUE, message = TRUE}
 errors <- detect_errors(shp = shp, capital_data = isd,
                         id_var = COWID, period_var = year,
                         progress = FALSE)
 ```
 
+Second, it returns a list composed of (1) the original data with columns indicating potential issues for each error type and (2) separate subsets of the data set including only observations identified as a potential issue for each of the error types. For instance, the code below returns only those COWIDs for which there are geometries not overlapping with other geometries of the same COWID (which might indicate either erroneous COWID assignment or erroneous geocoding of the map). 
 
+```{r error report, eval = TRUE, message = TRUE}
+shp_non_overlap <- errors$report$non_overlap
+shp_non_overlap
+```
 
 
 
