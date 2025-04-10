@@ -443,12 +443,10 @@ ggplot() +
         # plot.background = element_rect(fill = "grey90"),
         # plot.margin=grid::unit(c(0,0,0,0), "mm"),
         # axis.ticks.length = unit(0, "pt"),
-        aspect.ratio = 1,
+        # aspect.ratio = 1,
         axis.ticks = element_blank()
         ) +
-  facet_wrap(~ lyr)
+  facet_grid(~ lyr)
 ```
-
-    #> [1] "man/figures/README-plot panel grid-1.png"
 
 <img src="man/figures/README-plot panel grid-1.png" width="100%" />

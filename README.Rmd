@@ -286,7 +286,7 @@ share_largest_count_panel <- create_grid_panel(
   var = "polysh_largest_count")
 ```
 
-```{r, eval = FALSE}
+```{r plot panel grid, eval = TRUE}
 # Plot grid for each period
 ggplot() +
   geom_sf(data = afr) +
@@ -303,39 +303,8 @@ ggplot() +
         # plot.background = element_rect(fill = "grey90"),
         # plot.margin=grid::unit(c(0,0,0,0), "mm"),
         # axis.ticks.length = unit(0, "pt"),
-        aspect.ratio = 1,
+        # aspect.ratio = 1,
         axis.ticks = element_blank()
         ) +
-  facet_wrap(~ lyr)
-```
-
-```{r plot panel grid, eval = TRUE, echo = FALSE, message = FALSE}
-# Plot grid for each period
-fig_panel_grid <- ggplot() +
-  geom_sf(data = afr) +
-  tidyterra::geom_spatraster(data = share_largest_count_panel, alpha = 0.7) +
-  scale_fill_viridis_c(option = "plasma", direction = -1, na.value = NA) +
-  labs(fill = "Share of polygons for the state with the largest \nnumber of polygons in total",
-       x = NULL) +
-  guides(fill = guide_colorbar(barwidth = 15)) +
-  cappelenR::my_maptheme() +
-  cappelenR::coord_bbox(afr) +
-  theme(legend.position = "bottom", legend.title.position = "top",
-        legend.justification = "center",
-        # legend.title = element_text(size = 12),
-        # plot.background = element_rect(fill = "grey90"),
-        # plot.margin=grid::unit(c(0,0,0,0), "mm"),
-        # axis.ticks.length = unit(0, "pt"),
-        aspect.ratio = 1,
-        axis.ticks = element_blank()
-        ) +
-  facet_wrap(~ lyr)
-ggsave(filename = "man/figures/README-plot panel grid-1.png",
-       plot = fig_panel_grid)
-```
-
-
-```{r, eval = TRUE, echo = FALSE, message = FALSE}
-knitr::plot_crop("man/figures/README-plot panel grid-1.png", quiet = TRUE)
-knitr::include_graphics("man/figures/README-plot panel grid-1.png")
+  facet_grid(~ lyr)
 ```
