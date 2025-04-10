@@ -424,7 +424,9 @@ create_grid_panel <- function(x, var) {
 share_largest_count_panel <- create_grid_panel(
   x = df_grid_panel, 
   var = "polysh_largest_count")
+```
 
+``` r
 # Plot grid for each period
 ggplot() +
   geom_sf(data = afr) +
@@ -437,13 +439,16 @@ ggplot() +
   cappelenR::coord_bbox(afr) +
   theme(legend.position = "bottom", legend.title.position = "top",
         legend.justification = "center",
-        legend.title = element_text(size = 12),
-        plot.margin=grid::unit(c(0,0,0,0), "mm"),
-        axis.ticks.length = unit(0, "pt"),
-        axis.ticks = element_blank(),
-        aspect.ratio = 1
+        # legend.title = element_text(size = 12),
+        # plot.background = element_rect(fill = "grey90"),
+        # plot.margin=grid::unit(c(0,0,0,0), "mm"),
+        # axis.ticks.length = unit(0, "pt"),
+        aspect.ratio = 1,
+        axis.ticks = element_blank()
         ) +
   facet_wrap(~ lyr)
 ```
+
+    #> [1] "man/figures/README-plot panel grid-1.png"
 
 <img src="man/figures/README-plot panel grid-1.png" width="100%" />
