@@ -430,14 +430,18 @@ ggplot() +
   geom_sf(data = afr) +
   tidyterra::geom_spatraster(data = share_largest_count_panel, alpha = 0.7) +
   scale_fill_viridis_c(option = "plasma", direction = -1, na.value = NA) +
-  labs(fill = "Share of polygons for the state with the largest \nnumber of polygons in total") +
+  labs(fill = "Share of polygons for the state with the largest \nnumber of polygons in total",
+       x = NULL) +
   guides(fill = guide_colorbar(barwidth = 15)) +
   cappelenR::my_maptheme() +
   cappelenR::coord_bbox(afr) +
   theme(legend.position = "bottom", legend.title.position = "top",
         legend.justification = "center",
+        legend.title = element_text(size = 12),
+        plot.margin=grid::unit(c(0,0,0,0), "mm"),
+        axis.ticks.length = unit(0, "pt"),
         axis.ticks = element_blank(),
-        plot.background = element_rect(fill = "grey60")
+        aspect.ratio = 1
         ) +
   facet_wrap(~ lyr)
 ```
