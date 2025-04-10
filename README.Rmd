@@ -245,6 +245,7 @@ ggplot() +
   cappelenR::coord_bbox(afr) +
   theme(legend.position = "bottom", legend.title.position = "top",
         legend.justification = "center", legend.margin = margin(-2,0,0,0,unit = "cm"),
+        axis.ticks = element_blank(),
         legend.title = element_text(size = 12))
 ```
 
@@ -295,7 +296,8 @@ ggplot() +
   cappelenR::coord_bbox(afr) +
   theme(legend.position = "bottom", legend.title.position = "top",
         legend.justification = "center",
-        plot.background = element_rect(fill = "grey95")
+        axis.ticks = element_blank(),
+        plot.background = element_rect(fill = "grey60")
         ) +
   facet_wrap(~ lyr)
 ```
