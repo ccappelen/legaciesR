@@ -37,7 +37,6 @@
 #' @import future
 #' @importFrom furrr future_map
 #' @importFrom furrr furrr_options
-#' @importFrom purrr map
 #' @import progressr
 #' @importFrom methods is
 

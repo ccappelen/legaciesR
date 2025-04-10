@@ -389,7 +389,7 @@ get_grid <- function(shp, ras,
       suppressWarnings()
 
     ## ERROR CHECK:
-    if (ncell(r) %% nrow(df) == 0) {
+    if (nrow(df) %% terra::ncell(r) != 0) {
       cli::cli_abort("Number of rows is not a multiple of the number of grid cells.")
     }
 
@@ -412,7 +412,7 @@ get_grid <- function(shp, ras,
     dplyr::mutate(cname = as.character(cname))
 
   ## ERROR CHECK:
-  if (ncell(r) %% nrow(df) == 0) {
+  if (nrow(df) %% terra::ncell(r) != 0) {
     cli::cli_abort("Number of rows is not a multiple of the number of grid cells.")
   }
 
@@ -519,7 +519,7 @@ get_grid <- function(shp, ras,
   }
 
   ## ERROR CHECK:
-  if (ncell(r) %% nrow(df) == 0) {
+  if (nrow(df) %% terra::ncell(r) != 0) {
     cli::cli_abort("Number of rows is not a multiple of the number of grid cells.")
   }
 
@@ -547,7 +547,7 @@ get_grid <- function(shp, ras,
   }
 
   ## ERROR CHECK:
-  if (ncell(r) %% nrow(df) == 0) {
+  if (nrow(df) %% terra::ncell(r) != 0) {
     cli::cli_abort("Number of rows is not a multiple of the number of grid cells.")
   }
 
@@ -589,7 +589,7 @@ get_grid <- function(shp, ras,
   }
 
   ## ERROR CHECK:
-  if (ncell(r) %% nrow(df) == 0) {
+  if (nrow(df) %% terra::ncell(r) != 0) {
     cli::cli_abort("Number of rows is not a multiple of the number of grid cells.")
   }
 
@@ -617,7 +617,7 @@ get_grid <- function(shp, ras,
   }
 
   ## ERROR CHECK:
-  if (ncell(r) %% nrow(df) == 0) {
+  if (nrow(df) %% terra::ncell(r) != 0) {
     cli::cli_abort("Number of rows is not a multiple of the number of grid cells.")
   }
 
@@ -648,7 +648,7 @@ get_grid <- function(shp, ras,
   }
 
   ## ERROR CHECK:
-  if (ncell(r) %% nrow(df) == 0) {
+  if (nrow(df) %% terra::ncell(r) != 0) {
     cli::cli_abort("Number of rows is not a multiple of the number of grid cells.")
   }
 
@@ -714,7 +714,7 @@ get_grid <- function(shp, ras,
   }
 
   ## ERROR CHECK:
-  if (ncell(r) %% nrow(df) == 0) {
+  if (nrow(df) %% terra::ncell(r) != 0) {
     cli::cli_abort("Number of rows is not a multiple of the number of grid cells.")
   }
 
@@ -743,7 +743,7 @@ get_grid <- function(shp, ras,
   }
 
   ## ERROR CHECK:
-  if (ncell(r) %% nrow(df) == 0) {
+  if (nrow(df) %% terra::ncell(r) != 0) {
     cli::cli_abort("Number of rows is not a multiple of the number of grid cells.")
   }
 
@@ -765,7 +765,7 @@ get_grid <- function(shp, ras,
   }
 
   ## ERROR CHECK:
-  if (ncell(r) %% nrow(df) == 0) {
+  if (nrow(df) %% terra::ncell(r) != 0) {
     cli::cli_abort("Number of rows is not a multiple of the number of grid cells.")
   }
 

@@ -30,6 +30,15 @@ devtools::install_github("ccappelen/legaciesR")
 library(legaciesr)
 library(sf) 
 library(dplyr)
+library(ggplot2)
+```
+
+The plots produced below rely on custom functions available in my
+personal package which can be loaded with the following code:
+
+``` r
+devtools::install_github("ccappelen/cappelenR")
+library(cappelenR)
 ```
 
 ## Package overview and workflow
@@ -242,3 +251,193 @@ shp_non_overlap
 #> #   capital_coords <MULTIPOINT [°]>, incomplete <lgl>, in_spell <lgl>,
 #> #   empty_geom <lgl>, missing_id <lgl>, single_map <lgl>, year_outside <lgl>, …
 ```
+
+## Create contour polygons
+
+Contour polygons capture the varying degrees to which a given area is
+covered by the digitized maps. The contours divide the region covered by
+the union of all maps into custom intervals of the share of maps
+covering a given area. By default, the function divides the territory
+into four contours (correponding to 0-1, 0.25-1, 0.5-5, and 0.75-1). But
+the number of percentiles can be specified with the `cuts` option (see
+documentation for details).
+
+``` r
+df_contour <- get_contours(shp, id_var = COWID)
+#> Jobs running sequentially.
+#> ℹ Reverts to original plan after running.
+```
+
+The code below plots the contour polygons for the Sokoto Caliphate:
+
+``` r
+# Load map of Africa
+afr <- rnaturalearthdata::countries50 |>
+  filter(continent == "Africa")
+
+# Plot contour polygons 
+df_contour |>
+  filter(COWID == "SOK") |>
+  ggplot() +
+  geom_sf(data = afr, fill = "grey90", color = "grey20") +
+  geom_sf(aes(fill = label), color = NA) +
+  scale_fill_viridis_d(option = "plasma", direction = 1, na.value = "NA") +
+  labs(fill = "Share of polygons") +
+  cappelenR::my_maptheme() +
+  cappelenR::coord_bbox(df_contour |> filter(COWID == "SOK"),
+                        expand_x = 6, expand_y = 3) +
+  theme(legend.position = "bottom", legend.justification = "center",
+        legend.title.position = "top") 
+```
+
+<img src="man/figures/README-plot contours-1.png" width="100%" />
+
+By default, the function summarizes the maps across the entire period
+(i.e. 1750-1920). However, it is also possible to specify the contour
+polygons by drawn separately by specified period (see documentation for
+further details).
+
+``` r
+df_contour_panel <- get_contours(shp, id_var = COWID, by_period = TRUE, period_var = year)
+#> Jobs running sequentially.
+#> ℹ Reverts to original plan after running.
+
+df_contour_panel |>
+  filter(COWID == "SOK") |>
+  ggplot() +
+  geom_sf(data = afr, fill = "grey90", color = "grey20") +
+  geom_sf(aes(fill = label), color = NA) +
+  scale_fill_viridis_d(option = "plasma", direction = 1, na.value = "NA") +
+  labs(fill = "Share of maps") +
+  cappelenR::my_maptheme() +
+  cappelenR::coord_bbox(df_contour |> filter(COWID == "SOK"),
+                        expand_x = 6, expand_y = 3) +
+  theme(legend.position = "bottom", legend.justification = "center",
+        legend.title.position = "top") +
+  facet_wrap(~ period)
+```
+
+<img src="man/figures/README-contour panel-1.png" width="100%" />
+
+## Create grid data
+
+Finally, `get_grid` allows you to create a grid cell data set with
+various summary measures of how many maps cover a particular area. By
+default, the function creates a grid covering the entire extent of the
+provided map data set, but it is also possible to specify a particular
+area by providing a raster object with that extent. The function
+calculates several different operationalizations of the overall idea of
+capturing to what extent a given area was controlled by a state. The
+different measures rely on different rules for specyfing what state to
+use for summarizing the share of maps if there are more than one state
+covering a particular grid cell.
+
+1.  *polysh_largest_count*: The share of all polygons in a grid cell for
+    the state with the largest total number of polygons.
+2.  *polysh_largest_area*: The share of all polygons in a grid cell for
+    the state with the largest single polygon (NB: This could be
+    operataionalized differently as based on the area of the union of
+    polygons for each state or the median area of polygons for each
+    state).
+3.  *polysh_largest_share*: The share of all polygons in a grid cell for
+    the state with the largest share in that grid cell.
+4.  *polysh_across*: The average share of polygons across all states
+    intersecting a given grid cell.
+
+In addition to these, there are two measures capturing slightly
+different concepts related to borders and contested territory.
+
+5.  *bordersh*: The share of polygons with a border intersecting a given
+    grid cell, relative to all polygons intersecting the grid cell
+    (across all states). A higher share indicates that the area is more
+    likely to be a border region.
+6.  *contested*: A measure capturing the idea of contested territory. Is
+    is calculated as negative sum of state-specific shares of polygons
+    intersecting a grid cell weighted by the logarithm of the same
+    share: , where is the state-specific share of polygons intersecting
+    a grid cell. (NB: This measure is still in development and the exact
+    equation might change.)
+
+``` r
+df_grid <- get_grid(shp, id_var = COWID, period_var = year)
+```
+
+The output is (by default) a list containing the raster object (`r`)
+used for creating the gridded data set along with the actual grid data
+set (`df`). To plot a particular variable, you can extract the raster
+object and assign the values for a particular variable to that object.
+See below:
+
+``` r
+# Extract raster
+share_largest_count <- df_grid$r
+
+# Assign values to grid cells
+terra::values(share_largest_count) <- df_grid$data$polysh_largest_count
+
+# Plot grid
+ggplot() +
+  geom_sf(data = afr) +
+  tidyterra::geom_spatraster(data = share_largest_count, alpha = 0.7) +
+  scale_fill_viridis_c(option = "plasma", direction = -1, na.value = NA) +
+  labs(fill = "Share of polygons for the state with the largest \nnumber of polygons in total") +
+  guides(fill = guide_colorbar(barwidth = 15)) +
+  cappelenR::my_maptheme() +
+  cappelenR::coord_bbox(afr) +
+  theme(legend.position = "bottom", legend.title.position = "top",
+        legend.justification = "center", legend.margin = margin(-2,0,0,0,unit = "cm"),
+        legend.title = element_text(size = 12))
+```
+
+<img src="man/figures/README-plot grid-1.png" width="100%" />
+
+Again, it is also possible to create a panel version of the grid data,
+divided by specified period (by default it will create a panel for each
+20-year period):
+
+``` r
+df_grid_panel <- get_grid(shp, id_var = COWID, by_period = TRUE, period_var = year)
+```
+
+Plotting the panel data requires creating a different layer for the
+raster object for each period and then assigning the values for that
+period. The code below provides a function for doing that.
+
+``` r
+# Define function for extracting raster grid and values for given variable
+# This might be moved to its own proper function in the package
+create_grid_panel <- function(x, var) {
+  period_temp <- unique(x$data$period)
+  r_temp <- x$r
+  r_panel <- r_temp
+  for (i in seq_along(period_temp[-1])) {
+    terra::add(r_panel) <- r_temp
+  }
+  terra::set.names(r_panel, period_temp)
+  for (i in period_temp) {
+    terra::values(r_panel[[i]]) <- x$data[x$data$period == i, var]
+  }
+  return(r_panel)
+}
+
+share_largest_count_panel <- create_grid_panel(
+  x = df_grid_panel, 
+  var = "polysh_largest_count")
+
+# Plot grid for each period
+ggplot() +
+  geom_sf(data = afr) +
+  tidyterra::geom_spatraster(data = share_largest_count_panel, alpha = 0.7) +
+  scale_fill_viridis_c(option = "plasma", direction = -1, na.value = NA) +
+  labs(fill = "Share of polygons for the state with the largest \nnumber of polygons in total") +
+  guides(fill = guide_colorbar(barwidth = 15)) +
+  cappelenR::my_maptheme() +
+  cappelenR::coord_bbox(afr) +
+  theme(legend.position = "bottom", legend.title.position = "top",
+        legend.justification = "center"
+        # legend.margin = margin(-2,0,0,0,unit = "cm")
+        ) +
+  facet_wrap(~ lyr)
+```
+
+<img src="man/figures/README-plot panel grid-1.png" width="100%" />
