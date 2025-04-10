@@ -63,7 +63,12 @@
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://www.legacies-project.com" class="external-link">legaciesr</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://r-spatial.github.io/sf/" class="external-link">sf</a></span><span class="op">)</span> </span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span></code></pre></div>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span></code></pre></div>
+<p>The plots produced below rely on custom functions available in my personal package which can be loaded with the following code:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"ccappelen/cappelenR"</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">cappelenR</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="package-overview-and-workflow">Package overview and workflow<a class="anchor" aria-label="anchor" href="#package-overview-and-workflow"></a>
@@ -85,7 +90,7 @@
 <p>Some functions enable parallel processing to speed up intensive tasks. Parallel processing is is implemented using the [future::future] framework. There are two ways of running jobs in parallel: <code>multicore</code> which uses ‘forking’ to run multiple jobs in parallel with shared memory and <code>multisession</code> which launches a set of background R sessions. ‘Forking’ can be faster than multisession because of the larger overhead associated with copying the active environment to each background R session (whereas forking processes shares memory). However, ‘forking’ is not supported on Windows platforms and is considered unstable when running from within RStudio (on both Windows and Unix systems such as MacOS). The function will automatically determine whether <code>multicore</code> is supported by the platform and choose the appropriate plan.</p>
 <p>The greater overhead associated with <code>multisession</code> is primarily during the first parallel run in a given R session (since the background R sessions stays available for additional parallel jobs). It is possible to define a [future::plan(“multisession”)] in the global environment, which will minimize overhead in subsequent parallel jobs (apart from the first). The function will automatically detect if a <code>multisession</code> plan has been set globally and, thus, will not close background sessions after running.</p>
 <p>It is therefore recommended to start the script by setting a [future::plan]:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">future</span><span class="fu">::</span><span class="fu"><a href="https://future.futureverse.org/reference/plan.html" class="external-link">plan</a></span><span class="op">(</span><span class="st">"multisession"</span>, workers <span class="op">=</span> <span class="fu">future</span><span class="fu">::</span><span class="fu"><a href="https://parallelly.futureverse.org/reference/availableCores.html" class="external-link">availableCores</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">## The above code sets up parallel processing on all available cores. </span></span>
 <span><span class="co">## This can be changed with the 'workers' option. </span></span></code></pre></div>
@@ -94,11 +99,11 @@
 <h2 id="reading-the-data">Reading the data<a class="anchor" aria-label="anchor" href="#reading-the-data"></a>
 </h2>
 <p>The raw map and ISD data is not currently included in the package and therefore has to be loaded from the user’s own directory:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">shp_folder</span> <span class="op">&lt;-</span> <span class="st">"path to map data folder"</span></span>
 <span><span class="va">shp_name</span> <span class="op">&lt;-</span> <span class="st">"name of shapefile"</span></span>
 <span><span class="va">isd_path</span> <span class="op">&lt;-</span> <span class="st">"file path to isd data"</span></span></code></pre></div>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">shp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_read.html" class="external-link">st_read</a></span><span class="op">(</span><span class="va">shp_path</span>, <span class="va">shp_name</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">shp_folder</span>, <span class="va">shp_name</span><span class="op">)</span></span>
 <span></span>
@@ -110,7 +115,7 @@
 </h2>
 <p>Some maps in the raw data may be “invalid” which will result in errors in many spatial data analyses. This can happen for all kinds of reasons; typically it is the result of crossing boundaries. <code><a href="reference/fix_invalid.html">fix_invalid()</a></code> attempts to detect and fix these invalid geometries. It is a wrapper around the <code><a href="https://r-spatial.github.io/sf/reference/valid.html" class="external-link">sf::st_make_valid()</a></code> function that attempts to reiteratively lower the allowed precision to rebuild valid geometries. The function will return the same data set with fixed geometries (if it was able to fix them). The returned data set will include three columns describing the status of the geometry, e.g., whether it was invalid and whether it was successfully fixed. It will also (by default) print a summary of how many geometries were invalid, how many were fixed, and how many were unsuccessful.</p>
 <p>Because invalid geometries can happen for many reasons that may point to other data errors as well, it is recommended to check for valid geometries and run the <code><a href="reference/fix_invalid.html">legaciesr::fix_invalid()</a></code> to identify potential issues.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">shp</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/fix_invalid.html">fix_invalid</a></span><span class="op">(</span><span class="va">shp</span><span class="op">)</span></span>
 <span><span class="co">#&gt; 447 (3.3 %) geometries were successfully rebuilt.</span></span>
 <span><span class="co">#&gt; 0 (0 %) geometries failed to rebuild as valid.</span></span>
@@ -126,7 +131,7 @@
 </h2>
 <p>The next step is to prepare the map data to be in a suitable format for creating grid data, matching with data from the ISD data, etc. It is therefore also necessary to provide the ISD data in order to match the two data sets. By default, the function will (1) expand the data to have one row per year for maps that are assigned a range of years, (2) fix potential issues such as three-digit years due to approximate dating, (3) exclude maps without your assignment, (4) add information on capitals (names and coordinates), (5) crop all geometries to coastlines*, (6) exclude maps marked as “incomplete”, (7) exclude maps of core regions (if they are marked as such)**, and (8) exclude maps for years in which a state is not considered sovereign (in the ISD data)***. Each of these options can be disabled. It is also possible to exclude maps based on the hierarchy coding of states, i.e., if states are coded as tributary and/or dependency.</p>
 <p>* The cropped geometries currently result in errors when creating contour polygons (but work for grid data) ** There are currently errors in the coding of core regions. *** By default, maps are included if they fall within a 5-year window of when a state is considered sovereign. The size of the window can be changed with the <code>margin_sovereign</code> option.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">shp</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/prepare_shapes.html">prepare_shapes</a></span><span class="op">(</span>shp <span class="op">=</span> <span class="va">shp</span>, state_data <span class="op">=</span> <span class="va">isd</span>,</span>
 <span>                      id_var <span class="op">=</span> <span class="va">COWID</span>, period_var <span class="op">=</span> <span class="va">year</span>,</span>
 <span>                      range_min <span class="op">=</span> <span class="va">lyear</span>, range_max <span class="op">=</span> <span class="va">hyear</span>,</span>
@@ -139,7 +144,7 @@
 </h2>
 <p>To identify potential errors in the map data, the function <code>detect_errors</code> checks for various issues in the data set, such as the existence of duplicate COWIDs, missing COWIDs, errors in year assignment (e.g., outside study range), if there are geometries not overlapping with other geometries of the same COWID, and if there are capitals falling outside the geometry of a given COWID. All these CAN indicate errors, but it does not mean that it is necessarily an error. The function should therefore be used primarily as an easy way to identify potential issues with the map data that should be investigated further.</p>
 <p>The function returns various objects for easy identification of errors. First, it prints a report detailing whether and how many potential issues there are for a given type of error.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">errors</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/detect_errors.html">detect_errors</a></span><span class="op">(</span>shp <span class="op">=</span> <span class="va">shp</span>, capital_data <span class="op">=</span> <span class="va">isd</span>,</span>
 <span>                        id_var <span class="op">=</span> <span class="va">COWID</span>, period_var <span class="op">=</span> <span class="va">year</span>,</span>
 <span>                        progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -153,7 +158,7 @@
 <span><span class="co">#&gt; • 310 maps that do not overlap with other shapes with the same ID.</span></span>
 <span><span class="co">#&gt; • 482 maps where the capital falls outside the polygon.</span></span></code></pre></div>
 <p>Second, it returns a list composed of (1) the original data with columns indicating potential issues for each error type and (2) separate subsets of the data set including only observations identified as a potential issue for each of the error types. For instance, the code below returns only those COWIDs for which there are geometries not overlapping with other geometries of the same COWID (which might indicate either erroneous COWID assignment or erroneous geocoding of the map).</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">shp_non_overlap</span> <span class="op">&lt;-</span> <span class="va">errors</span><span class="op">$</span><span class="va">report</span><span class="op">$</span><span class="va">non_overlap</span></span>
 <span><span class="va">shp_non_overlap</span></span>
 <span><span class="co">#&gt; Simple feature collection with 310 features and 32 fields</span></span>
@@ -183,6 +188,140 @@
 <span><span class="co">#&gt; #   rebuilt &lt;lgl&gt;, snap_precision &lt;dbl&gt;, capital_names &lt;chr&gt;,</span></span>
 <span><span class="co">#&gt; #   capital_coords &lt;MULTIPOINT [°]&gt;, incomplete &lt;lgl&gt;, in_spell &lt;lgl&gt;,</span></span>
 <span><span class="co">#&gt; #   empty_geom &lt;lgl&gt;, missing_id &lt;lgl&gt;, single_map &lt;lgl&gt;, year_outside &lt;lgl&gt;, …</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="create-contour-polygons">Create contour polygons<a class="anchor" aria-label="anchor" href="#create-contour-polygons"></a>
+</h2>
+<p>Contour polygons capture the varying degrees to which a given area is covered by the digitized maps. The contours divide the region covered by the union of all maps into custom intervals of the share of maps covering a given area. By default, the function divides the territory into four contours (correponding to 0-1, 0.25-1, 0.5-5, and 0.75-1). But the number of percentiles can be specified with the <code>cuts</code> option (see documentation for details).</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">df_contour</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/get_contours.html">get_contours</a></span><span class="op">(</span><span class="va">shp</span>, id_var <span class="op">=</span> <span class="va">COWID</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Jobs running sequentially.</span></span>
+<span><span class="co">#&gt; ℹ Reverts to original plan after running.</span></span></code></pre></div>
+<p>The code below plots the contour polygons for the Sokoto Caliphate:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Load map of Africa</span></span>
+<span><span class="va">afr</span> <span class="op">&lt;-</span> <span class="fu">rnaturalearthdata</span><span class="fu">::</span><span class="va"><a href="https://docs.ropensci.org/rnaturalearthdata/reference/countries.html" class="external-link">countries50</a></span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">continent</span> <span class="op">==</span> <span class="st">"Africa"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Plot contour polygons </span></span>
+<span><span class="va">df_contour</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">COWID</span> <span class="op">==</span> <span class="st">"SOK"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">afr</span>, fill <span class="op">=</span> <span class="st">"grey90"</span>, color <span class="op">=</span> <span class="st">"grey20"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="va">label</span><span class="op">)</span>, color <span class="op">=</span> <span class="cn">NA</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_viridis.html" class="external-link">scale_fill_viridis_d</a></span><span class="op">(</span>option <span class="op">=</span> <span class="st">"plasma"</span>, direction <span class="op">=</span> <span class="fl">1</span>, na.value <span class="op">=</span> <span class="st">"NA"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="st">"Share of polygons"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">cappelenR</span><span class="fu">::</span><span class="fu">my_maptheme</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">cappelenR</span><span class="fu">::</span><span class="fu">coord_bbox</span><span class="op">(</span><span class="va">df_contour</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">COWID</span> <span class="op">==</span> <span class="st">"SOK"</span><span class="op">)</span>,</span>
+<span>                        expand_x <span class="op">=</span> <span class="fl">6</span>, expand_y <span class="op">=</span> <span class="fl">3</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span>, legend.justification <span class="op">=</span> <span class="st">"center"</span>,</span>
+<span>        legend.title.position <span class="op">=</span> <span class="st">"top"</span><span class="op">)</span> </span></code></pre></div>
+<p><img src="reference/figures/README-plot%20contours-1.png" width="100%"></p>
+<p>By default, the function summarizes the maps across the entire period (i.e. 1750-1920). However, it is also possible to specify the contour polygons by drawn separately by specified period (see documentation for further details).</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">df_contour_panel</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/get_contours.html">get_contours</a></span><span class="op">(</span><span class="va">shp</span>, id_var <span class="op">=</span> <span class="va">COWID</span>, by_period <span class="op">=</span> <span class="cn">TRUE</span>, period_var <span class="op">=</span> <span class="va">year</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Jobs running sequentially.</span></span>
+<span><span class="co">#&gt; ℹ Reverts to original plan after running.</span></span>
+<span></span>
+<span><span class="va">df_contour_panel</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">COWID</span> <span class="op">==</span> <span class="st">"SOK"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">afr</span>, fill <span class="op">=</span> <span class="st">"grey90"</span>, color <span class="op">=</span> <span class="st">"grey20"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="va">label</span><span class="op">)</span>, color <span class="op">=</span> <span class="cn">NA</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_viridis.html" class="external-link">scale_fill_viridis_d</a></span><span class="op">(</span>option <span class="op">=</span> <span class="st">"plasma"</span>, direction <span class="op">=</span> <span class="fl">1</span>, na.value <span class="op">=</span> <span class="st">"NA"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="st">"Share of maps"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">cappelenR</span><span class="fu">::</span><span class="fu">my_maptheme</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">cappelenR</span><span class="fu">::</span><span class="fu">coord_bbox</span><span class="op">(</span><span class="va">df_contour</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">COWID</span> <span class="op">==</span> <span class="st">"SOK"</span><span class="op">)</span>,</span>
+<span>                        expand_x <span class="op">=</span> <span class="fl">6</span>, expand_y <span class="op">=</span> <span class="fl">3</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span>, legend.justification <span class="op">=</span> <span class="st">"center"</span>,</span>
+<span>        legend.title.position <span class="op">=</span> <span class="st">"top"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span> <span class="va">period</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-contour%20panel-1.png" width="100%"></p>
+</div>
+<div class="section level2">
+<h2 id="create-grid-data">Create grid data<a class="anchor" aria-label="anchor" href="#create-grid-data"></a>
+</h2>
+<p>Finally, <code>get_grid</code> allows you to create a grid cell data set with various summary measures of how many maps cover a particular area. By default, the function creates a grid covering the entire extent of the provided map data set, but it is also possible to specify a particular area by providing a raster object with that extent. The function calculates several different operationalizations of the overall idea of capturing to what extent a given area was controlled by a state. The different measures rely on different rules for specyfing what state to use for summarizing the share of maps if there are more than one state covering a particular grid cell.</p>
+<ol style="list-style-type: decimal">
+<li>
+<em>polysh_largest_count</em>: The share of all polygons in a grid cell for the state with the largest total number of polygons.</li>
+<li>
+<em>polysh_largest_area</em>: The share of all polygons in a grid cell for the state with the largest single polygon (NB: This could be operataionalized differently as based on the area of the union of polygons for each state or the median area of polygons for each state).</li>
+<li>
+<em>polysh_largest_share</em>: The share of all polygons in a grid cell for the state with the largest share in that grid cell.</li>
+<li>
+<em>polysh_across</em>: The average share of polygons across all states intersecting a given grid cell.</li>
+</ol>
+<p>In addition to these, there are two measures capturing slightly different concepts related to borders and contested territory.</p>
+<ol start="5" style="list-style-type: decimal">
+<li>
+<em>bordersh</em>: The share of polygons with a border intersecting a given grid cell, relative to all polygons intersecting the grid cell (across all states). A higher share indicates that the area is more likely to be a border region.</li>
+<li>
+<em>contested</em>: A measure capturing the idea of contested territory. Is is calculated as negative sum of state-specific shares of polygons intersecting a grid cell weighted by the logarithm of the same share: , where is the state-specific share of polygons intersecting a grid cell. (NB: This measure is still in development and the exact equation might change.)</li>
+</ol>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">df_grid</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/get_grid.html">get_grid</a></span><span class="op">(</span><span class="va">shp</span>, id_var <span class="op">=</span> <span class="va">COWID</span>, period_var <span class="op">=</span> <span class="va">year</span><span class="op">)</span></span></code></pre></div>
+<p>The output is (by default) a list containing the raster object (<code>r</code>) used for creating the gridded data set along with the actual grid data set (<code>df</code>). To plot a particular variable, you can extract the raster object and assign the values for a particular variable to that object. See below:</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Extract raster</span></span>
+<span><span class="va">share_largest_count</span> <span class="op">&lt;-</span> <span class="va">df_grid</span><span class="op">$</span><span class="va">r</span></span>
+<span></span>
+<span><span class="co"># Assign values to grid cells</span></span>
+<span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/values.html" class="external-link">values</a></span><span class="op">(</span><span class="va">share_largest_count</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">df_grid</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">polysh_largest_count</span></span>
+<span></span>
+<span><span class="co"># Plot grid</span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">afr</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">tidyterra</span><span class="fu">::</span><span class="fu">geom_spatraster</span><span class="op">(</span>data <span class="op">=</span> <span class="va">share_largest_count</span>, alpha <span class="op">=</span> <span class="fl">0.7</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_viridis.html" class="external-link">scale_fill_viridis_c</a></span><span class="op">(</span>option <span class="op">=</span> <span class="st">"plasma"</span>, direction <span class="op">=</span> <span class="op">-</span><span class="fl">1</span>, na.value <span class="op">=</span> <span class="cn">NA</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="st">"Share of polygons for the state with the largest \nnumber of polygons in total"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/guides.html" class="external-link">guides</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/guide_colourbar.html" class="external-link">guide_colorbar</a></span><span class="op">(</span>barwidth <span class="op">=</span> <span class="fl">15</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">cappelenR</span><span class="fu">::</span><span class="fu">my_maptheme</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">cappelenR</span><span class="fu">::</span><span class="fu">coord_bbox</span><span class="op">(</span><span class="va">afr</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span>, legend.title.position <span class="op">=</span> <span class="st">"top"</span>,</span>
+<span>        legend.justification <span class="op">=</span> <span class="st">"center"</span>, legend.margin <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">margin</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>,<span class="fl">0</span>,<span class="fl">0</span>,<span class="fl">0</span>,unit <span class="op">=</span> <span class="st">"cm"</span><span class="op">)</span>,</span>
+<span>        legend.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">12</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-plot%20grid-1.png" width="100%"></p>
+<p>Again, it is also possible to create a panel version of the grid data, divided by specified period (by default it will create a panel for each 20-year period):</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">df_grid_panel</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/get_grid.html">get_grid</a></span><span class="op">(</span><span class="va">shp</span>, id_var <span class="op">=</span> <span class="va">COWID</span>, by_period <span class="op">=</span> <span class="cn">TRUE</span>, period_var <span class="op">=</span> <span class="va">year</span><span class="op">)</span></span></code></pre></div>
+<p>Plotting the panel data requires creating a different layer for the raster object for each period and then assigning the values for that period. The code below provides a function for doing that.</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Define function for extracting raster grid and values for given variable</span></span>
+<span><span class="co"># This might be moved to its own proper function in the package</span></span>
+<span><span class="va">create_grid_panel</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">var</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">period_temp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">x</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">period</span><span class="op">)</span></span>
+<span>  <span class="va">r_temp</span> <span class="op">&lt;-</span> <span class="va">x</span><span class="op">$</span><span class="va">r</span></span>
+<span>  <span class="va">r_panel</span> <span class="op">&lt;-</span> <span class="va">r_temp</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">period_temp</span><span class="op">[</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="fu">terra</span><span class="fu">::</span><span class="fu">add</span><span class="op">(</span><span class="va">r_panel</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">r_temp</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/inplace.html" class="external-link">set.names</a></span><span class="op">(</span><span class="va">r_panel</span>, <span class="va">period_temp</span><span class="op">)</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="va">period_temp</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/values.html" class="external-link">values</a></span><span class="op">(</span><span class="va">r_panel</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">x</span><span class="op">$</span><span class="va">data</span><span class="op">[</span><span class="va">x</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">period</span> <span class="op">==</span> <span class="va">i</span>, <span class="va">var</span><span class="op">]</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">r_panel</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">share_largest_count_panel</span> <span class="op">&lt;-</span> <span class="fu">create_grid_panel</span><span class="op">(</span></span>
+<span>  x <span class="op">=</span> <span class="va">df_grid_panel</span>, </span>
+<span>  var <span class="op">=</span> <span class="st">"polysh_largest_count"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Plot grid for each period</span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">afr</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">tidyterra</span><span class="fu">::</span><span class="fu">geom_spatraster</span><span class="op">(</span>data <span class="op">=</span> <span class="va">share_largest_count_panel</span>, alpha <span class="op">=</span> <span class="fl">0.7</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_viridis.html" class="external-link">scale_fill_viridis_c</a></span><span class="op">(</span>option <span class="op">=</span> <span class="st">"plasma"</span>, direction <span class="op">=</span> <span class="op">-</span><span class="fl">1</span>, na.value <span class="op">=</span> <span class="cn">NA</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="st">"Share of polygons for the state with the largest \nnumber of polygons in total"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/guides.html" class="external-link">guides</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/guide_colourbar.html" class="external-link">guide_colorbar</a></span><span class="op">(</span>barwidth <span class="op">=</span> <span class="fl">15</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">cappelenR</span><span class="fu">::</span><span class="fu">my_maptheme</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">cappelenR</span><span class="fu">::</span><span class="fu">coord_bbox</span><span class="op">(</span><span class="va">afr</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span>, legend.title.position <span class="op">=</span> <span class="st">"top"</span>,</span>
+<span>        legend.justification <span class="op">=</span> <span class="st">"center"</span></span>
+<span>        <span class="co"># legend.margin = margin(-2,0,0,0,unit = "cm")</span></span>
+<span>        <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span> <span class="va">lyr</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-plot%20panel%20grid-1.png" width="100%"></p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">
