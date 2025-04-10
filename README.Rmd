@@ -263,7 +263,7 @@ df_grid_panel$data <- df_grid_panel$data |>
 
 Plotting the panel data requires creating a different layer for the raster object for each period and then assigning the values for that period. The code below provides a function for doing that. 
 
-```{r plot panel grid, eval = TRUE}
+```{r plot panel grid, eval = TRUE, out.width = "100%"}
 # Define function for extracting raster grid and values for given variable
 # This might be moved to its own proper function in the package
 create_grid_panel <- function(x, var) {
@@ -294,8 +294,8 @@ ggplot() +
   cappelenR::my_maptheme() +
   cappelenR::coord_bbox(afr) +
   theme(legend.position = "bottom", legend.title.position = "top",
-        legend.justification = "center"
-        # legend.margin = margin(-2,0,0,0,unit = "cm")
+        legend.justification = "center",
+        plot.background = element_rect(fill = "grey95")
         ) +
   facet_wrap(~ lyr)
 ```

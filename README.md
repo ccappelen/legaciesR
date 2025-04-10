@@ -434,8 +434,8 @@ ggplot() +
   cappelenR::my_maptheme() +
   cappelenR::coord_bbox(afr) +
   theme(legend.position = "bottom", legend.title.position = "top",
-        legend.justification = "center"
-        # legend.margin = margin(-2,0,0,0,unit = "cm")
+        legend.justification = "center",
+        plot.background = element_rect(fill = "grey95")
         ) +
   facet_wrap(~ lyr)
 ```
