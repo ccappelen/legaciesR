@@ -200,8 +200,8 @@ get_covariates <- function(x,
     # riverdist <- terra::distance(r, rivers, progress = 0)
     # riverdist <- riverdist / 1000
     # df$dist2river <- terra::values(riverdist)
-    riverdist <- nngeo::st_nn(x$data |> sf::st_as_sf(coords = coords, crs = 4326), rivers,
-                       k = 1, returnDist = TRUE, parallel = future::availableCores()) |>
+    riverdist <- nngeo::st_nn(df |> sf::st_as_sf(coords = coords, crs = 4326), rivers,
+                              k = 1, returnDist = TRUE, parallel = future::availableCores()) |>
       suppressMessages()
     riverdist <- riverdist$dist |>
       unlist()
@@ -225,7 +225,7 @@ get_covariates <- function(x,
 
     coast <- rnaturalearthdata::coastline50
     # coastdist <- terra::distance(r, rivers, progress = 0)
-    coastdist <- nngeo::st_nn(x$data |> sf::st_as_sf(coords = coords, crs = 4326), coast,
+    coastdist <- nngeo::st_nn(df |> sf::st_as_sf(coords = coords, crs = 4326), coast,
                               k = 1, returnDist = TRUE, parallel = future::availableCores()) |>
       suppressMessages()
     coastdist <- coastdist$dist |>

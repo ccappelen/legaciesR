@@ -110,10 +110,10 @@ Because invalid geometries can happen for many reasons that may point to other d
 ```{r fix invalid geometries, eval = TRUE, warning = FALSE}
 shp <- fix_invalid(shp)
 
-## CROP SHP FOR NOW
+## SUBET DATA TO AFRICA FOR QUICKER COMPUTATION
 shp <- shp[st_within(shp,
                      rnaturalearthdata::countries50 |>
-                       filter(subregion == "Western Africa") |>
+                       filter(continent == "Africa") |>
                        st_union(), sparse = F),]
 ```
 
@@ -299,12 +299,33 @@ ggplot() +
   cappelenR::coord_bbox(afr) +
   theme(legend.position = "bottom", legend.title.position = "top",
         legend.justification = "center",
-        # legend.title = element_text(size = 12),
-        # plot.background = element_rect(fill = "grey90"),
-        # plot.margin=grid::unit(c(0,0,0,0), "mm"),
-        # axis.ticks.length = unit(0, "pt"),
-        # aspect.ratio = 1,
+        legend.title = element_text(size = 12),
         axis.ticks = element_blank()
         ) +
   facet_grid(~ lyr)
+```
+
+
+## Adding covariates to grid data
+
+In order to add additional covariates to the grid data, it is necessary to provide the path to the folder containing the relevant data. The folder is located in the LEGACIES OneDrive folder and is called "covariates". Thus, the path should end with the following ".../legacies_project/covariates". 
+
+The function takes the output from `get_grid` and adds the specified covariates to the data set. By default, all covariates are included, but it is possible to specify which covariates to include. At the moment, there are only a few commonly used geographic covariates included, but more will be added.  
+
+```{r path, eval = TRUE, echo = FALSE}
+covar_path <- "/Users/christoffercappelen/Library/CloudStorage/OneDrive-NTNU/legacies_project"
+```
+
+```{r path hidden, eval = FALSE}
+covar_path <- ".../legacies_project"
+```
+
+```{r covars, eval = TRUE}
+df_grid <- get_covariates(df_grid, path = covar_path)
+```
+
+Adding covariates to the panel version of the grid data follows the exact same structure: 
+
+```{r covars panel, eval = TRUE}
+df_grid_panel <- get_covariates(df_grid_panel, path = covar_path)
 ```

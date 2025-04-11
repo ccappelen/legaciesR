@@ -4,8 +4,11 @@
 # legaciesr
 
 <!-- badges: start -->
+
 <!-- [![Codecov test coverage](https://codecov.io/gh/ccappelen/legaciesR/graph/badge.svg)](https://app.codecov.io/gh/ccappelen/legaciesR) -->
+
 <!-- [![R-CMD-check](https://github.com/ccappelen/legaciesR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/ccappelen/legaciesR/actions/workflows/R-CMD-check.yaml) -->
+
 <!-- badges: end -->
 
 The `legaciesr` package provides a set of functions used to aggregate
@@ -141,10 +144,10 @@ shp <- fix_invalid(shp)
 #> 447 (3.3 %) geometries were successfully rebuilt.
 #> 0 (0 %) geometries failed to rebuild as valid.
 
-## CROP SHP FOR NOW
+## SUBET DATA TO AFRICA FOR QUICKER COMPUTATION
 shp <- shp[st_within(shp,
                      rnaturalearthdata::countries50 |>
-                       filter(subregion == "Western Africa") |>
+                       filter(continent == "Africa") |>
                        st_union(), sparse = F),]
 ```
 
@@ -203,13 +206,13 @@ errors <- detect_errors(shp = shp, capital_data = isd,
                         progress = FALSE)
 #> 
 #> POTENTIAL ERRORS:
-#> • 15 states with potentially duplicate COWIDs.
+#> • 49 states with potentially duplicate COWIDs.
 #> • 0 shapes with empty geometries.
-#> • 1 shapes with missing IDs.
-#> • 26 COWIDs with only a single map.
-#> • 465 maps with years missing or outside 1750-1920.
-#> • 310 maps that do not overlap with other shapes with the same ID.
-#> • 482 maps where the capital falls outside the polygon.
+#> • 2 shapes with missing IDs.
+#> • 36 COWIDs with only a single map.
+#> • 1130 maps with years missing or outside 1750-1920.
+#> • 817 maps that do not overlap with other shapes with the same ID.
+#> • 1583 maps where the capital falls outside the polygon.
 ```
 
 Second, it returns a list composed of (1) the original data with columns
@@ -223,33 +226,33 @@ erroneous COWID assignment or erroneous geocoding of the map).
 ``` r
 shp_non_overlap <- errors$report$non_overlap
 shp_non_overlap
-#> Simple feature collection with 310 features and 32 fields
+#> Simple feature collection with 817 features and 32 fields
 #> Active geometry column: geometry
 #> Geometry type: GEOMETRY
 #> Dimension:     XY
-#> Bounding box:  xmin: -16.94491 ymin: 4.957359 xmax: 15.37766 ymax: 20.90528
+#> Bounding box:  xmin: -16.94491 ymin: -31.30053 xmax: 49.33274 ymax: 34.90809
 #> Geodetic CRS:  WGS 84
-#> # A tibble: 310 × 34
-#> # Groups:   COWID [40]
-#>     year COWID COWNUM name         lyear hyear coder note   coasterror cityerror
-#>  * <dbl> <chr>  <int> <chr>        <dbl> <dbl> <chr> <chr>       <int>     <dbl>
-#>  1  1870 99999     NA Liptako       1870  1870 cm    <NA>           NA        12
-#>  2  1870 AGA     4783 Agaie         1870  1870 cm    <NA>           NA        16
-#>  3  1790 AIR     4361 Agades        1790  1790 ss    <NA>           NA        NA
-#>  4  2019 AIR     4361 Asben         2019  2019 ss    Borde…         NA        NA
-#>  5  2019 AIR     4361 Asben         2019  2019 ss    Borde…         NA        NA
-#>  6  1874 AIR     4361 Air or Asben  1874  1874 ss    <NA>           NA        37
-#>  7  1967 AIR     4361 Aïr           1967  1967 ss    <NA>           NA        NA
-#>  8  1811 AIR     4361 Agades        1811  1811 ss    <NA>           NA        NA
-#>  9  1814 AIR     4361 Agades        1814  1814 ss    <NA>           NA        NA
-#> 10  1818 AIR     4361 Agades        1818  1818 ss    <NA>           NA        NA
-#> # ℹ 300 more rows
+#> # A tibble: 817 × 34
+#> # Groups:   COWID [73]
+#>     year COWID COWNUM name          lyear hyear coder note  coasterror cityerror
+#>  * <dbl> <chr>  <int> <chr>         <dbl> <dbl> <chr> <chr>      <int>     <dbl>
+#>  1  1899 563       NA Transvaal      1899  1910 ca    <NA>          NA        10
+#>  2  1900 563       NA Transvaal      1899  1910 ca    <NA>          NA        10
+#>  3  1910 563       NA Transvaal      1899  1910 ca    <NA>          NA        10
+#>  4  1870 99999     NA Liptako        1870  1870 cm    <NA>          NA        12
+#>  5  1866 99999     NA Orange Free …  1866  1866 cm    <NA>          NA         6
+#>  6  1870 AGA     4783 Agaie          1870  1870 cm    <NA>          NA        16
+#>  7  1787 AIR     4361 Wuste Agades   1787  1787 ss    Spli…         NA        NA
+#>  8  1795 AIR     4361 Agades         1795  1795 ss    <NA>          NA        NA
+#>  9  1790 AIR     4361 Agades         1790  1790 ss    <NA>          NA        NA
+#> 10  2019 AIR     4361 Asben          2019  2019 ss    Bord…         NA        NA
+#> # ℹ 807 more rows
 #> # ℹ 24 more variables: sourcetype <int>, `Core/Great` <int>, source <chr>,
 #> #   core <int>, id <dbl>, layer <chr>, path <chr>, lyear_str <chr>,
-#> #   core_str <chr>, geometry <MULTIPOLYGON [°]>, geom_valid <lgl>,
-#> #   rebuilt <lgl>, snap_precision <dbl>, capital_names <chr>,
-#> #   capital_coords <MULTIPOINT [°]>, incomplete <lgl>, in_spell <lgl>,
-#> #   empty_geom <lgl>, missing_id <lgl>, single_map <lgl>, year_outside <lgl>, …
+#> #   core_str <chr>, geometry <GEOMETRY [°]>, geom_valid <lgl>, rebuilt <lgl>,
+#> #   snap_precision <dbl>, capital_names <chr>, capital_coords <MULTIPOINT [°]>,
+#> #   incomplete <lgl>, in_spell <lgl>, empty_geom <lgl>, missing_id <lgl>,
+#> #   single_map <lgl>, year_outside <lgl>, year_na <lgl>, non_overlap <lgl>, …
 ```
 
 ## Create contour polygons
@@ -299,8 +302,6 @@ further details).
 
 ``` r
 df_contour_panel <- get_contours(shp, id_var = COWID, by_period = TRUE, period_var = year)
-#> Jobs running sequentially.
-#> ℹ Reverts to original plan after running.
 
 df_contour_panel |>
   filter(COWID == "SOK") |>
@@ -439,14 +440,69 @@ ggplot() +
   cappelenR::coord_bbox(afr) +
   theme(legend.position = "bottom", legend.title.position = "top",
         legend.justification = "center",
-        # legend.title = element_text(size = 12),
-        # plot.background = element_rect(fill = "grey90"),
-        # plot.margin=grid::unit(c(0,0,0,0), "mm"),
-        # axis.ticks.length = unit(0, "pt"),
-        # aspect.ratio = 1,
+        legend.title = element_text(size = 12),
         axis.ticks = element_blank()
         ) +
   facet_grid(~ lyr)
 ```
 
 <img src="man/figures/README-plot panel grid-1.png" width="100%" />
+
+## Adding covariates to grid data
+
+In order to add additional covariates to the grid data, it is necessary
+to provide the path to the folder containing the relevant data. The
+folder is located in the LEGACIES OneDrive folder and is called
+“covariates”. Thus, the path should end with the following
+“…/legacies_project/covariates”.
+
+The function takes the output from `get_grid` and adds the specified
+covariates to the data set. By default, all covariates are included, but
+it is possible to specify which covariates to include. At the moment,
+there are only a few commonly used geographic covariates included, but
+more will be added.
+
+``` r
+covar_path <- ".../legacies_project"
+```
+
+``` r
+df_grid <- get_covariates(df_grid, path = covar_path)
+#> ℹ 1/5: Extracing covariates - Terrain
+#> ✔ 1/5: Extracing covariates - Terrain [32.5s]
+#> 
+#> ℹ 2/5: Extracing covariates - Climate
+#> ✔ 2/5: Extracing covariates - Climate [123ms]
+#> 
+#> ℹ 3/5: Extracing covariates - Crops
+#> ✔ 3/5: Extracing covariates - Crops [4ms]
+#> 
+#> ℹ 4/5: Extracing covariates - Rivers
+#> ✔ 4/5: Extracing covariates - Rivers [3m 55.9s]
+#> 
+#> ℹ 5/5: Extracing covariates - Coast
+#> ✔ 5/5: Extracing covariates - Coast [55.6s]
+#> 
+```
+
+Adding covariates to the panel version of the grid data follows the
+exact same structure:
+
+``` r
+df_grid_panel <- get_covariates(df_grid_panel, path = covar_path)
+#> ℹ 1/5: Extracing covariates - Terrain
+#> ✔ 1/5: Extracing covariates - Terrain [30.2s]
+#> 
+#> ℹ 2/5: Extracing covariates - Climate
+#> ✔ 2/5: Extracing covariates - Climate [122ms]
+#> 
+#> ℹ 3/5: Extracing covariates - Crops
+#> ✔ 3/5: Extracing covariates - Crops [5ms]
+#> 
+#> ℹ 4/5: Extracing covariates - Rivers
+#> ✔ 4/5: Extracing covariates - Rivers [3m 19.2s]
+#> 
+#> ℹ 5/5: Extracing covariates - Coast
+#> ✔ 5/5: Extracing covariates - Coast [51.4s]
+#> 
+```
