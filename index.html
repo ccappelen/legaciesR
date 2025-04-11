@@ -120,10 +120,10 @@
 <span><span class="co">#&gt; 447 (3.3 %) geometries were successfully rebuilt.</span></span>
 <span><span class="co">#&gt; 0 (0 %) geometries failed to rebuild as valid.</span></span>
 <span></span>
-<span><span class="co">## CROP SHP FOR NOW</span></span>
+<span><span class="co">## SUBET DATA TO AFRICA FOR QUICKER COMPUTATION</span></span>
 <span><span class="va">shp</span> <span class="op">&lt;-</span> <span class="va">shp</span><span class="op">[</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_binary_pred.html" class="external-link">st_within</a></span><span class="op">(</span><span class="va">shp</span>,</span>
 <span>                     <span class="fu">rnaturalearthdata</span><span class="fu">::</span><span class="va"><a href="https://docs.ropensci.org/rnaturalearthdata/reference/countries.html" class="external-link">countries50</a></span> <span class="op">|&gt;</span></span>
-<span>                       <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">subregion</span> <span class="op">==</span> <span class="st">"Western Africa"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>                       <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">continent</span> <span class="op">==</span> <span class="st">"Africa"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>                       <span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_combine.html" class="external-link">st_union</a></span><span class="op">(</span><span class="op">)</span>, sparse <span class="op">=</span> <span class="cn">F</span><span class="op">)</span>,<span class="op">]</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -150,44 +150,44 @@
 <span>                        progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; POTENTIAL ERRORS:</span></span>
-<span><span class="co">#&gt; • 15 states with potentially duplicate COWIDs.</span></span>
+<span><span class="co">#&gt; • 49 states with potentially duplicate COWIDs.</span></span>
 <span><span class="co">#&gt; • 0 shapes with empty geometries.</span></span>
-<span><span class="co">#&gt; • 1 shapes with missing IDs.</span></span>
-<span><span class="co">#&gt; • 26 COWIDs with only a single map.</span></span>
-<span><span class="co">#&gt; • 465 maps with years missing or outside 1750-1920.</span></span>
-<span><span class="co">#&gt; • 310 maps that do not overlap with other shapes with the same ID.</span></span>
-<span><span class="co">#&gt; • 482 maps where the capital falls outside the polygon.</span></span></code></pre></div>
+<span><span class="co">#&gt; • 2 shapes with missing IDs.</span></span>
+<span><span class="co">#&gt; • 36 COWIDs with only a single map.</span></span>
+<span><span class="co">#&gt; • 1130 maps with years missing or outside 1750-1920.</span></span>
+<span><span class="co">#&gt; • 817 maps that do not overlap with other shapes with the same ID.</span></span>
+<span><span class="co">#&gt; • 1583 maps where the capital falls outside the polygon.</span></span></code></pre></div>
 <p>Second, it returns a list composed of (1) the original data with columns indicating potential issues for each error type and (2) separate subsets of the data set including only observations identified as a potential issue for each of the error types. For instance, the code below returns only those COWIDs for which there are geometries not overlapping with other geometries of the same COWID (which might indicate either erroneous COWID assignment or erroneous geocoding of the map).</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">shp_non_overlap</span> <span class="op">&lt;-</span> <span class="va">errors</span><span class="op">$</span><span class="va">report</span><span class="op">$</span><span class="va">non_overlap</span></span>
 <span><span class="va">shp_non_overlap</span></span>
-<span><span class="co">#&gt; Simple feature collection with 310 features and 32 fields</span></span>
+<span><span class="co">#&gt; Simple feature collection with 817 features and 32 fields</span></span>
 <span><span class="co">#&gt; Active geometry column: geometry</span></span>
 <span><span class="co">#&gt; Geometry type: GEOMETRY</span></span>
 <span><span class="co">#&gt; Dimension:     XY</span></span>
-<span><span class="co">#&gt; Bounding box:  xmin: -16.94491 ymin: 4.957359 xmax: 15.37766 ymax: 20.90528</span></span>
+<span><span class="co">#&gt; Bounding box:  xmin: -16.94491 ymin: -31.30053 xmax: 49.33274 ymax: 34.90809</span></span>
 <span><span class="co">#&gt; Geodetic CRS:  WGS 84</span></span>
-<span><span class="co">#&gt; # A tibble: 310 × 34</span></span>
-<span><span class="co">#&gt; # Groups:   COWID [40]</span></span>
-<span><span class="co">#&gt;     year COWID COWNUM name         lyear hyear coder note   coasterror cityerror</span></span>
-<span><span class="co">#&gt;  * &lt;dbl&gt; &lt;chr&gt;  &lt;int&gt; &lt;chr&gt;        &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;       &lt;int&gt;     &lt;dbl&gt;</span></span>
-<span><span class="co">#&gt;  1  1870 99999     NA Liptako       1870  1870 cm    &lt;NA&gt;           NA        12</span></span>
-<span><span class="co">#&gt;  2  1870 AGA     4783 Agaie         1870  1870 cm    &lt;NA&gt;           NA        16</span></span>
-<span><span class="co">#&gt;  3  1790 AIR     4361 Agades        1790  1790 ss    &lt;NA&gt;           NA        NA</span></span>
-<span><span class="co">#&gt;  4  2019 AIR     4361 Asben         2019  2019 ss    Borde…         NA        NA</span></span>
-<span><span class="co">#&gt;  5  2019 AIR     4361 Asben         2019  2019 ss    Borde…         NA        NA</span></span>
-<span><span class="co">#&gt;  6  1874 AIR     4361 Air or Asben  1874  1874 ss    &lt;NA&gt;           NA        37</span></span>
-<span><span class="co">#&gt;  7  1967 AIR     4361 Aïr           1967  1967 ss    &lt;NA&gt;           NA        NA</span></span>
-<span><span class="co">#&gt;  8  1811 AIR     4361 Agades        1811  1811 ss    &lt;NA&gt;           NA        NA</span></span>
-<span><span class="co">#&gt;  9  1814 AIR     4361 Agades        1814  1814 ss    &lt;NA&gt;           NA        NA</span></span>
-<span><span class="co">#&gt; 10  1818 AIR     4361 Agades        1818  1818 ss    &lt;NA&gt;           NA        NA</span></span>
-<span><span class="co">#&gt; # ℹ 300 more rows</span></span>
+<span><span class="co">#&gt; # A tibble: 817 × 34</span></span>
+<span><span class="co">#&gt; # Groups:   COWID [73]</span></span>
+<span><span class="co">#&gt;     year COWID COWNUM name          lyear hyear coder note  coasterror cityerror</span></span>
+<span><span class="co">#&gt;  * &lt;dbl&gt; &lt;chr&gt;  &lt;int&gt; &lt;chr&gt;         &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;      &lt;int&gt;     &lt;dbl&gt;</span></span>
+<span><span class="co">#&gt;  1  1899 563       NA Transvaal      1899  1910 ca    &lt;NA&gt;          NA        10</span></span>
+<span><span class="co">#&gt;  2  1900 563       NA Transvaal      1899  1910 ca    &lt;NA&gt;          NA        10</span></span>
+<span><span class="co">#&gt;  3  1910 563       NA Transvaal      1899  1910 ca    &lt;NA&gt;          NA        10</span></span>
+<span><span class="co">#&gt;  4  1870 99999     NA Liptako        1870  1870 cm    &lt;NA&gt;          NA        12</span></span>
+<span><span class="co">#&gt;  5  1866 99999     NA Orange Free …  1866  1866 cm    &lt;NA&gt;          NA         6</span></span>
+<span><span class="co">#&gt;  6  1870 AGA     4783 Agaie          1870  1870 cm    &lt;NA&gt;          NA        16</span></span>
+<span><span class="co">#&gt;  7  1787 AIR     4361 Wuste Agades   1787  1787 ss    Spli…         NA        NA</span></span>
+<span><span class="co">#&gt;  8  1795 AIR     4361 Agades         1795  1795 ss    &lt;NA&gt;          NA        NA</span></span>
+<span><span class="co">#&gt;  9  1790 AIR     4361 Agades         1790  1790 ss    &lt;NA&gt;          NA        NA</span></span>
+<span><span class="co">#&gt; 10  2019 AIR     4361 Asben          2019  2019 ss    Bord…         NA        NA</span></span>
+<span><span class="co">#&gt; # ℹ 807 more rows</span></span>
 <span><span class="co">#&gt; # ℹ 24 more variables: sourcetype &lt;int&gt;, `Core/Great` &lt;int&gt;, source &lt;chr&gt;,</span></span>
 <span><span class="co">#&gt; #   core &lt;int&gt;, id &lt;dbl&gt;, layer &lt;chr&gt;, path &lt;chr&gt;, lyear_str &lt;chr&gt;,</span></span>
-<span><span class="co">#&gt; #   core_str &lt;chr&gt;, geometry &lt;MULTIPOLYGON [°]&gt;, geom_valid &lt;lgl&gt;,</span></span>
-<span><span class="co">#&gt; #   rebuilt &lt;lgl&gt;, snap_precision &lt;dbl&gt;, capital_names &lt;chr&gt;,</span></span>
-<span><span class="co">#&gt; #   capital_coords &lt;MULTIPOINT [°]&gt;, incomplete &lt;lgl&gt;, in_spell &lt;lgl&gt;,</span></span>
-<span><span class="co">#&gt; #   empty_geom &lt;lgl&gt;, missing_id &lt;lgl&gt;, single_map &lt;lgl&gt;, year_outside &lt;lgl&gt;, …</span></span></code></pre></div>
+<span><span class="co">#&gt; #   core_str &lt;chr&gt;, geometry &lt;GEOMETRY [°]&gt;, geom_valid &lt;lgl&gt;, rebuilt &lt;lgl&gt;,</span></span>
+<span><span class="co">#&gt; #   snap_precision &lt;dbl&gt;, capital_names &lt;chr&gt;, capital_coords &lt;MULTIPOINT [°]&gt;,</span></span>
+<span><span class="co">#&gt; #   incomplete &lt;lgl&gt;, in_spell &lt;lgl&gt;, empty_geom &lt;lgl&gt;, missing_id &lt;lgl&gt;,</span></span>
+<span><span class="co">#&gt; #   single_map &lt;lgl&gt;, year_outside &lt;lgl&gt;, year_na &lt;lgl&gt;, non_overlap &lt;lgl&gt;, …</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="create-contour-polygons">Create contour polygons<a class="anchor" aria-label="anchor" href="#create-contour-polygons"></a>
@@ -220,8 +220,6 @@
 <p>By default, the function summarizes the maps across the entire period (i.e. 1750-1920). However, it is also possible to specify the contour polygons by drawn separately by specified period (see documentation for further details).</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df_contour_panel</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/get_contours.html">get_contours</a></span><span class="op">(</span><span class="va">shp</span>, id_var <span class="op">=</span> <span class="va">COWID</span>, by_period <span class="op">=</span> <span class="cn">TRUE</span>, period_var <span class="op">=</span> <span class="va">year</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Jobs running sequentially.</span></span>
-<span><span class="co">#&gt; ℹ Reverts to original plan after running.</span></span>
 <span></span>
 <span><span class="va">df_contour_panel</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">COWID</span> <span class="op">==</span> <span class="st">"SOK"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -320,15 +318,54 @@
 <span>  <span class="fu">cappelenR</span><span class="fu">::</span><span class="fu">coord_bbox</span><span class="op">(</span><span class="va">afr</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span>, legend.title.position <span class="op">=</span> <span class="st">"top"</span>,</span>
 <span>        legend.justification <span class="op">=</span> <span class="st">"center"</span>,</span>
-<span>        <span class="co"># legend.title = element_text(size = 12),</span></span>
-<span>        <span class="co"># plot.background = element_rect(fill = "grey90"),</span></span>
-<span>        <span class="co"># plot.margin=grid::unit(c(0,0,0,0), "mm"),</span></span>
-<span>        <span class="co"># axis.ticks.length = unit(0, "pt"),</span></span>
-<span>        <span class="co"># aspect.ratio = 1,</span></span>
+<span>        legend.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">12</span><span class="op">)</span>,</span>
 <span>        axis.ticks <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_blank</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>        <span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_grid.html" class="external-link">facet_grid</a></span><span class="op">(</span><span class="op">~</span> <span class="va">lyr</span><span class="op">)</span></span></code></pre></div>
 <p><img src="reference/figures/README-plot%20panel%20grid-1.png" width="100%"></p>
+</div>
+<div class="section level2">
+<h2 id="adding-covariates-to-grid-data">Adding covariates to grid data<a class="anchor" aria-label="anchor" href="#adding-covariates-to-grid-data"></a>
+</h2>
+<p>In order to add additional covariates to the grid data, it is necessary to provide the path to the folder containing the relevant data. The folder is located in the LEGACIES OneDrive folder and is called “covariates”. Thus, the path should end with the following “…/legacies_project/covariates”.</p>
+<p>The function takes the output from <code>get_grid</code> and adds the specified covariates to the data set. By default, all covariates are included, but it is possible to specify which covariates to include. At the moment, there are only a few commonly used geographic covariates included, but more will be added.</p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">covar_path</span> <span class="op">&lt;-</span> <span class="st">".../legacies_project"</span></span></code></pre></div>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">df_grid</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/get_covariates.html">get_covariates</a></span><span class="op">(</span><span class="va">df_grid</span>, path <span class="op">=</span> <span class="va">covar_path</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ℹ 1/5: Extracing covariates - Terrain</span></span>
+<span><span class="co">#&gt; ✔ 1/5: Extracing covariates - Terrain [32.5s]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ℹ 2/5: Extracing covariates - Climate</span></span>
+<span><span class="co">#&gt; ✔ 2/5: Extracing covariates - Climate [123ms]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ℹ 3/5: Extracing covariates - Crops</span></span>
+<span><span class="co">#&gt; ✔ 3/5: Extracing covariates - Crops [4ms]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ℹ 4/5: Extracing covariates - Rivers</span></span>
+<span><span class="co">#&gt; ✔ 4/5: Extracing covariates - Rivers [3m 55.9s]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ℹ 5/5: Extracing covariates - Coast</span></span>
+<span><span class="co">#&gt; ✔ 5/5: Extracing covariates - Coast [55.6s]</span></span>
+<span><span class="co">#&gt; </span></span></code></pre></div>
+<p>Adding covariates to the panel version of the grid data follows the exact same structure:</p>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">df_grid_panel</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/get_covariates.html">get_covariates</a></span><span class="op">(</span><span class="va">df_grid_panel</span>, path <span class="op">=</span> <span class="va">covar_path</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ℹ 1/5: Extracing covariates - Terrain</span></span>
+<span><span class="co">#&gt; ✔ 1/5: Extracing covariates - Terrain [30.2s]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ℹ 2/5: Extracing covariates - Climate</span></span>
+<span><span class="co">#&gt; ✔ 2/5: Extracing covariates - Climate [122ms]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ℹ 3/5: Extracing covariates - Crops</span></span>
+<span><span class="co">#&gt; ✔ 3/5: Extracing covariates - Crops [5ms]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ℹ 4/5: Extracing covariates - Rivers</span></span>
+<span><span class="co">#&gt; ✔ 4/5: Extracing covariates - Rivers [3m 19.2s]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ℹ 5/5: Extracing covariates - Coast</span></span>
+<span><span class="co">#&gt; ✔ 5/5: Extracing covariates - Coast [51.4s]</span></span>
+<span><span class="co">#&gt; </span></span></code></pre></div>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">
