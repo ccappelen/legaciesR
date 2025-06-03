@@ -46,14 +46,15 @@ prepare_shapes(
 
 \item{exclude_hierarchy}{Character vector, whether to exclude maps for states that are subordinated (tributary or dependency). \code{none} (default)
 will keep all maps regardless of hierarchy status, \code{tributary} will exclude tributary states (\code{hierarchy == 1}), \code{dependency} will exclude
-dependencies (\code{hierarchy == 2}), and \code{both} will exclude both tributaries and dependencies. See also \code{combine_hierarchy}.}
+dependencies (\code{hierarchy == 2}), and \code{all} will exclude both tributaries and dependencies. See also \code{combine_hierarchy}.}
 
 \item{exclude_core}{Exclude maps coded as core (i.e., include only the complete shape of both core and periphery).
 Default is \code{TRUE}.}
 
 \item{exclude_incomplete}{Exclude maps with incomplete borders. Default is \code{TRUE}.}
 
-\item{exclude_sovereign}{Exclude maps for states that are not sovereign at the time of the map. See details.}
+\item{exclude_sovereign}{Exclude maps for states that are not sovereign at the time of the map. If \code{exclude_sovereign} is not \code{none}, then sovereign spells are defined by the same hierarchy rule.
+Otherwise, all polity-years in the ID data will be included as sovereign spells. See details.}
 
 \item{margin_sovereign}{Number of years before or after a state is sovereign that a map is still included (if \code{exclude_sovereign} is \code{TRUE}). Default is 5 years.}
 

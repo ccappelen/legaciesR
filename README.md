@@ -17,7 +17,7 @@ and summarize the mapping and ID data collected in the
 to, i.a., (1) create contour polygons capturing the territorial extent
 of historical states at different probability thresholds, (2) create a
 grid with various summary measures of historical state presence, and (3)
-add a range of commonly used covariates to the polygon and grid data.
+aggregate data on the number of historical states to modern countries.
 
 ## Installation
 
@@ -54,16 +54,17 @@ in the remainder of this README. In short, it consists of
 <!-- (1) fixing invalid geometries in the map data, (2) preprocess the map data and match with information in the ISD state data, (3) detect potential errors in the data set, (4) generate contour polygons from the raw map data, (5) generate a grid cell data set with various summary measures of historical statehood, and (6) match the grid cell data with numerous other data sources commonly used in empirical applications.  -->
 
 1.  Detecting and fixing invalid geometries in the map data.
-2.  Preprocessing the map data and match with information in the ISD
+2.  Cleaning and expanding the ID data to polity-year observations.
+3.  Pre-processing the map data and match with information in the ID
     state data.
-3.  Detecting potential errors in the data set.
-4.  Generating contour polygons from the raw map data. (Optional)
-5.  Generating a grid cell data set with various summary measures of
+4.  Detecting potential errors in the map data.
+5.  Generating contour polygons from the raw map data.
+6.  Generating a grid cell data set with various summary measures of
     historical statehood.
-6.  Matching the grid cell data with numerous other data sources
-    commonly used in empirical applications.
+7.  Aggregate data on the number of historical states to the modern
+    country level.
 
-Each function (corresponding to each of the six steps) is further
+Each function (corresponding to each of the seven steps) is further
 documented in their respective help documentation. This guide will
 outline the basic features of the functions and their intended usage.
 
@@ -102,21 +103,23 @@ future::plan("multisession", workers = future::availableCores())
 
 ## Reading the data
 
-The raw map and ISD data is not currently included in the package and
-therefore has to be loaded from the user’s own directory:
+The raw map and ID data is not currently included in the package and
+therefore has to be loaded from the user’s own directory. The raw
+mapping data is the set of shapefiles called “master_shapefile”, while
+the raw ID data isd called “legacies_id_coding.xlsx”:
 
 ``` r
 shp_folder <- "path to map data folder"
 shp_name <- "name of shapefile"
-isd_path <- "file path to isd data"
+id_path <- "file path to id data"
 ```
 
 ``` r
 shp <- st_read(shp_path, shp_name)
 rm(shp_folder, shp_name)
 
-isd <- readxl::read_xlsx(isd_path)
-rm(isd_path)
+id <- readxl::read_xlsx(isd_path)
+rm(id_path)
 ```
 
 ## Invalid geometries
@@ -143,27 +146,49 @@ issues.
 shp <- fix_invalid(shp)
 #> 447 (3.3 %) geometries were successfully rebuilt.
 #> 0 (0 %) geometries failed to rebuild as valid.
-
-## SUBET DATA TO AFRICA FOR QUICKER COMPUTATION
-shp <- shp[st_within(shp,
-                     rnaturalearthdata::countries50 |>
-                       filter(continent == "Africa") |>
-                       st_union(), sparse = F),]
 ```
 
-## Preprocessing
+## Prepare ID data
+
+The raw ID data contains information on polities, their capital cities,
+and hierarchy status (among other things). `legacies::prepare_id`
+expands the data into polity-year format and extracts information on
+capital cities and hierarchy status. For capital cities, some
+polity-years are coded with multiple capitals in the same year. It is
+possible to specify whether all capitals should be included, in which
+case each polity-year will be represented by multiple rows
+(corresponding to the number of capitals). The default is to keep only
+the capital with the longest continuous spell.
+
+``` r
+id <- prepare_id(id, multiple_capital = FALSE)
+#> ℹ 1/4: Cleaning ID data
+#> ✔ 2/4: Cleaning ID data [35ms]
+#> 
+#> ℹ 2/4: Extracting capitals
+#> ✔ 3/4: Extracting capitals [1s]
+#> 
+#> ℹ 3/4: Extract hierarchy information
+#> ✔ 4/4: Extract hierarchy information [751ms]
+#> 
+#> ℹ 4/4: Finishing
+#> ✔ 4/4: Finishing [13ms]
+#> 
+```
+
+## Prepare map data
 
 The next step is to prepare the map data to be in a suitable format for
 creating grid data, matching with data from the ISD data, etc. It is
-therefore also necessary to provide the ISD data in order to match the
-two data sets. By default, the function will (1) expand the data to have
-one row per year for maps that are assigned a range of years, (2) fix
-potential issues such as three-digit years due to approximate dating,
-(3) exclude maps without your assignment, (4) add information on
-capitals (names and coordinates), (5) crop all geometries to
-coastlines\*, (6) exclude maps marked as “incomplete”, (7) exclude maps
-of core regions (if they are marked as such)\*\*, and (8) exclude maps
-for years in which a state is not considered sovereign (in the ISD
+therefore also necessary to provide the ID data (see previous step) in
+order to match the two data sets. By default, the function will (1)
+expand the data to have one row per year for maps that are assigned a
+range of years, (2) fix potential issues such as three-digit years due
+to approximate dating, (3) exclude maps without your assignment, (4) add
+information on capitals (names and coordinates), (5) crop all geometries
+to coastlines\*, (6) exclude maps marked as “incomplete”, (7) exclude
+maps of core regions (if they are marked as such)\*\*, and (8) exclude
+maps for years in which a state is not considered sovereign (in the ID
 data)\*\*\*. Each of these options can be disabled. It is also possible
 to exclude maps based on the hierarchy coding of states, i.e., if states
 are coded as tributary and/or dependency.
@@ -176,7 +201,7 @@ considered sovereign. The size of the window can be changed with the
 `margin_sovereign` option.
 
 ``` r
-shp <- prepare_shapes(shp = shp, state_data = isd,
+shp <- prepare_shapes(shp = shp, state_data = id,
                       id_var = COWID, period_var = year,
                       range_min = lyear, range_max = hyear,
                       crop_to_land = FALSE, ## 'get_contours' currently not working when cropped to land
@@ -201,18 +226,18 @@ First, it prints a report detailing whether and how many potential
 issues there are for a given type of error.
 
 ``` r
-errors <- detect_errors(shp = shp, capital_data = isd,
+errors <- detect_errors(shp = shp, capital_data = id,
                         id_var = COWID, period_var = year,
                         progress = FALSE)
 #> 
 #> POTENTIAL ERRORS:
-#> • 49 states with potentially duplicate COWIDs.
-#> • 0 shapes with empty geometries.
-#> • 2 shapes with missing IDs.
-#> • 36 COWIDs with only a single map.
-#> • 1130 maps with years missing or outside 1750-1920.
-#> • 817 maps that do not overlap with other shapes with the same ID.
-#> • 1583 maps where the capital falls outside the polygon.
+#> • 113 states with potentially duplicate COWIDs.
+#> • 8 shapes with empty geometries.
+#> • 0 shapes with missing IDs.
+#> • 23 COWIDs with only a single map.
+#> • 75 maps with years missing or outside 1750-1920.
+#> • 2188 maps that do not overlap with other shapes with the same ID.
+#> • 4765 maps where the capital falls outside the polygon.
 ```
 
 Second, it returns a list composed of (1) the original data with columns
@@ -226,33 +251,33 @@ erroneous COWID assignment or erroneous geocoding of the map).
 ``` r
 shp_non_overlap <- errors$report$non_overlap
 shp_non_overlap
-#> Simple feature collection with 817 features and 32 fields
-#> Active geometry column: geometry
+#> Simple feature collection with 2188 features and 33 fields
+#> Active geometry column: geometry (with 8 geometries empty)
 #> Geometry type: GEOMETRY
 #> Dimension:     XY
-#> Bounding box:  xmin: -16.94491 ymin: -31.30053 xmax: 49.33274 ymax: 34.90809
+#> Bounding box:  xmin: -17.26439 ymin: -29.96989 xmax: 115.7275 ymax: 45.67083
 #> Geodetic CRS:  WGS 84
-#> # A tibble: 817 × 34
-#> # Groups:   COWID [73]
-#>     year COWID COWNUM name          lyear hyear coder note  coasterror cityerror
-#>  * <dbl> <chr>  <int> <chr>         <dbl> <dbl> <chr> <chr>      <int>     <dbl>
-#>  1  1899 563       NA Transvaal      1899  1910 ca    <NA>          NA        10
-#>  2  1900 563       NA Transvaal      1899  1910 ca    <NA>          NA        10
-#>  3  1910 563       NA Transvaal      1899  1910 ca    <NA>          NA        10
-#>  4  1870 99999     NA Liptako        1870  1870 cm    <NA>          NA        12
-#>  5  1866 99999     NA Orange Free …  1866  1866 cm    <NA>          NA         6
-#>  6  1870 AGA     4783 Agaie          1870  1870 cm    <NA>          NA        16
-#>  7  1787 AIR     4361 Wuste Agades   1787  1787 ss    Spli…         NA        NA
-#>  8  1795 AIR     4361 Agades         1795  1795 ss    <NA>          NA        NA
-#>  9  1790 AIR     4361 Agades         1790  1790 ss    <NA>          NA        NA
-#> 10  2019 AIR     4361 Asben          2019  2019 ss    Bord…         NA        NA
-#> # ℹ 807 more rows
-#> # ℹ 24 more variables: sourcetype <int>, `Core/Great` <int>, source <chr>,
-#> #   core <int>, id <dbl>, layer <chr>, path <chr>, lyear_str <chr>,
-#> #   core_str <chr>, geometry <GEOMETRY [°]>, geom_valid <lgl>, rebuilt <lgl>,
-#> #   snap_precision <dbl>, capital_names <chr>, capital_coords <MULTIPOINT [°]>,
-#> #   incomplete <lgl>, in_spell <lgl>, empty_geom <lgl>, missing_id <lgl>,
-#> #   single_map <lgl>, year_outside <lgl>, year_na <lgl>, non_overlap <lgl>, …
+#> # A tibble: 2,188 × 35
+#> # Groups:   COWID [95]
+#>    COWID COWNUM polity_name map_name     year lyear hyear coder note  coasterror
+#>  * <chr>  <int> <chr>       <chr>       <int> <chr> <chr> <chr> <chr>      <int>
+#>  1 AGA     4783 agaie       Agaie        1870 1870  1870  cm    <NA>          NA
+#>  2 AIR     4361 air         Wuste Agad…  1787 1787  1787  ss    Spli…         NA
+#>  3 AIR     4361 air         Agades       1795 1795  1795  ss    <NA>          NA
+#>  4 AIR     4361 air         Agades       1790 1790  1790  ss    <NA>          NA
+#>  5 AIR     4361 air         Air or Asb…  1874 1874  1874  ss    <NA>          NA
+#>  6 AIR     4361 air         Agades       1811 1811  1811  ss    <NA>          NA
+#>  7 AIR     4361 air         Agades       1814 1814  1814  ss    <NA>          NA
+#>  8 AIR     4361 air         Agades       1818 1818  1818  ss    <NA>          NA
+#>  9 AIR     4361 air         Air or Asb…  1855 1855  1855  ss    <NA>          NA
+#> 10 AIR     4361 air         Air, Asben   1808 1808  1808  ss    Bord…         NA
+#> # ℹ 2,178 more rows
+#> # ℹ 25 more variables: cityerror <dbl>, sourcetype <int>, `Core/Great` <int>,
+#> #   source <chr>, core <int>, id <dbl>, layer <chr>, path <chr>,
+#> #   lyear_str <chr>, core_str <chr>, geometry <GEOMETRY [°]>, geom_valid <lgl>,
+#> #   rebuilt <lgl>, snap_precision <dbl>, capital_name <chr>,
+#> #   capital_coords <MULTIPOINT [°]>, incomplete <lgl>, in_spell <lgl>,
+#> #   empty_geom <lgl>, missing_id <lgl>, single_map <lgl>, year_outside <lgl>, …
 ```
 
 ## Create contour polygons
@@ -267,8 +292,6 @@ documentation for details).
 
 ``` r
 df_contour <- get_contours(shp, id_var = COWID)
-#> Jobs running sequentially.
-#> ℹ Reverts to original plan after running.
 ```
 
 The code below plots the contour polygons for the Sokoto Caliphate:
@@ -448,61 +471,144 @@ ggplot() +
 
 <img src="man/figures/README-plot panel grid-1.png" width="100%" />
 
-## Adding covariates to grid data
+## Aggregate ID data
 
-In order to add additional covariates to the grid data, it is necessary
-to provide the path to the folder containing the relevant data. The
-folder is located in the LEGACIES OneDrive folder and is called
-“covariates”. Thus, the path should end with the following
-“…/legacies_project/covariates”.
+The final two steps allow users to aggregate the ID data to modern
+countries (i.e. number of historical states in each modern country).
+There are currently three “methods” for aggregating: (1) aggregating
+based on destination states as coded in the ID data, (2) aggregating
+based on capital city location, and (3) aggregating based on the
+intersection of a polity’s contour polygon and the modern country
+borders. In the latter case, it is necessary to first match the contour
+polygons (created above using the `legaciesr::get_contours()` function).
+This is done with the `match_id_contour()` function. It takes as input
+the ID data and the contour polygons (e.g., `df_contours`). If the
+contour polygons are created for the entire period, then each
+polity-year will be matched to the same contour polygon. If the contour
+polygons are created as a panel with a certain interval, then the
+contour polygons will be matched to the appropriate polity-years. By
+default, only the 25-100 % contour polygon will be matched. It is
+possible to (1) specify the threshold (e.g., 0.25) of the contour
+polygon (as long as it corresponds to one of the break points in the
+contour polygons used for matching) and (2) keep all contour polygons
+which will result in multiple observations per polity-year. The function
+also adds information on land area (for the contour polygon) and
+historical population estimates from HYDE (by decade). It is therefore
+necessary to specify a file path to the LEGACIES folder which contains
+data on population.
 
-The function takes the output from `get_grid` and adds the specified
-covariates to the data set. By default, all covariates are included, but
-it is possible to specify which covariates to include. At the moment,
-there are only a few commonly used geographic covariates included, but
-more will be added.
+    #> ℹ 1/5: Preparing contour polygons
+    #> ✔ 2/5: Preparing contour polygons [14ms]
+    #> 
+    #> ℹ 2/5: Calculating land area
+    #> ✔ 3/5: Calculating land area [444ms]
+    #> 
+    #> ℹ 3/5: Expanding to polity-year
+    #> ✔ 4/5: Expanding to polity-year [2.4s]
+    #> 
+    #> ℹ 4/5: Aggregating population data
+    #> ✔ 5/5: Aggregating population data [11.3s]
+    #> 
+    #> ℹ 5/5: Finishing
+    #> ✔ 5/5: Finishing [1.2s]
+    #> 
 
 ``` r
-covar_path <- ".../legacies_project"
+id_contour <- match_id_contour(id_data = id, multiple_levels = FALSE,
+                               contour_data = df_contour,
+                               covar_path = ".../legacies_project")
 ```
+
+Finally, `id2country()` takes the ID data and aggregates the number of
+historical states to each modern country. If `method = "source"`, the
+aggregation is based on the destination states coded in the ID data. It
+is possible to specify whether to use only the first destination state
+or all destination states with the `multiple` option.
 
 ``` r
-df_grid <- get_covariates(df_grid, path = covar_path)
-#> ℹ 1/5: Extracing covariates - Terrain
-#> ✔ 1/5: Extracing covariates - Terrain [32.5s]
+id_aggregate_source <- id2country(id_data = id_contour, 
+                           method = "source", 
+                           multiple = FALSE)
+#> ℹ 1/2: Load cshapes data
+#> ✔ 2/2: Load cshapes data [871ms]
 #> 
-#> ℹ 2/5: Extracing covariates - Climate
-#> ✔ 2/5: Extracing covariates - Climate [123ms]
-#> 
-#> ℹ 3/5: Extracing covariates - Crops
-#> ✔ 3/5: Extracing covariates - Crops [4ms]
-#> 
-#> ℹ 4/5: Extracing covariates - Rivers
-#> ✔ 4/5: Extracing covariates - Rivers [3m 55.9s]
-#> 
-#> ℹ 5/5: Extracing covariates - Coast
-#> ✔ 5/5: Extracing covariates - Coast [55.6s]
+#> ℹ 2/2: Aggregate to destination states
+#> ✔ 2/2: Aggregate to destination states [335ms]
 #> 
 ```
 
-Adding covariates to the panel version of the grid data follows the
-exact same structure:
+If `method = "capital"`, the aggregation is based on capital city
+locations. In this case, whether to include multiple capitals for a
+polity-year is determined by the ID data created with `prepare_id()`.
 
 ``` r
-df_grid_panel <- get_covariates(df_grid_panel, path = covar_path)
-#> ℹ 1/5: Extracing covariates - Terrain
-#> ✔ 1/5: Extracing covariates - Terrain [30.2s]
+id_aggregate_source <- id2country(id_data = id_contour, 
+                           method = "capital")
+#> ℹ 1/3: Load cshapes data
+#> ✔ 2/3: Load cshapes data [844ms]
 #> 
-#> ℹ 2/5: Extracing covariates - Climate
-#> ✔ 2/5: Extracing covariates - Climate [122ms]
+#> ℹ 2/3: Intersecting capitals and country borders
+#> ✔ 3/3: Intersecting capitals and country borders [10m 41s]
 #> 
-#> ℹ 3/5: Extracing covariates - Crops
-#> ✔ 3/5: Extracing covariates - Crops [5ms]
-#> 
-#> ℹ 4/5: Extracing covariates - Rivers
-#> ✔ 4/5: Extracing covariates - Rivers [3m 19.2s]
-#> 
-#> ℹ 5/5: Extracing covariates - Coast
-#> ✔ 5/5: Extracing covariates - Coast [51.4s]
+#> ℹ 3/3: Aggregate capitals to modern states
+#> ✔ 3/3: Aggregate capitals to modern states [81ms]
 #> 
 ```
+
+If `method = "polygon"`, the aggregation in based on the intersection of
+contour polygons and modern country borders. To ensure that a given
+polity is counted only when there is more than a trivial amount of
+overlap, a given intersection is counted only if either (1) the entire
+polity is located within the borders of a given modern country or (2)
+the polity overlaps with at least 5 % of the modern country.
+
+``` r
+id_aggregate_source <- id2country(id_data = id_contour, 
+                           method = "polygon")
+#> ℹ 1/4: Load cshapes data
+#> ✔ 2/4: Load cshapes data [19.6s]
+#> 
+#> ℹ 2/4: Prepare contour polygons
+#> ✔ 3/4: Prepare contour polygons [9m 39s]
+#> 
+#> ℹ 3/4: Intersecting contour polygons
+#> Warning: attribute variables are assumed to be spatially constant throughout
+#> all geometries
+#> ✔ 4/4: Intersecting contour polygons [2m 40.5s]
+#> 
+#> ℹ 4/4: Aggregate contour polygons to modern states
+#> ✔ 4/4: Aggregate contour polygons to modern states [96ms]
+#> 
+```
+
+<!-- ## Adding covariates to grid data -->
+
+<!-- In order to add additional covariates to the grid data, it is necessary to provide the path to the folder containing the relevant data. The folder is located in the LEGACIES OneDrive folder and is called "covariates". Thus, the path should end with the following ".../legacies_project/covariates".  -->
+
+<!-- The function takes the output from `get_grid` and adds the specified covariates to the data set. By default, all covariates are included, but it is possible to specify which covariates to include. At the moment, there are only a few commonly used geographic covariates included, but more will be added.   -->
+
+<!-- ```{r path, eval = TRUE, echo = FALSE} -->
+
+<!-- covar_path <- "/Users/christoffercappelen/Library/CloudStorage/OneDrive-NTNU/legacies_project" -->
+
+<!-- ``` -->
+
+<!-- ```{r path hidden, eval = FALSE} -->
+
+<!-- covar_path <- ".../legacies_project" -->
+
+<!-- ``` -->
+
+<!-- ```{r covars, eval = TRUE} -->
+
+<!-- df_grid <- get_covariates(df_grid, path = covar_path) -->
+
+<!-- ``` -->
+
+<!-- Adding covariates to the panel version of the grid data follows the exact same structure:  -->
+
+<!-- ```{r covars panel, eval = TRUE} -->
+
+<!-- df_grid_panel <- get_covariates(df_grid_panel, path = covar_path) -->
+
+<!-- ``` -->

@@ -15,13 +15,14 @@
 #' @param match_capitals Logical, whether to add information on capital cities to the `shp` data. Default is `TRUE`. See details.
 #' @param exclude_hierarchy Character vector, whether to exclude maps for states that are subordinated (tributary or dependency). `none` (default)
 #' will keep all maps regardless of hierarchy status, `tributary` will exclude tributary states (`hierarchy == 1`), `dependency` will exclude
-#' dependencies (`hierarchy == 2`), and `both` will exclude both tributaries and dependencies. See also `combine_hierarchy`.
+#' dependencies (`hierarchy == 2`), and `all` will exclude both tributaries and dependencies. See also `combine_hierarchy`.
 # @param combine_hierarchy Logical, whether to combine maps for states that are part of the same hierarchy,
 # i.e., maps with hierarchy status 1 or 2 will be subsumed in the state of which they are subordinated.
 #' @param exclude_core Exclude maps coded as core (i.e., include only the complete shape of both core and periphery).
 #' Default is `TRUE`.
 #' @param exclude_incomplete Exclude maps with incomplete borders. Default is `TRUE`.
-#' @param exclude_sovereign Exclude maps for states that are not sovereign at the time of the map. See details.
+#' @param exclude_sovereign Exclude maps for states that are not sovereign at the time of the map. If `exclude_sovereign` is not `none`, then sovereign spells are defined by the same hierarchy rule.
+#' Otherwise, all polity-years in the ID data will be included as sovereign spells. See details.
 #' @param margin_sovereign Number of years before or after a state is sovereign that a map is still included (if `exclude_sovereign` is `TRUE`). Default is 5 years.
 #' @param crop_to_land Logical, whether to crop geometries to land (default is `TRUE`)
 #'
@@ -249,23 +250,44 @@ prepare_shapes <- function(shp,
   }
 
 
+  ## Add unique polity names from ID data
+  id_name <- state_data |>
+    dplyr::distinct({{ id_var }}, polity_name)
+  shp <- shp |>
+    left_join(id_name, by = id_var_str)
+  shp <- shp |>
+    dplyr::select(COWID, COWNUM, polity_name, map_name = name, everything())
+
+
+
   ## Match capitals
   if (match_capitals) {
     step <- step + 1
     cli::cli_progress_step("{step}/{steps}: Matching capitals")
 
-
     cap <- state_data |>
-      dplyr::select({{ id_var }}, {{ period_var }}, capital = Capital, capital_lon = Cap_Lon, capital_lat = Cap_Lat) |>
+      dplyr::select({{ id_var }}, {{ period_var }}, capital_name, capital_lon, capital_lat) |>
       dplyr::filter(!is.na(capital_lon) & !is.na(capital_lat)) |>
       sf::st_as_sf(coords = c("capital_lon", "capital_lat"), crs = 4326) |>
       dplyr::group_by({{ id_var }}, {{ period_var }}) |>
       dplyr::summarise(
         geometry = st_combine(geometry),
-        capital_names = paste(capital, collapse = ";")
+        capital_name = paste(capital_name, collapse = ";")
       ) |>
       dplyr::mutate(capital_coords = geometry) |>
       sf::st_drop_geometry()
+
+    # cap <- state_data |>
+    #   dplyr::select({{ id_var }}, {{ period_var }}, capital = Capital, capital_lon = Cap_Lon, capital_lat = Cap_Lat) |>
+    #   dplyr::filter(!is.na(capital_lon) & !is.na(capital_lat)) |>
+    #   sf::st_as_sf(coords = c("capital_lon", "capital_lat"), crs = 4326) |>
+    #   dplyr::group_by({{ id_var }}, {{ period_var }}) |>
+    #   dplyr::summarise(
+    #     geometry = st_combine(geometry),
+    #     capital_names = paste(capital, collapse = ";")
+    #   ) |>
+    #   dplyr::mutate(capital_coords = geometry) |>
+    #   sf::st_drop_geometry()
 
     shp <- shp |>
       dplyr::left_join(cap, by = c(id_var_str, period_var_str))
@@ -275,32 +297,35 @@ prepare_shapes <- function(shp,
 
 
   ## Exclude hierarchy
-  if (exclude_hierarchy != "none" | exclude_sovereign) {
-    df_hierarchy <- state_data |>
-      dplyr::select({{ id_var }}, {{ period_var }}, Hie_1, Hie_2) |>
-      dplyr::group_by({{ id_var }}, {{ period_var }}) |>
-      dplyr::summarise(hie1 = max(Hie_1, na.rm = T),
-                       hie2 = max(Hie_2, na.rm = T)) |>
-      dplyr::mutate(hie3 = ifelse(hie1 == 1 | hie2 == 1, 1, 0)) |>
-      dplyr::group_by({{ id_var }}) |>
-      dplyr::mutate(hie1_lag = lag(hie1),
-                    hie1_lead = lead(hie1),
-                    hie2_lag = lag(hie2),
-                    hie2_lead = lead(hie2),
-                    hie3_lag = lag(hie3),
-                    hie3_lead = lead(hie3)) |>
-      dplyr::ungroup() |>
-      dplyr::mutate(tributary = hie1,
-                    tributary = ifelse((hie1 == 1 & hie1_lag == 0) | (hie1 == 0 & hie1_lead == 0),
-                                       0, tributary),
-                    dependency = hie2,
-                    dependency = ifelse((hie2 == 1 & hie2_lag == 0) | (hie2 == 0 & hie2_lead == 0),
-                                        0, dependency),
-                    tributary_dependency = hie3,
-                    tributary_dependency = ifelse((hie3 == 1 & hie3_lag == 0) | (hie3 == 0 & hie3_lead == 0),
-                                                  0, tributary_dependency)) |>
-    dplyr::select({{ id_var }}, {{ period_var }}, tributary, dependency, tributary_dependency)
-  }
+  # if (exclude_hierarchy != "none" | exclude_sovereign) {
+  #   df_hierarchy <- state_data |>
+  #     dplyr::select({{ id_var }}, {{ period_var }}, Hie_1, Hie_2) |>
+  #     dplyr::group_by({{ id_var }}, {{ period_var }}) |>
+  #     dplyr::summarise(hie1 = max(Hie_1, na.rm = T),
+  #                      hie2 = max(Hie_2, na.rm = T)) |>
+  #     dplyr::mutate(hie3 = ifelse(hie1 == 1 | hie2 == 1, 1, 0)) |>
+  #     dplyr::group_by({{ id_var }}) |>
+  #     dplyr::mutate(hie1_lag = lag(hie1),
+  #                   hie1_lead = lead(hie1),
+  #                   hie2_lag = lag(hie2),
+  #                   hie2_lead = lead(hie2),
+  #                   hie3_lag = lag(hie3),
+  #                   hie3_lead = lead(hie3)) |>
+  #     dplyr::ungroup() |>
+  #     dplyr::mutate(tributary = hie1,
+  #                   tributary = ifelse((hie1 == 1 & hie1_lag == 0) | (hie1 == 0 & hie1_lead == 0),
+  #                                      0, tributary),
+  #                   dependency = hie2,
+  #                   dependency = ifelse((hie2 == 1 & hie2_lag == 0) | (hie2 == 0 & hie2_lead == 0),
+  #                                       0, dependency),
+  #                   tributary_dependency = hie3,
+  #                   tributary_dependency = ifelse((hie3 == 1 & hie3_lag == 0) | (hie3 == 0 & hie3_lead == 0),
+  #                                                 0, tributary_dependency)) |>
+  #   dplyr::select({{ id_var }}, {{ period_var }}, tributary, dependency, tributary_dependency)
+  # }
+
+  df_hierarchy <- state_data |>
+    dplyr::select({{ id_var }}, {{ period_var }}, hie_tributary, hie_dependency, independent_tributary, independent_dependency, independent)
 
 
   if (exclude_hierarchy != "none") {
@@ -312,33 +337,21 @@ prepare_shapes <- function(shp,
 
     if (exclude_hierarchy == "tributary") {
       shp <- shp |>
-        dplyr::filter(tributary == 0)
+        dplyr::filter(independent_tributary == 1)
     }
 
     if (exclude_hierarchy == "dependency") {
       shp <- shp |>
-        dplyr::filter(dependency == 0)
+        dplyr::filter(independent_dependency == 1)
     }
 
-    if (exclude_hierarchy == "both") {
+    if (exclude_hierarchy == "all") {
       shp <- shp |>
-        dplyr::filter(tributary_dependency == 0)
+        dplyr::filter(independent == 1)
     }
 
     cli::cli_progress_done()
   }
-
-
-  # ## Combine hierarchy
-  # if (combine_hierarchy > 0) {
-  #   cli::cli_progress_step("{step}/{steps}: Combine hierarchy")
-  #
-  #
-  #
-  #
-  #
-  #   cli::cli_progress_done()
-  # }
 
 
 
@@ -390,11 +403,25 @@ prepare_shapes <- function(shp,
     msg <- ""
     cli::cli_progress_step("{step}/{steps}: Exclude non-sovereign maps{msg}", spinner = TRUE)
 
-    if (exclude_hierarchy != "none") {
-      sovereign_spell <- df_hierarchy
-    } else {
+    # if (exclude_hierarchy != "none") {
+    #   sovereign_spell <- df_hierarchy
+    # } else {
+    #   sovereign_spell <- state_data
+    # }
+
+    if (exclude_hierarchy == "none") {
       sovereign_spell <- state_data
+    } else if (exclude_hierarchy == "tributary") {
+      sovereign_spell <- state_data |>
+        dplyr::filter(independent_triburary == 1)
+    } else if (exclude_hierarchy == "dependency") {
+      sovereign_spell <- state_data |>
+        dplyr::filter(independent_dependency == 1)
+    } else if (exclude_hierarchy == "all") {
+      sovereign_spell <- state_data |>
+        dplyr::filter(independent == 1)
     }
+
 
     sovereign_spell <- sovereign_spell |>
       dplyr::select({{ id_var }}, {{ period_var }}) |>
@@ -433,8 +460,8 @@ prepare_shapes <- function(shp,
                     }) |>
       bind_rows()
 
-    # shp <- shp |>
-    #   dplyr::filter(in_spell == TRUE)
+    shp <- shp |>
+      dplyr::filter(in_spell == TRUE)
 
     msg <- ""
     cli::cli_progress_update()

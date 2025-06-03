@@ -148,11 +148,14 @@ get_contours <- function(shp,
   if (by_period == FALSE) {
 
     shp <- shp |>
+      dplyr::mutate(period = "1750-1920") |>
+      dplyr::filter(year >= 1750 & year <= 1920) |>
       dplyr::group_by({{ id_var }}) |>
       dplyr::filter(n() >= nmap_threshold) |>
       dplyr::ungroup()
 
-    shp_list <- split(shp, shp[[id_var_str]], drop = T)
+    # shp_list <- split(shp, shp[[id_var_str]], drop = T)
+    shp_list <- split(shp, list(shp[[id_var_str]], shp[["period"]]), drop = T)
 
     period_var <- NULL
     period <- NULL
@@ -190,7 +193,7 @@ get_contours <- function(shp,
       shp <- shp |>
         dplyr::mutate(
           period = cut({{ period_var }}, breaks = year_seq, labels = year_seq_char, include.lowest = T)
-          )
+        )
 
       shp <- shp |>
         dplyr::group_by({{ id_var }}, .data$period) |>
@@ -223,7 +226,7 @@ get_contours <- function(shp,
       shp <- shp |>
         dplyr::mutate(
           period = cut({{ period_var }}, breaks = year_seq, labels = year_seq_char, include.lowest = T)
-          )
+        )
 
       shp <- shp |>
         dplyr::group_by({{ id_var }}, .data$period) |>
@@ -247,7 +250,7 @@ get_contours <- function(shp,
       shp <- shp |>
         dplyr::mutate(
           period = cut({{ period_var }}, breaks = year_seq, labels = year_seq_char, include.lowest = T)
-          )
+        )
 
       shp <- shp |>
         dplyr::group_by({{ id_var }}, .data$period) |>
@@ -277,8 +280,8 @@ get_contours <- function(shp,
       old_plan <- future::plan("sequential")
       on.exit(future::plan(old_plan), add = TRUE)
       cli::cli_inform(c("Jobs running sequentially.",
-                      "i" = "Reverts to original plan after running."
-                      ))
+                        "i" = "Reverts to original plan after running."
+      ))
     }
   }
 
@@ -299,62 +302,91 @@ get_contours <- function(shp,
           old_plan <- future::plan("multicore", workers = ncores)
           on.exit(future::plan(old_plan), add = TRUE)
           cli::cli_inform(c("Jobs running in parallel using 'multicore' (forking).",
-                          "i" = "Reverts to original plan after running."
-                          ))
+                            "i" = "Reverts to original plan after running."
+          ))
         } else {
           old_plan <- future::plan("multisession", workers = ncores)
           on.exit(future::plan(old_plan), add = TRUE)
           cli::cli_inform(c("Jobs running in parallel using 'multisession'.",
-                          "i" = "Reverts to original plan after running."
-                          ))
+                            "i" = "Reverts to original plan after running."
+          ))
         }
       }
     }
   }
 
 
+
+  ## Create id_var and polity_name list to match afterwards
+  id_name <- shp |>
+    sf::st_drop_geometry() |>
+    dplyr::distinct({{ id_var }}, polity_name)
+
+
   ## APPLY CONTOUR FUNCTION OVER EACH GROUP OF GEOMETRIES
-  if (by_period) {
-    progressr::with_progress({
-      p <- progressr::progressor(along = shp_list)
+  progressr::with_progress({
+    p <- progressr::progressor(along = shp_list)
 
-      shp_contours <- furrr::future_map(
-        shp_list,
-        .f = function(x) {
-          p()
-          contour_polygons(
-            x, id_vars = c({{ id_var }}, period),
-            nmap_threshold = nmap_threshold,
-            smoothing = smoothing,
-            invalid_geom = invalid_geom,
-            include_higher = include_higher,
-            cuts = cuts,
-            ...)
-        },
-        .options = furrr_options(seed = TRUE)
-      )
-    }, interrupts = TRUE)
-  } else {
-    progressr::with_progress({
-      p <- progressr::progressor(along = shp_list)
+    shp_contours <- furrr::future_map(
+      shp_list,
+      .f = function(x) {
+        p()
+        legaciesr::contour_polygons(
+          x, id_vars = c({{ id_var }}, period),
+          nmap_threshold = nmap_threshold,
+          smoothing = smoothing,
+          invalid_geom = invalid_geom,
+          include_higher = include_higher,
+          cuts = cuts,
+          ...)
+      },
+      .options = furrr_options(seed = TRUE)
+    )
+  }, interrupts = TRUE)
 
-      shp_contours <- furrr::future_map(
-        shp_list,
-        .f = function(x) {
-          p()
-          contour_polygons(
-            x, id_vars = c({{ id_var }}),
-            nmap_threshold = nmap_threshold,
-            smoothing = smoothing,
-            invalid_geom = invalid_geom,
-            include_higher = include_higher,
-            cuts = cuts,
-            ...)
-        },
-        .options = furrr_options(seed = TRUE)
-      )
-    }, interrupts = TRUE)
-  }
+
+  # ## APPLY CONTOUR FUNCTION OVER EACH GROUP OF GEOMETRIES
+  # if (by_period) {
+  #   progressr::with_progress({
+  #     p <- progressr::progressor(along = shp_list)
+  #
+  #     shp_contours <- furrr::future_map(
+  #       shp_list,
+  #       .f = function(x) {
+  #         p()
+  #         legaciesr::contour_polygons(
+  #           x, id_vars = c({{ id_var }}, period),
+  #           nmap_threshold = nmap_threshold,
+  #           smoothing = smoothing,
+  #           invalid_geom = invalid_geom,
+  #           include_higher = include_higher,
+  #           cuts = cuts,
+  #           ...)
+  #       },
+  #       .options = furrr_options(seed = TRUE)
+  #     )
+  #   }, interrupts = TRUE)
+  # } else {
+  #   progressr::with_progress({
+  #     p <- progressr::progressor(along = shp_list)
+  #
+  #     shp_contours <- furrr::future_map(
+  #       shp_list,
+  #       .f = function(x) {
+  #         p()
+  #         legaciesr::contour_polygons(
+  #           x, id_vars = c({{ id_var }}),
+  #           nmap_threshold = nmap_threshold,
+  #           smoothing = smoothing,
+  #           invalid_geom = invalid_geom,
+  #           include_higher = include_higher,
+  #           cuts = cuts,
+  #           ...)
+  #       },
+  #       .options = furrr_options(seed = TRUE)
+  #     )
+  #   }, interrupts = TRUE)
+  # }
 
 
 
@@ -369,6 +401,7 @@ get_contours <- function(shp,
   #   },
   #   cl = cl
   # ) %>% suppressWarnings()
+
 
   # Check for errors
   contour_errors <- sapply(shp_contours, inherits, what = "try-error")
@@ -387,30 +420,31 @@ get_contours <- function(shp,
   if (!inv_list) {
     shp_contours <- lapply(shp_contours,
                            FUN = function(x) st_make_valid(x))
-    }
+  }
 
-    inv_list <- lapply(shp_contours, FUN = function(x) sf::st_is_valid(x)) |>
-      sapply(all) |>
-      all()
+  inv_list <- lapply(shp_contours, FUN = function(x) sf::st_is_valid(x)) |>
+    sapply(all) |>
+    all()
 
-    if (!inv_list) {
-      cli::cli_warn(c(
-        "Invalid geometries",
-        "i" = "Some contour polygons may not be valid geometries. If you encounter invalid geometries,
+  if (!inv_list) {
+    cli::cli_warn(c(
+      "Invalid geometries",
+      "i" = "Some contour polygons may not be valid geometries. If you encounter invalid geometries,
         consider lowering resolution or use fewer cuts."
-      ))
-    }
+    ))
+  }
 
   ## Return list or dataframe
   if (returnList) {
     shp_contours <- shp_contours
   } else {
     shp_contours <- shp_contours |>  bind_rows()
+    # Match polity names
+    shp_contours <- shp_contours |>
+      dplyr::left_join(id_name, by = id_var_str) |>
+      dplyr::select({{ id_var }}, polity_name, everything())
   }
 
   return(shp_contours)
 
 }
-
-
-

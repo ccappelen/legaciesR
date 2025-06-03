@@ -352,11 +352,11 @@ detect_errors <- function(shp,
                    tmp_year <- x[[period_var_str]]
                    cap_tmp <- capital_data |>
                      dplyr::filter({{ id_var }} == tmp_id & {{ period_var }} == tmp_year) |>
-                     dplyr::filter(!is.na(Cap_Lon))
+                     dplyr::filter(!is.na(capital_lon))
 
                    if (nrow(cap_tmp) > 0) {
                      cap_tmp <- cap_tmp |>
-                       sf::st_as_sf(coords = c("Cap_Lon", "Cap_Lat"), crs = 4326) |>
+                       sf::st_as_sf(coords = c("capital_lon", "capital_lat"), crs = 4326) |>
                        sf::st_cast("POINT") |>
                        suppressWarnings()
 

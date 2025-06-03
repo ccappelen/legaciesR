@@ -311,6 +311,7 @@ contour_polygons <- function(shp,
 
   }
 
+
   if (!all(sf::st_is_valid(shp_smoothed))) {
     cli::cli_warn(c(
       "Invalid geometries",
