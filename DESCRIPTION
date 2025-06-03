@@ -12,6 +12,7 @@ Depends:
     R (>= 4.3)
 Imports: 
     cli,
+    cshapes,
     data.table,
     dplyr,
     dtplyr,

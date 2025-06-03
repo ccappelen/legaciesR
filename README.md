@@ -162,18 +162,6 @@ the capital with the longest continuous spell.
 
 ``` r
 id <- prepare_id(id, multiple_capital = FALSE)
-#> ℹ 1/4: Cleaning ID data
-#> ✔ 2/4: Cleaning ID data [35ms]
-#> 
-#> ℹ 2/4: Extracting capitals
-#> ✔ 3/4: Extracting capitals [1s]
-#> 
-#> ℹ 3/4: Extract hierarchy information
-#> ✔ 4/4: Extract hierarchy information [751ms]
-#> 
-#> ℹ 4/4: Finishing
-#> ✔ 4/4: Finishing [13ms]
-#> 
 ```
 
 ## Prepare map data
@@ -497,22 +485,6 @@ historical population estimates from HYDE (by decade). It is therefore
 necessary to specify a file path to the LEGACIES folder which contains
 data on population.
 
-    #> ℹ 1/5: Preparing contour polygons
-    #> ✔ 2/5: Preparing contour polygons [14ms]
-    #> 
-    #> ℹ 2/5: Calculating land area
-    #> ✔ 3/5: Calculating land area [444ms]
-    #> 
-    #> ℹ 3/5: Expanding to polity-year
-    #> ✔ 4/5: Expanding to polity-year [2.4s]
-    #> 
-    #> ℹ 4/5: Aggregating population data
-    #> ✔ 5/5: Aggregating population data [11.3s]
-    #> 
-    #> ℹ 5/5: Finishing
-    #> ✔ 5/5: Finishing [1.2s]
-    #> 
-
 ``` r
 id_contour <- match_id_contour(id_data = id, multiple_levels = FALSE,
                                contour_data = df_contour,
@@ -529,12 +501,6 @@ or all destination states with the `multiple` option.
 id_aggregate_source <- id2country(id_data = id_contour, 
                            method = "source", 
                            multiple = FALSE)
-#> ℹ 1/2: Load cshapes data
-#> ✔ 2/2: Load cshapes data [871ms]
-#> 
-#> ℹ 2/2: Aggregate to destination states
-#> ✔ 2/2: Aggregate to destination states [335ms]
-#> 
 ```
 
 If `method = "capital"`, the aggregation is based on capital city
@@ -544,15 +510,6 @@ polity-year is determined by the ID data created with `prepare_id()`.
 ``` r
 id_aggregate_source <- id2country(id_data = id_contour, 
                            method = "capital")
-#> ℹ 1/3: Load cshapes data
-#> ✔ 2/3: Load cshapes data [844ms]
-#> 
-#> ℹ 2/3: Intersecting capitals and country borders
-#> ✔ 3/3: Intersecting capitals and country borders [10m 41s]
-#> 
-#> ℹ 3/3: Aggregate capitals to modern states
-#> ✔ 3/3: Aggregate capitals to modern states [81ms]
-#> 
 ```
 
 If `method = "polygon"`, the aggregation in based on the intersection of
@@ -565,20 +522,8 @@ the polity overlaps with at least 5 % of the modern country.
 ``` r
 id_aggregate_source <- id2country(id_data = id_contour, 
                            method = "polygon")
-#> ℹ 1/4: Load cshapes data
-#> ✔ 2/4: Load cshapes data [19.6s]
-#> 
-#> ℹ 2/4: Prepare contour polygons
-#> ✔ 3/4: Prepare contour polygons [9m 39s]
-#> 
-#> ℹ 3/4: Intersecting contour polygons
 #> Warning: attribute variables are assumed to be spatially constant throughout
 #> all geometries
-#> ✔ 4/4: Intersecting contour polygons [2m 40.5s]
-#> 
-#> ℹ 4/4: Aggregate contour polygons to modern states
-#> ✔ 4/4: Aggregate contour polygons to modern states [96ms]
-#> 
 ```
 
 <!-- ## Adding covariates to grid data -->

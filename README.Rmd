@@ -116,7 +116,7 @@ shp <- fix_invalid(shp)
 
 The raw ID data contains information on polities, their capital cities, and hierarchy status (among other things). `legacies::prepare_id` expands the data into polity-year format and extracts information on capital cities and hierarchy status. For capital cities, some polity-years are coded with multiple capitals in the same year. It is possible to specify whether all capitals should be included, in which case each polity-year will be represented by multiple rows (corresponding to the number of capitals). The default is to keep only the capital with the longest continuous spell. 
 
-```{r prepare id data, eval = TRUE, warning = FALSE}
+```{r prepare id data, eval = TRUE, warning = FALSE, message = FALSE}
 id <- prepare_id(id, multiple_capital = FALSE)
 ```
 
@@ -313,7 +313,7 @@ ggplot() +
 
 The final two steps allow users to aggregate the ID data to modern countries (i.e. number of historical states in each modern country). There are currently three "methods" for aggregating: (1) aggregating based on destination states as coded in the ID data, (2) aggregating based on capital city location, and (3) aggregating based on the intersection of a polity's contour polygon and the modern country borders. In the latter case, it is necessary to first match the contour polygons (created above using the `legaciesr::get_contours()` function). This is done with the `match_id_contour()` function. It takes as input the ID data and the contour polygons (e.g., `df_contours`). If the contour polygons are created for the entire period, then each polity-year will be matched to the same contour polygon. If the contour polygons are created as a panel with a certain interval, then the contour polygons will be matched to the appropriate polity-years. By default, only the 25-100 % contour polygon will be matched. It is possible to (1) specify the threshold (e.g., 0.25) of the contour polygon (as long as it corresponds to one of the break points in the contour polygons used for matching) and (2) keep all contour polygons which will result in multiple observations per polity-year. The function also adds information on land area (for the contour polygon) and  historical population estimates from HYDE (by decade). It is therefore necessary to specify a file path to the LEGACIES folder which contains data on population. 
 
-```{r match id contour hide, eval = TRUE, echo = FALSE}
+```{r match id contour hide, eval = TRUE, echo = FALSE, message = FALSE}
 id_contour <- match_id_contour(id_data = id, multiple_levels = FALSE,
                                contour_data = df_contour,
                                covar_path = "/Users/christoffercappelen/Library/CloudStorage/OneDrive-NTNU/legacies_project")
@@ -327,7 +327,7 @@ id_contour <- match_id_contour(id_data = id, multiple_levels = FALSE,
 
 Finally, `id2country()` takes the ID data and aggregates the number of historical states to each modern country. If `method = "source"`, the aggregation is based on the destination states coded in the ID data. It is possible to specify whether to use only the first destination state or all destination states with the `multiple` option. 
 
-```{r aggregate source, eval = TRUE}
+```{r aggregate source, eval = TRUE, message = FALSE}
 id_aggregate_source <- id2country(id_data = id_contour, 
                            method = "source", 
                            multiple = FALSE)
@@ -335,14 +335,14 @@ id_aggregate_source <- id2country(id_data = id_contour,
 
 If `method = "capital"`, the aggregation is based on capital city locations. In this case, whether to include multiple capitals for a polity-year is determined by the ID data created with `prepare_id()`. 
 
-```{r aggregate capital, eval = TRUE}
+```{r aggregate capital, eval = TRUE, message = FALSE}
 id_aggregate_source <- id2country(id_data = id_contour, 
                            method = "capital")
 ```
 
 If `method = "polygon"`, the aggregation in based on the intersection of contour polygons and modern country borders. To ensure that a given polity is counted only when there is more than a trivial amount of overlap, a given intersection is counted only if either (1) the entire polity is located within the borders of a given modern country or (2) the polity overlaps with at least 5 % of the modern country. 
 
-```{r aggregate polygon, eval = TRUE}
+```{r aggregate polygon, eval = TRUE, message = FALSE}
 id_aggregate_source <- id2country(id_data = id_contour, 
                            method = "polygon")
 ```
