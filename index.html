@@ -62,6 +62,16 @@
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"ccappelen/legaciesR"</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://www.legacies-project.com" class="external-link">legaciesr</a></span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: replacing previous import 'dplyr::intersect' by 'terra::intersect'</span></span>
+<span><span class="co">#&gt; when loading 'legaciesr'</span></span>
+<span><span class="co">#&gt; Warning: replacing previous import 'glue::trim' by 'terra::trim' when loading</span></span>
+<span><span class="co">#&gt; 'legaciesr'</span></span>
+<span><span class="co">#&gt; Warning: replacing previous import 'dplyr::union' by 'terra::union' when</span></span>
+<span><span class="co">#&gt; loading 'legaciesr'</span></span>
+<span><span class="co">#&gt; Warning: replacing previous import 'terra::extract' by 'tidyr::extract' when</span></span>
+<span><span class="co">#&gt; loading 'legaciesr'</span></span>
+<span><span class="co">#&gt; Warning: replacing previous import 'terra::na.omit' by 'stats::na.omit' when</span></span>
+<span><span class="co">#&gt; loading 'legaciesr'</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://r-spatial.github.io/sf/" class="external-link">sf</a></span><span class="op">)</span> </span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span></code></pre></div>
@@ -216,7 +226,7 @@
 <span>                        expand_x <span class="op">=</span> <span class="fl">6</span>, expand_y <span class="op">=</span> <span class="fl">3</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span>, legend.justification <span class="op">=</span> <span class="st">"center"</span>,</span>
 <span>        legend.title.position <span class="op">=</span> <span class="st">"top"</span><span class="op">)</span> </span></code></pre></div>
-<p><img src="reference/figures/README-plot%20contours-1.png" width="100%"></p>
+<p><img src="reference/figures/README-plot_contours-1.png" width="100%"></p>
 <p>By default, the function summarizes the maps across the entire period (i.e. 1750-1920). However, it is also possible to specify the contour polygons by drawn separately by specified period (see documentation for further details).</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df_contour_panel</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/get_contours.html">get_contours</a></span><span class="op">(</span><span class="va">shp</span>, id_var <span class="op">=</span> <span class="va">COWID</span>, by_period <span class="op">=</span> <span class="cn">TRUE</span>, period_var <span class="op">=</span> <span class="va">year</span><span class="op">)</span></span>
@@ -234,7 +244,7 @@
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span>, legend.justification <span class="op">=</span> <span class="st">"center"</span>,</span>
 <span>        legend.title.position <span class="op">=</span> <span class="st">"top"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span> <span class="va">period</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-contour%20panel-1.png" width="100%"></p>
+<p><img src="reference/figures/README-contour_panel-1.png" width="100%"></p>
 </div>
 <div class="section level2">
 <h2 id="create-grid-data">Create grid data<a class="anchor" aria-label="anchor" href="#create-grid-data"></a>
@@ -280,7 +290,7 @@
 <span>        legend.justification <span class="op">=</span> <span class="st">"center"</span>, legend.margin <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">margin</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>,<span class="fl">0</span>,<span class="fl">0</span>,<span class="fl">0</span>,unit <span class="op">=</span> <span class="st">"cm"</span><span class="op">)</span>,</span>
 <span>        axis.ticks <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_blank</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>        legend.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">12</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-plot%20grid-1.png" width="100%"></p>
+<p><img src="reference/figures/README-plot_grid-1.png" width="100%"></p>
 <p>Again, it is also possible to create a panel version of the grid data, divided by specified period (by default it will create a panel for each 20-year period):</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df_grid_panel</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/get_grid.html">get_grid</a></span><span class="op">(</span><span class="va">shp</span>, id_var <span class="op">=</span> <span class="va">COWID</span>, by_period <span class="op">=</span> <span class="cn">TRUE</span>, period_var <span class="op">=</span> <span class="va">year</span><span class="op">)</span></span></code></pre></div>
@@ -322,7 +332,7 @@
 <span>        axis.ticks <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_blank</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>        <span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_grid.html" class="external-link">facet_grid</a></span><span class="op">(</span><span class="op">~</span> <span class="va">lyr</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-plot%20panel%20grid-1.png" width="100%"></p>
+<p><img src="reference/figures/README-plot_panel_grid-1.png" width="100%"></p>
 </div>
 <div class="section level2">
 <h2 id="aggregate-id-data">Aggregate ID data<a class="anchor" aria-label="anchor" href="#aggregate-id-data"></a>
