@@ -20,6 +20,7 @@ Imports:
     furrr,
     future,
     methods,
+    measurements,
     progressr,
     purrr,
     raster,
