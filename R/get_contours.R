@@ -75,6 +75,8 @@ get_contours <- function(shp,
                          ncores,
                          ...){
 
+  year <- polity_name <- NULL
+
   # Check arguments
   if (missing(id_var)) {
     cli::cli_abort("Missing {.arg id_var}")
@@ -318,9 +320,12 @@ get_contours <- function(shp,
 
 
   ## Create id_var and polity_name list to match afterwards
-  id_name <- shp |>
-    sf::st_drop_geometry() |>
-    dplyr::distinct({{ id_var }}, polity_name)
+  if ("polity_name" %in% names(shp)) {
+    id_name <- shp |>
+      sf::st_drop_geometry() |>
+      dplyr::distinct({{ id_var }}, polity_name)
+  }
+
 
 
   ## APPLY CONTOUR FUNCTION OVER EACH GROUP OF GEOMETRIES
@@ -440,9 +445,11 @@ get_contours <- function(shp,
   } else {
     shp_contours <- shp_contours |>  bind_rows()
     # Match polity names
-    shp_contours <- shp_contours |>
-      dplyr::left_join(id_name, by = id_var_str) |>
-      dplyr::select({{ id_var }}, polity_name, everything())
+    if ("polity_name" %in% names(shp)) {
+      shp_contours <- shp_contours |>
+        dplyr::left_join(id_name, by = id_var_str) |>
+        dplyr::select({{ id_var }}, polity_name, everything())
+    }
   }
 
   return(shp_contours)

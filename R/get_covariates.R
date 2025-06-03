@@ -48,7 +48,7 @@ get_covariates <- function(x,
                            parallel = FALSE,
                            coords){
 
-
+  gid <- NULL
 
   ## Define grid id var
   grid_id_str <- deparse(substitute(grid_id))

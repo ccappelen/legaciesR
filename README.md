@@ -31,6 +31,16 @@ devtools::install_github("ccappelen/legaciesR")
 
 ``` r
 library(legaciesr)
+#> Warning: replacing previous import 'dplyr::intersect' by 'terra::intersect'
+#> when loading 'legaciesr'
+#> Warning: replacing previous import 'glue::trim' by 'terra::trim' when loading
+#> 'legaciesr'
+#> Warning: replacing previous import 'dplyr::union' by 'terra::union' when
+#> loading 'legaciesr'
+#> Warning: replacing previous import 'terra::extract' by 'tidyr::extract' when
+#> loading 'legaciesr'
+#> Warning: replacing previous import 'terra::na.omit' by 'stats::na.omit' when
+#> loading 'legaciesr'
 library(sf) 
 library(dplyr)
 library(ggplot2)
@@ -304,7 +314,7 @@ df_contour |>
         legend.title.position = "top") 
 ```
 
-<img src="man/figures/README-plot contours-1.png" width="100%" />
+<img src="man/figures/README-plot_contours-1.png" width="100%" />
 
 By default, the function summarizes the maps across the entire period
 (i.e. 1750-1920). However, it is also possible to specify the contour
@@ -329,7 +339,7 @@ df_contour_panel |>
   facet_wrap(~ period)
 ```
 
-<img src="man/figures/README-contour panel-1.png" width="100%" />
+<img src="man/figures/README-contour_panel-1.png" width="100%" />
 
 ## Create grid data
 
@@ -402,7 +412,7 @@ ggplot() +
         legend.title = element_text(size = 12))
 ```
 
-<img src="man/figures/README-plot grid-1.png" width="100%" />
+<img src="man/figures/README-plot_grid-1.png" width="100%" />
 
 Again, it is also possible to create a panel version of the grid data,
 divided by specified period (by default it will create a panel for each
@@ -457,7 +467,7 @@ ggplot() +
   facet_grid(~ lyr)
 ```
 
-<img src="man/figures/README-plot panel grid-1.png" width="100%" />
+<img src="man/figures/README-plot_panel_grid-1.png" width="100%" />
 
 ## Aggregate ID data
 

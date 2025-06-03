@@ -13,6 +13,7 @@ Depends:
 Imports: 
     cli,
     cshapes,
+    exactextractr,
     data.table,
     dplyr,
     dtplyr,
@@ -21,6 +22,7 @@ Imports:
     future,
     methods,
     measurements,
+    plyr,
     progressr,
     purrr,
     raster,

@@ -169,7 +169,7 @@ df_contour <- get_contours(shp, id_var = COWID)
 
 The code below plots the contour polygons for the Sokoto Caliphate: 
 
-```{r plot contours, eval = TRUE}
+```{r plot_contours, eval = TRUE}
 # Load map of Africa
 afr <- rnaturalearthdata::countries50 |>
   filter(continent == "Africa")
@@ -191,7 +191,7 @@ df_contour |>
 
 By default, the function summarizes the maps across the entire period (i.e. 1750-1920). However, it is also possible to specify the contour polygons by drawn separately by specified period (see documentation for further details). 
 
-```{r contour panel, eval = TRUE}
+```{r contour_panel, eval = TRUE}
 df_contour_panel <- get_contours(shp, id_var = COWID, by_period = TRUE, period_var = year)
 
 df_contour_panel |>
@@ -230,7 +230,7 @@ df_grid <- get_grid(shp, id_var = COWID, period_var = year)
 
 The output is (by default) a list containing the raster object (`r`) used for creating the gridded data set along with the actual grid data set (`df`). To plot a particular variable, you can extract the raster object and assign the values for a particular variable to that object. See below: 
 
-```{r plot grid, eval = TRUE}
+```{r plot_grid, eval = TRUE}
 # Extract raster
 share_largest_count <- df_grid$r
 
@@ -289,7 +289,7 @@ share_largest_count_panel <- create_grid_panel(
   var = "polysh_largest_count")
 ```
 
-```{r plot panel grid, eval = TRUE}
+```{r plot_panel_grid, eval = TRUE}
 # Plot grid for each period
 ggplot() +
   geom_sf(data = afr) +

@@ -8,6 +8,15 @@
 #' @param multiple_levels Whether to include all contour levels, in which case there will be multiple rows per polity-year.
 #' @param covar_path File path to folder containing HYDE population data. Typically the path will be something like `"~/user/OneDrive-NTNU/legacies-project"`.
 #'
+#' @import cli
+#' @import dplyr
+#' @import tidyr
+#' @import units
+#' @import terra
+#' @import exactextractr
+#' @import sf
+#' @importFrom plyr round_any
+#'
 #' @returns A dataframe with polity-year observations and columns for land area (based on contour polygons) and decade population estimates
 #' based on HYDE population data (aggregated to contour polygons).
 #'
@@ -23,6 +32,8 @@ match_id_contour <- function(id_data,
                              contour_level = 0.25,
                              multiple_levels = FALSE,
                              covar_path) {
+
+  prob <- period <- start <- end <- year <- COWID <- area <- geometry <- decade <- pop <- NULL
 
   if (missing(id_data)) {
     cli::cli_abort("{.arg id_data} is missing.")

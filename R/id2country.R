@@ -23,6 +23,7 @@
 #' @import cli
 #' @import stringr
 #' @import units
+#' @import exactextractr
 #'
 #' @returns A dataframe of modern countries with a column for the number of unique historical states.
 #' @export
@@ -34,6 +35,12 @@ id2country <- function(id_data,
                        cshape_year = "2019",
                        multiple = FALSE,
                        exclude_hierarchy = c("none", "tributary", "dependency", "all")){
+
+  cowcode <- country_name <- status <- owner <- capname <- caplong <- caplat <- NULL
+  independent <- independent_tributary <- independent_dependency <- NULL
+  COWNUM <- year <- destination_states_COWNUM <- dest_COWNUM <- dest_rank <- NULL
+  n_states <- capital_lon <- polity_name <- geometry <- cntry_area <- area <- polity_area <- NULL
+  share_polity_area <- polity_complete_within <- share_cntry_area <- NULL
 
   if (stringr::str_length(cshape_year) != 4 && as.numeric(cshape_year) <= 2019) {
     cli::cli_abort("{.arg cshape_year} must be a four digit character string. Maximum year is 2019.")
@@ -93,7 +100,7 @@ id2country <- function(id_data,
       dplyr::select(COWNUM, year, destination_states_COWNUM) |>
       tidyr::separate(destination_states_COWNUM, sprintf("dest_COWNUM_[%d]", seq(1:5)),
                       sep = ";", extra = "drop", fill = "right") |>
-      dplyr::mutate(across(.col = starts_with("dest_COWNUM"),
+      dplyr::mutate(across(.cols = starts_with("dest_COWNUM"),
                            .fns = ~ as.numeric(stringr::str_trim(.x)))) |>
       tidyr::pivot_longer(cols = starts_with("dest_COWNUM"), names_to = "dest_rank", values_to = "dest_COWNUM") |>
       dplyr::filter(!is.na(dest_COWNUM)) |>

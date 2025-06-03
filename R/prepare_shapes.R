@@ -74,6 +74,10 @@ prepare_shapes <- function(shp,
   tributary <- dependency <- tributary_dependency <- NULL
   Core.Great <- core <- core_periphery <- note <- NULL
   incomplete <- year_diff <- new_spell <- spell <- year <- NULL
+  polity_name <- COWID <- COWNUM <- name <- capital_name <- hie_tributary <- hie_dependency <- NULL
+  independent_tributary <- independent_dependency <- independent <- NULL
+  in_spell <- NULL
+
 
 
   # Check input
@@ -413,7 +417,7 @@ prepare_shapes <- function(shp,
       sovereign_spell <- state_data
     } else if (exclude_hierarchy == "tributary") {
       sovereign_spell <- state_data |>
-        dplyr::filter(independent_triburary == 1)
+        dplyr::filter(independent_tributary == 1)
     } else if (exclude_hierarchy == "dependency") {
       sovereign_spell <- state_data |>
         dplyr::filter(independent_dependency == 1)

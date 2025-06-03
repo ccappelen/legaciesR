@@ -13,6 +13,7 @@
 #' @import dplyr
 #' @import cli
 #' @import measurements
+#' @importFrom stats na.omit
 #'
 #
 # ## Aggregating:
@@ -61,7 +62,19 @@
 ## Multiple capitals: Prior year continuity - check how many cases (if few, go through)
 ##
 
-prepare_id <- function(data, multiple_capital = FALSE) {
+prepare_id <- function(data,
+                       multiple_capital = FALSE) {
+
+  Polity <- Polity_Start <- Polity_End <- start_year <- end_year <- year <- NULL
+  Entity_Name <- COWNum <- Capital <- Capital_Info <- Capital_Name <- Capital_Years <- NULL
+  Capital_Lat <- Capital_Lon <- Capital_Start <- Capital_End <- Capital_Lat_dec <- Capital_Lon_dec <- NULL
+  Capital_Spell <- spell_max <- spell_max_sum <- cap_keep <- Hie <- Hie_Info <- Hie_Year <- NULL
+  Hie_Start <- Hie_End <- Hie_Type <- Hie_COWID <- Hie_Tributary <- Hie_Dependency <- NULL
+  Hie_Dependency_lag <- Hie_Dependency_lead <- Hie_Tributary_lag <- Hie_Tributary_lead <- NULL
+  independent_tributary <- independent_dependency <- independent <- NULL
+  COWID <- Other_Names <- Population_10K <- Autonomy <- EPR_Link <- NULL
+  Destination_States <- Destination_State_1 <- Destination_State_2 <- Destination_State_3 <- Destination_State_4 <- Destination_State_5 <- NULL
+  Capital_Coord <- NULL
 
   # id_path <- "data_private/legacies_id_coding.xlsx"
   # data <- readxl::read_excel(id_path, col_types = "text")
@@ -76,7 +89,7 @@ prepare_id <- function(data, multiple_capital = FALSE) {
 
   # Remove everything in square brackets
   data <- data |>
-    dplyr::mutate(across(.col = everything(),
+    dplyr::mutate(across(.cols = everything(),
                          .fns = ~ stringr::str_remove_all(.x, "\\[.*?\\]")))
 
   # Keep only polities
@@ -133,7 +146,7 @@ prepare_id <- function(data, multiple_capital = FALSE) {
 
     # dplyr::filter(stringr::str_detect(Capital_Years, "-8")) |>
     # Replace -8 with NA
-    dplyr::mutate(across(.col = c(Capital_Coord, Capital_Name, Capital_Years),
+    dplyr::mutate(across(.cols = c(Capital_Coord, Capital_Name, Capital_Years),
                          .fns = ~ stringr::str_replace_all(.x, "-8", "NA"))) |>
 
     # Remove brackets from columns
@@ -141,7 +154,7 @@ prepare_id <- function(data, multiple_capital = FALSE) {
                   Capital_Years = gsub("[()]", "", Capital_Years)) |>
 
     # Convert to lower case
-    dplyr::mutate(across(.col = Capital_Coord:Capital_Years,
+    dplyr::mutate(across(.cols = Capital_Coord:Capital_Years,
                          .fns = tolower)) |>
 
     # Extract latitude and longitude from coord
@@ -153,7 +166,7 @@ prepare_id <- function(data, multiple_capital = FALSE) {
                     sep = "-", extra = "drop", fill = "right") |>
 
     # Convert to NA
-    dplyr::mutate(across(.col = c(Capital_Lat, Capital_Lon, Capital_Start, Capital_End),
+    dplyr::mutate(across(.cols = c(Capital_Lat, Capital_Lon, Capital_Start, Capital_End),
                          .fns = ~ stringr::str_replace_all(.x, "NA|na", NA_character_)),
                   Capital_Lat = ifelse(Capital_Lat == "", NA_character_, Capital_Lat),
                   Capital_Lon = ifelse(Capital_Lon == "", NA_character_, Capital_Lon)) |>
@@ -206,7 +219,7 @@ prepare_id <- function(data, multiple_capital = FALSE) {
 
   # Replace three-digit years with 0
   capitals <- capitals |>
-    dplyr::mutate(across(.col = c(Capital_Start, Capital_End),
+    dplyr::mutate(across(.cols = c(Capital_Start, Capital_End),
                          .fns = ~ stringr::str_replace_all(.x, "x", "0")),
                   Capital_Spell = as.numeric(Capital_End)-as.numeric(Capital_Start) + 1) |>
     dplyr::arrange(COWNum)
@@ -331,7 +344,7 @@ prepare_id <- function(data, multiple_capital = FALSE) {
   hierarchy <- hierarchy |>
     dplyr::group_by(Entity_Name, year) |>
     dplyr::summarise(
-      Hie_Type = as.character(paste0(na.omit(Hie_Type), collapse = ";")),
+      Hie_Type = as.character(paste0(stats::na.omit(Hie_Type), collapse = ";")),
       Hie_COWID = as.character(paste0(Hie_COWID, collapse = ";"))) |>
     dplyr::ungroup() |>
     dplyr::rowwise() |>
@@ -345,7 +358,7 @@ prepare_id <- function(data, multiple_capital = FALSE) {
 
   # Recode missing hierarchy to 0
   data <- data |>
-    dplyr::mutate(across(.col = c(Hie_Tributary, Hie_Dependency),
+    dplyr::mutate(across(.cols = c(Hie_Tributary, Hie_Dependency),
                          .fns = ~ ifelse(is.na(.x), 0, .x)))
 
 

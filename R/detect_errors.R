@@ -56,7 +56,7 @@ detect_errors <- function(shp,
   # utils::globalVariables()
 
   geometry <- COWID <- COWNUM <- year <- lyear <- hyear <- NULL
-  year_outside <- year_na <- non_overlap_any <- Cap_Lon <- Cap_Lat <- NULL
+  year_outside <- year_na <- non_overlap_any <- Cap_Lon <- Cap_Lat <- capital_lon <- capital_lat <- NULL
 
   output_args <- c("id_duplicates", "missing_id", "overlap", "capital", "singles", "year", "empty")
   if (missing(errors)) {
