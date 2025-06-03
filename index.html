@@ -52,7 +52,7 @@
 <!-- [![Codecov test coverage](https://codecov.io/gh/ccappelen/legaciesR/graph/badge.svg)](https://app.codecov.io/gh/ccappelen/legaciesR) -->
 <!-- [![R-CMD-check](https://github.com/ccappelen/legaciesR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/ccappelen/legaciesR/actions/workflows/R-CMD-check.yaml) -->
 <!-- badges: end -->
-<p>The <code>legaciesr</code> package provides a set of functions used to aggregate and summarize the mapping and ID data collected in the <a href="https://www.legacies-project.com" class="external-link">LEGACIES</a> project. It allows users to, i.a., (1) create contour polygons capturing the territorial extent of historical states at different probability thresholds, (2) create a grid with various summary measures of historical state presence, and (3) add a range of commonly used covariates to the polygon and grid data.</p>
+<p>The <code>legaciesr</code> package provides a set of functions used to aggregate and summarize the mapping and ID data collected in the <a href="https://www.legacies-project.com" class="external-link">LEGACIES</a> project. It allows users to, i.a., (1) create contour polygons capturing the territorial extent of historical states at different probability thresholds, (2) create a grid with various summary measures of historical state presence, and (3) aggregate data on the number of historical states to modern countries.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
@@ -76,13 +76,14 @@
 <p>The legaciesr package is composed of a number of functions designed to process and match the raw mapping and state data collected in the LEGACIES project. While they can, in most cases, be run independently of each other, they are mostly meant to be used in the workflow described in the remainder of this README. In short, it consists of <!-- (1) fixing invalid geometries in the map data, (2) preprocess the map data and match with information in the ISD state data, (3) detect potential errors in the data set, (4) generate contour polygons from the raw map data, (5) generate a grid cell data set with various summary measures of historical statehood, and (6) match the grid cell data with numerous other data sources commonly used in empirical applications.  --></p>
 <ol style="list-style-type: decimal">
 <li>Detecting and fixing invalid geometries in the map data.</li>
-<li>Preprocessing the map data and match with information in the ISD state data.</li>
-<li>Detecting potential errors in the data set.</li>
-<li>Generating contour polygons from the raw map data. (Optional)</li>
+<li>Cleaning and expanding the ID data to polity-year observations.</li>
+<li>Pre-processing the map data and match with information in the ID state data.</li>
+<li>Detecting potential errors in the map data.</li>
+<li>Generating contour polygons from the raw map data.</li>
 <li>Generating a grid cell data set with various summary measures of historical statehood.</li>
-<li>Matching the grid cell data with numerous other data sources commonly used in empirical applications.</li>
+<li>Aggregate data on the number of historical states to the modern country level.</li>
 </ol>
-<p>Each function (corresponding to each of the six steps) is further documented in their respective help documentation. This guide will outline the basic features of the functions and their intended usage.</p>
+<p>Each function (corresponding to each of the seven steps) is further documented in their respective help documentation. This guide will outline the basic features of the functions and their intended usage.</p>
 </div>
 <div class="section level2">
 <h2 id="support-for-parallel-processing">Support for parallel processing:<a class="anchor" aria-label="anchor" href="#support-for-parallel-processing"></a>
@@ -98,17 +99,17 @@
 <div class="section level2">
 <h2 id="reading-the-data">Reading the data<a class="anchor" aria-label="anchor" href="#reading-the-data"></a>
 </h2>
-<p>The raw map and ISD data is not currently included in the package and therefore has to be loaded from the user’s own directory:</p>
+<p>The raw map and ID data is not currently included in the package and therefore has to be loaded from the user’s own directory. The raw mapping data is the set of shapefiles called “master_shapefile”, while the raw ID data isd called “legacies_id_coding.xlsx”:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">shp_folder</span> <span class="op">&lt;-</span> <span class="st">"path to map data folder"</span></span>
 <span><span class="va">shp_name</span> <span class="op">&lt;-</span> <span class="st">"name of shapefile"</span></span>
-<span><span class="va">isd_path</span> <span class="op">&lt;-</span> <span class="st">"file path to isd data"</span></span></code></pre></div>
+<span><span class="va">id_path</span> <span class="op">&lt;-</span> <span class="st">"file path to id data"</span></span></code></pre></div>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">shp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_read.html" class="external-link">st_read</a></span><span class="op">(</span><span class="va">shp_path</span>, <span class="va">shp_name</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">shp_folder</span>, <span class="va">shp_name</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">isd</span> <span class="op">&lt;-</span> <span class="fu">readxl</span><span class="fu">::</span><span class="fu">read_xlsx</span><span class="op">(</span><span class="va">isd_path</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">isd_path</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">id</span> <span class="op">&lt;-</span> <span class="fu">readxl</span><span class="fu">::</span><span class="fu">read_xlsx</span><span class="op">(</span><span class="va">isd_path</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">id_path</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="invalid-geometries">Invalid geometries<a class="anchor" aria-label="anchor" href="#invalid-geometries"></a>
@@ -118,21 +119,22 @@
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">shp</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/fix_invalid.html">fix_invalid</a></span><span class="op">(</span><span class="va">shp</span><span class="op">)</span></span>
 <span><span class="co">#&gt; 447 (3.3 %) geometries were successfully rebuilt.</span></span>
-<span><span class="co">#&gt; 0 (0 %) geometries failed to rebuild as valid.</span></span>
-<span></span>
-<span><span class="co">## SUBET DATA TO AFRICA FOR QUICKER COMPUTATION</span></span>
-<span><span class="va">shp</span> <span class="op">&lt;-</span> <span class="va">shp</span><span class="op">[</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_binary_pred.html" class="external-link">st_within</a></span><span class="op">(</span><span class="va">shp</span>,</span>
-<span>                     <span class="fu">rnaturalearthdata</span><span class="fu">::</span><span class="va"><a href="https://docs.ropensci.org/rnaturalearthdata/reference/countries.html" class="external-link">countries50</a></span> <span class="op">|&gt;</span></span>
-<span>                       <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">continent</span> <span class="op">==</span> <span class="st">"Africa"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>                       <span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_combine.html" class="external-link">st_union</a></span><span class="op">(</span><span class="op">)</span>, sparse <span class="op">=</span> <span class="cn">F</span><span class="op">)</span>,<span class="op">]</span></span></code></pre></div>
+<span><span class="co">#&gt; 0 (0 %) geometries failed to rebuild as valid.</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="preprocessing">Preprocessing<a class="anchor" aria-label="anchor" href="#preprocessing"></a>
+<h2 id="prepare-id-data">Prepare ID data<a class="anchor" aria-label="anchor" href="#prepare-id-data"></a>
 </h2>
-<p>The next step is to prepare the map data to be in a suitable format for creating grid data, matching with data from the ISD data, etc. It is therefore also necessary to provide the ISD data in order to match the two data sets. By default, the function will (1) expand the data to have one row per year for maps that are assigned a range of years, (2) fix potential issues such as three-digit years due to approximate dating, (3) exclude maps without your assignment, (4) add information on capitals (names and coordinates), (5) crop all geometries to coastlines*, (6) exclude maps marked as “incomplete”, (7) exclude maps of core regions (if they are marked as such)**, and (8) exclude maps for years in which a state is not considered sovereign (in the ISD data)***. Each of these options can be disabled. It is also possible to exclude maps based on the hierarchy coding of states, i.e., if states are coded as tributary and/or dependency.</p>
-<p>* The cropped geometries currently result in errors when creating contour polygons (but work for grid data) ** There are currently errors in the coding of core regions. *** By default, maps are included if they fall within a 5-year window of when a state is considered sovereign. The size of the window can be changed with the <code>margin_sovereign</code> option.</p>
+<p>The raw ID data contains information on polities, their capital cities, and hierarchy status (among other things). <code>legacies::prepare_id</code> expands the data into polity-year format and extracts information on capital cities and hierarchy status. For capital cities, some polity-years are coded with multiple capitals in the same year. It is possible to specify whether all capitals should be included, in which case each polity-year will be represented by multiple rows (corresponding to the number of capitals). The default is to keep only the capital with the longest continuous spell.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">shp</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/prepare_shapes.html">prepare_shapes</a></span><span class="op">(</span>shp <span class="op">=</span> <span class="va">shp</span>, state_data <span class="op">=</span> <span class="va">isd</span>,</span>
+<code class="sourceCode R"><span><span class="va">id</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/prepare_id.html">prepare_id</a></span><span class="op">(</span><span class="va">id</span>, multiple_capital <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="prepare-map-data">Prepare map data<a class="anchor" aria-label="anchor" href="#prepare-map-data"></a>
+</h2>
+<p>The next step is to prepare the map data to be in a suitable format for creating grid data, matching with data from the ISD data, etc. It is therefore also necessary to provide the ID data (see previous step) in order to match the two data sets. By default, the function will (1) expand the data to have one row per year for maps that are assigned a range of years, (2) fix potential issues such as three-digit years due to approximate dating, (3) exclude maps without your assignment, (4) add information on capitals (names and coordinates), (5) crop all geometries to coastlines*, (6) exclude maps marked as “incomplete”, (7) exclude maps of core regions (if they are marked as such)**, and (8) exclude maps for years in which a state is not considered sovereign (in the ID data)***. Each of these options can be disabled. It is also possible to exclude maps based on the hierarchy coding of states, i.e., if states are coded as tributary and/or dependency.</p>
+<p>* The cropped geometries currently result in errors when creating contour polygons (but work for grid data) ** There are currently errors in the coding of core regions. *** By default, maps are included if they fall within a 5-year window of when a state is considered sovereign. The size of the window can be changed with the <code>margin_sovereign</code> option.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">shp</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/prepare_shapes.html">prepare_shapes</a></span><span class="op">(</span>shp <span class="op">=</span> <span class="va">shp</span>, state_data <span class="op">=</span> <span class="va">id</span>,</span>
 <span>                      id_var <span class="op">=</span> <span class="va">COWID</span>, period_var <span class="op">=</span> <span class="va">year</span>,</span>
 <span>                      range_min <span class="op">=</span> <span class="va">lyear</span>, range_max <span class="op">=</span> <span class="va">hyear</span>,</span>
 <span>                      crop_to_land <span class="op">=</span> <span class="cn">FALSE</span>, <span class="co">## 'get_contours' currently not working when cropped to land</span></span>
@@ -144,61 +146,59 @@
 </h2>
 <p>To identify potential errors in the map data, the function <code>detect_errors</code> checks for various issues in the data set, such as the existence of duplicate COWIDs, missing COWIDs, errors in year assignment (e.g., outside study range), if there are geometries not overlapping with other geometries of the same COWID, and if there are capitals falling outside the geometry of a given COWID. All these CAN indicate errors, but it does not mean that it is necessarily an error. The function should therefore be used primarily as an easy way to identify potential issues with the map data that should be investigated further.</p>
 <p>The function returns various objects for easy identification of errors. First, it prints a report detailing whether and how many potential issues there are for a given type of error.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">errors</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/detect_errors.html">detect_errors</a></span><span class="op">(</span>shp <span class="op">=</span> <span class="va">shp</span>, capital_data <span class="op">=</span> <span class="va">isd</span>,</span>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">errors</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/detect_errors.html">detect_errors</a></span><span class="op">(</span>shp <span class="op">=</span> <span class="va">shp</span>, capital_data <span class="op">=</span> <span class="va">id</span>,</span>
 <span>                        id_var <span class="op">=</span> <span class="va">COWID</span>, period_var <span class="op">=</span> <span class="va">year</span>,</span>
 <span>                        progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; POTENTIAL ERRORS:</span></span>
-<span><span class="co">#&gt; • 49 states with potentially duplicate COWIDs.</span></span>
-<span><span class="co">#&gt; • 0 shapes with empty geometries.</span></span>
-<span><span class="co">#&gt; • 2 shapes with missing IDs.</span></span>
-<span><span class="co">#&gt; • 36 COWIDs with only a single map.</span></span>
-<span><span class="co">#&gt; • 1130 maps with years missing or outside 1750-1920.</span></span>
-<span><span class="co">#&gt; • 817 maps that do not overlap with other shapes with the same ID.</span></span>
-<span><span class="co">#&gt; • 1583 maps where the capital falls outside the polygon.</span></span></code></pre></div>
+<span><span class="co">#&gt; • 113 states with potentially duplicate COWIDs.</span></span>
+<span><span class="co">#&gt; • 8 shapes with empty geometries.</span></span>
+<span><span class="co">#&gt; • 0 shapes with missing IDs.</span></span>
+<span><span class="co">#&gt; • 23 COWIDs with only a single map.</span></span>
+<span><span class="co">#&gt; • 75 maps with years missing or outside 1750-1920.</span></span>
+<span><span class="co">#&gt; • 2188 maps that do not overlap with other shapes with the same ID.</span></span>
+<span><span class="co">#&gt; • 4765 maps where the capital falls outside the polygon.</span></span></code></pre></div>
 <p>Second, it returns a list composed of (1) the original data with columns indicating potential issues for each error type and (2) separate subsets of the data set including only observations identified as a potential issue for each of the error types. For instance, the code below returns only those COWIDs for which there are geometries not overlapping with other geometries of the same COWID (which might indicate either erroneous COWID assignment or erroneous geocoding of the map).</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">shp_non_overlap</span> <span class="op">&lt;-</span> <span class="va">errors</span><span class="op">$</span><span class="va">report</span><span class="op">$</span><span class="va">non_overlap</span></span>
 <span><span class="va">shp_non_overlap</span></span>
-<span><span class="co">#&gt; Simple feature collection with 817 features and 32 fields</span></span>
-<span><span class="co">#&gt; Active geometry column: geometry</span></span>
+<span><span class="co">#&gt; Simple feature collection with 2188 features and 33 fields</span></span>
+<span><span class="co">#&gt; Active geometry column: geometry (with 8 geometries empty)</span></span>
 <span><span class="co">#&gt; Geometry type: GEOMETRY</span></span>
 <span><span class="co">#&gt; Dimension:     XY</span></span>
-<span><span class="co">#&gt; Bounding box:  xmin: -16.94491 ymin: -31.30053 xmax: 49.33274 ymax: 34.90809</span></span>
+<span><span class="co">#&gt; Bounding box:  xmin: -17.26439 ymin: -29.96989 xmax: 115.7275 ymax: 45.67083</span></span>
 <span><span class="co">#&gt; Geodetic CRS:  WGS 84</span></span>
-<span><span class="co">#&gt; # A tibble: 817 × 34</span></span>
-<span><span class="co">#&gt; # Groups:   COWID [73]</span></span>
-<span><span class="co">#&gt;     year COWID COWNUM name          lyear hyear coder note  coasterror cityerror</span></span>
-<span><span class="co">#&gt;  * &lt;dbl&gt; &lt;chr&gt;  &lt;int&gt; &lt;chr&gt;         &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;      &lt;int&gt;     &lt;dbl&gt;</span></span>
-<span><span class="co">#&gt;  1  1899 563       NA Transvaal      1899  1910 ca    &lt;NA&gt;          NA        10</span></span>
-<span><span class="co">#&gt;  2  1900 563       NA Transvaal      1899  1910 ca    &lt;NA&gt;          NA        10</span></span>
-<span><span class="co">#&gt;  3  1910 563       NA Transvaal      1899  1910 ca    &lt;NA&gt;          NA        10</span></span>
-<span><span class="co">#&gt;  4  1870 99999     NA Liptako        1870  1870 cm    &lt;NA&gt;          NA        12</span></span>
-<span><span class="co">#&gt;  5  1866 99999     NA Orange Free …  1866  1866 cm    &lt;NA&gt;          NA         6</span></span>
-<span><span class="co">#&gt;  6  1870 AGA     4783 Agaie          1870  1870 cm    &lt;NA&gt;          NA        16</span></span>
-<span><span class="co">#&gt;  7  1787 AIR     4361 Wuste Agades   1787  1787 ss    Spli…         NA        NA</span></span>
-<span><span class="co">#&gt;  8  1795 AIR     4361 Agades         1795  1795 ss    &lt;NA&gt;          NA        NA</span></span>
-<span><span class="co">#&gt;  9  1790 AIR     4361 Agades         1790  1790 ss    &lt;NA&gt;          NA        NA</span></span>
-<span><span class="co">#&gt; 10  2019 AIR     4361 Asben          2019  2019 ss    Bord…         NA        NA</span></span>
-<span><span class="co">#&gt; # ℹ 807 more rows</span></span>
-<span><span class="co">#&gt; # ℹ 24 more variables: sourcetype &lt;int&gt;, `Core/Great` &lt;int&gt;, source &lt;chr&gt;,</span></span>
-<span><span class="co">#&gt; #   core &lt;int&gt;, id &lt;dbl&gt;, layer &lt;chr&gt;, path &lt;chr&gt;, lyear_str &lt;chr&gt;,</span></span>
-<span><span class="co">#&gt; #   core_str &lt;chr&gt;, geometry &lt;GEOMETRY [°]&gt;, geom_valid &lt;lgl&gt;, rebuilt &lt;lgl&gt;,</span></span>
-<span><span class="co">#&gt; #   snap_precision &lt;dbl&gt;, capital_names &lt;chr&gt;, capital_coords &lt;MULTIPOINT [°]&gt;,</span></span>
-<span><span class="co">#&gt; #   incomplete &lt;lgl&gt;, in_spell &lt;lgl&gt;, empty_geom &lt;lgl&gt;, missing_id &lt;lgl&gt;,</span></span>
-<span><span class="co">#&gt; #   single_map &lt;lgl&gt;, year_outside &lt;lgl&gt;, year_na &lt;lgl&gt;, non_overlap &lt;lgl&gt;, …</span></span></code></pre></div>
+<span><span class="co">#&gt; # A tibble: 2,188 × 35</span></span>
+<span><span class="co">#&gt; # Groups:   COWID [95]</span></span>
+<span><span class="co">#&gt;    COWID COWNUM polity_name map_name     year lyear hyear coder note  coasterror</span></span>
+<span><span class="co">#&gt;  * &lt;chr&gt;  &lt;int&gt; &lt;chr&gt;       &lt;chr&gt;       &lt;int&gt; &lt;chr&gt; &lt;chr&gt; &lt;chr&gt; &lt;chr&gt;      &lt;int&gt;</span></span>
+<span><span class="co">#&gt;  1 AGA     4783 agaie       Agaie        1870 1870  1870  cm    &lt;NA&gt;          NA</span></span>
+<span><span class="co">#&gt;  2 AIR     4361 air         Wuste Agad…  1787 1787  1787  ss    Spli…         NA</span></span>
+<span><span class="co">#&gt;  3 AIR     4361 air         Agades       1795 1795  1795  ss    &lt;NA&gt;          NA</span></span>
+<span><span class="co">#&gt;  4 AIR     4361 air         Agades       1790 1790  1790  ss    &lt;NA&gt;          NA</span></span>
+<span><span class="co">#&gt;  5 AIR     4361 air         Air or Asb…  1874 1874  1874  ss    &lt;NA&gt;          NA</span></span>
+<span><span class="co">#&gt;  6 AIR     4361 air         Agades       1811 1811  1811  ss    &lt;NA&gt;          NA</span></span>
+<span><span class="co">#&gt;  7 AIR     4361 air         Agades       1814 1814  1814  ss    &lt;NA&gt;          NA</span></span>
+<span><span class="co">#&gt;  8 AIR     4361 air         Agades       1818 1818  1818  ss    &lt;NA&gt;          NA</span></span>
+<span><span class="co">#&gt;  9 AIR     4361 air         Air or Asb…  1855 1855  1855  ss    &lt;NA&gt;          NA</span></span>
+<span><span class="co">#&gt; 10 AIR     4361 air         Air, Asben   1808 1808  1808  ss    Bord…         NA</span></span>
+<span><span class="co">#&gt; # ℹ 2,178 more rows</span></span>
+<span><span class="co">#&gt; # ℹ 25 more variables: cityerror &lt;dbl&gt;, sourcetype &lt;int&gt;, `Core/Great` &lt;int&gt;,</span></span>
+<span><span class="co">#&gt; #   source &lt;chr&gt;, core &lt;int&gt;, id &lt;dbl&gt;, layer &lt;chr&gt;, path &lt;chr&gt;,</span></span>
+<span><span class="co">#&gt; #   lyear_str &lt;chr&gt;, core_str &lt;chr&gt;, geometry &lt;GEOMETRY [°]&gt;, geom_valid &lt;lgl&gt;,</span></span>
+<span><span class="co">#&gt; #   rebuilt &lt;lgl&gt;, snap_precision &lt;dbl&gt;, capital_name &lt;chr&gt;,</span></span>
+<span><span class="co">#&gt; #   capital_coords &lt;MULTIPOINT [°]&gt;, incomplete &lt;lgl&gt;, in_spell &lt;lgl&gt;,</span></span>
+<span><span class="co">#&gt; #   empty_geom &lt;lgl&gt;, missing_id &lt;lgl&gt;, single_map &lt;lgl&gt;, year_outside &lt;lgl&gt;, …</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="create-contour-polygons">Create contour polygons<a class="anchor" aria-label="anchor" href="#create-contour-polygons"></a>
 </h2>
 <p>Contour polygons capture the varying degrees to which a given area is covered by the digitized maps. The contours divide the region covered by the union of all maps into custom intervals of the share of maps covering a given area. By default, the function divides the territory into four contours (correponding to 0-1, 0.25-1, 0.5-5, and 0.75-1). But the number of percentiles can be specified with the <code>cuts</code> option (see documentation for details).</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">df_contour</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/get_contours.html">get_contours</a></span><span class="op">(</span><span class="va">shp</span>, id_var <span class="op">=</span> <span class="va">COWID</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Jobs running sequentially.</span></span>
-<span><span class="co">#&gt; ℹ Reverts to original plan after running.</span></span></code></pre></div>
-<p>The code below plots the contour polygons for the Sokoto Caliphate:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">df_contour</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/get_contours.html">get_contours</a></span><span class="op">(</span><span class="va">shp</span>, id_var <span class="op">=</span> <span class="va">COWID</span><span class="op">)</span></span></code></pre></div>
+<p>The code below plots the contour polygons for the Sokoto Caliphate:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Load map of Africa</span></span>
 <span><span class="va">afr</span> <span class="op">&lt;-</span> <span class="fu">rnaturalearthdata</span><span class="fu">::</span><span class="va"><a href="https://docs.ropensci.org/rnaturalearthdata/reference/countries.html" class="external-link">countries50</a></span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">continent</span> <span class="op">==</span> <span class="st">"Africa"</span><span class="op">)</span></span>
@@ -218,7 +218,7 @@
 <span>        legend.title.position <span class="op">=</span> <span class="st">"top"</span><span class="op">)</span> </span></code></pre></div>
 <p><img src="reference/figures/README-plot%20contours-1.png" width="100%"></p>
 <p>By default, the function summarizes the maps across the entire period (i.e. 1750-1920). However, it is also possible to specify the contour polygons by drawn separately by specified period (see documentation for further details).</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df_contour_panel</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/get_contours.html">get_contours</a></span><span class="op">(</span><span class="va">shp</span>, id_var <span class="op">=</span> <span class="va">COWID</span>, by_period <span class="op">=</span> <span class="cn">TRUE</span>, period_var <span class="op">=</span> <span class="va">year</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">df_contour_panel</span> <span class="op">|&gt;</span></span>
@@ -257,10 +257,10 @@
 <li>
 <em>contested</em>: A measure capturing the idea of contested territory. Is is calculated as negative sum of state-specific shares of polygons intersecting a grid cell weighted by the logarithm of the same share: , where is the state-specific share of polygons intersecting a grid cell. (NB: This measure is still in development and the exact equation might change.)</li>
 </ol>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df_grid</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/get_grid.html">get_grid</a></span><span class="op">(</span><span class="va">shp</span>, id_var <span class="op">=</span> <span class="va">COWID</span>, period_var <span class="op">=</span> <span class="va">year</span><span class="op">)</span></span></code></pre></div>
 <p>The output is (by default) a list containing the raster object (<code>r</code>) used for creating the gridded data set along with the actual grid data set (<code>df</code>). To plot a particular variable, you can extract the raster object and assign the values for a particular variable to that object. See below:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Extract raster</span></span>
 <span><span class="va">share_largest_count</span> <span class="op">&lt;-</span> <span class="va">df_grid</span><span class="op">$</span><span class="va">r</span></span>
 <span></span>
@@ -282,10 +282,10 @@
 <span>        legend.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">12</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="reference/figures/README-plot%20grid-1.png" width="100%"></p>
 <p>Again, it is also possible to create a panel version of the grid data, divided by specified period (by default it will create a panel for each 20-year period):</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df_grid_panel</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/get_grid.html">get_grid</a></span><span class="op">(</span><span class="va">shp</span>, id_var <span class="op">=</span> <span class="va">COWID</span>, by_period <span class="op">=</span> <span class="cn">TRUE</span>, period_var <span class="op">=</span> <span class="va">year</span><span class="op">)</span></span></code></pre></div>
 <p>Plotting the panel data requires creating a different layer for the raster object for each period and then assigning the values for that period. The code below provides a function for doing that.</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Define function for extracting raster grid and values for given variable</span></span>
 <span><span class="co"># This might be moved to its own proper function in the package</span></span>
 <span><span class="va">create_grid_panel</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">var</span><span class="op">)</span> <span class="op">{</span></span>
@@ -305,7 +305,7 @@
 <span><span class="va">share_largest_count_panel</span> <span class="op">&lt;-</span> <span class="fu">create_grid_panel</span><span class="op">(</span></span>
 <span>  x <span class="op">=</span> <span class="va">df_grid_panel</span>, </span>
 <span>  var <span class="op">=</span> <span class="st">"polysh_largest_count"</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Plot grid for each period</span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">afr</span><span class="op">)</span> <span class="op">+</span></span>
@@ -325,47 +325,44 @@
 <p><img src="reference/figures/README-plot%20panel%20grid-1.png" width="100%"></p>
 </div>
 <div class="section level2">
-<h2 id="adding-covariates-to-grid-data">Adding covariates to grid data<a class="anchor" aria-label="anchor" href="#adding-covariates-to-grid-data"></a>
+<h2 id="aggregate-id-data">Aggregate ID data<a class="anchor" aria-label="anchor" href="#aggregate-id-data"></a>
 </h2>
-<p>In order to add additional covariates to the grid data, it is necessary to provide the path to the folder containing the relevant data. The folder is located in the LEGACIES OneDrive folder and is called “covariates”. Thus, the path should end with the following “…/legacies_project/covariates”.</p>
-<p>The function takes the output from <code>get_grid</code> and adds the specified covariates to the data set. By default, all covariates are included, but it is possible to specify which covariates to include. At the moment, there are only a few commonly used geographic covariates included, but more will be added.</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">covar_path</span> <span class="op">&lt;-</span> <span class="st">".../legacies_project"</span></span></code></pre></div>
+<p>The final two steps allow users to aggregate the ID data to modern countries (i.e. number of historical states in each modern country). There are currently three “methods” for aggregating: (1) aggregating based on destination states as coded in the ID data, (2) aggregating based on capital city location, and (3) aggregating based on the intersection of a polity’s contour polygon and the modern country borders. In the latter case, it is necessary to first match the contour polygons (created above using the <code><a href="reference/get_contours.html">legaciesr::get_contours()</a></code> function). This is done with the <code><a href="reference/match_id_contour.html">match_id_contour()</a></code> function. It takes as input the ID data and the contour polygons (e.g., <code>df_contours</code>). If the contour polygons are created for the entire period, then each polity-year will be matched to the same contour polygon. If the contour polygons are created as a panel with a certain interval, then the contour polygons will be matched to the appropriate polity-years. By default, only the 25-100 % contour polygon will be matched. It is possible to (1) specify the threshold (e.g., 0.25) of the contour polygon (as long as it corresponds to one of the break points in the contour polygons used for matching) and (2) keep all contour polygons which will result in multiple observations per polity-year. The function also adds information on land area (for the contour polygon) and historical population estimates from HYDE (by decade). It is therefore necessary to specify a file path to the LEGACIES folder which contains data on population.</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">df_grid</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/get_covariates.html">get_covariates</a></span><span class="op">(</span><span class="va">df_grid</span>, path <span class="op">=</span> <span class="va">covar_path</span><span class="op">)</span></span>
-<span><span class="co">#&gt; ℹ 1/5: Extracing covariates - Terrain</span></span>
-<span><span class="co">#&gt; ✔ 1/5: Extracing covariates - Terrain [32.5s]</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ℹ 2/5: Extracing covariates - Climate</span></span>
-<span><span class="co">#&gt; ✔ 2/5: Extracing covariates - Climate [123ms]</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ℹ 3/5: Extracing covariates - Crops</span></span>
-<span><span class="co">#&gt; ✔ 3/5: Extracing covariates - Crops [4ms]</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ℹ 4/5: Extracing covariates - Rivers</span></span>
-<span><span class="co">#&gt; ✔ 4/5: Extracing covariates - Rivers [3m 55.9s]</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ℹ 5/5: Extracing covariates - Coast</span></span>
-<span><span class="co">#&gt; ✔ 5/5: Extracing covariates - Coast [55.6s]</span></span>
-<span><span class="co">#&gt; </span></span></code></pre></div>
-<p>Adding covariates to the panel version of the grid data follows the exact same structure:</p>
+<code class="sourceCode R"><span><span class="va">id_contour</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/match_id_contour.html">match_id_contour</a></span><span class="op">(</span>id_data <span class="op">=</span> <span class="va">id</span>, multiple_levels <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>                               contour_data <span class="op">=</span> <span class="va">df_contour</span>,</span>
+<span>                               covar_path <span class="op">=</span> <span class="st">".../legacies_project"</span><span class="op">)</span></span></code></pre></div>
+<p>Finally, <code><a href="reference/id2country.html">id2country()</a></code> takes the ID data and aggregates the number of historical states to each modern country. If <code>method = "source"</code>, the aggregation is based on the destination states coded in the ID data. It is possible to specify whether to use only the first destination state or all destination states with the <code>multiple</code> option.</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">df_grid_panel</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/get_covariates.html">get_covariates</a></span><span class="op">(</span><span class="va">df_grid_panel</span>, path <span class="op">=</span> <span class="va">covar_path</span><span class="op">)</span></span>
-<span><span class="co">#&gt; ℹ 1/5: Extracing covariates - Terrain</span></span>
-<span><span class="co">#&gt; ✔ 1/5: Extracing covariates - Terrain [30.2s]</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ℹ 2/5: Extracing covariates - Climate</span></span>
-<span><span class="co">#&gt; ✔ 2/5: Extracing covariates - Climate [122ms]</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ℹ 3/5: Extracing covariates - Crops</span></span>
-<span><span class="co">#&gt; ✔ 3/5: Extracing covariates - Crops [5ms]</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ℹ 4/5: Extracing covariates - Rivers</span></span>
-<span><span class="co">#&gt; ✔ 4/5: Extracing covariates - Rivers [3m 19.2s]</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ℹ 5/5: Extracing covariates - Coast</span></span>
-<span><span class="co">#&gt; ✔ 5/5: Extracing covariates - Coast [51.4s]</span></span>
-<span><span class="co">#&gt; </span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">id_aggregate_source</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/id2country.html">id2country</a></span><span class="op">(</span>id_data <span class="op">=</span> <span class="va">id_contour</span>, </span>
+<span>                           method <span class="op">=</span> <span class="st">"source"</span>, </span>
+<span>                           multiple <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<p>If <code>method = "capital"</code>, the aggregation is based on capital city locations. In this case, whether to include multiple capitals for a polity-year is determined by the ID data created with <code><a href="reference/prepare_id.html">prepare_id()</a></code>.</p>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">id_aggregate_source</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/id2country.html">id2country</a></span><span class="op">(</span>id_data <span class="op">=</span> <span class="va">id_contour</span>, </span>
+<span>                           method <span class="op">=</span> <span class="st">"capital"</span><span class="op">)</span></span></code></pre></div>
+<p>If <code>method = "polygon"</code>, the aggregation in based on the intersection of contour polygons and modern country borders. To ensure that a given polity is counted only when there is more than a trivial amount of overlap, a given intersection is counted only if either (1) the entire polity is located within the borders of a given modern country or (2) the polity overlaps with at least 5 % of the modern country.</p>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">id_aggregate_source</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/id2country.html">id2country</a></span><span class="op">(</span>id_data <span class="op">=</span> <span class="va">id_contour</span>, </span>
+<span>                           method <span class="op">=</span> <span class="st">"polygon"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: attribute variables are assumed to be spatially constant throughout</span></span>
+<span><span class="co">#&gt; all geometries</span></span></code></pre></div>
+<!-- ## Adding covariates to grid data -->
+<!-- In order to add additional covariates to the grid data, it is necessary to provide the path to the folder containing the relevant data. The folder is located in the LEGACIES OneDrive folder and is called "covariates". Thus, the path should end with the following ".../legacies_project/covariates".  -->
+<!-- The function takes the output from `get_grid` and adds the specified covariates to the data set. By default, all covariates are included, but it is possible to specify which covariates to include. At the moment, there are only a few commonly used geographic covariates included, but more will be added.   -->
+<!-- ```{r path, eval = TRUE, echo = FALSE} -->
+<!-- covar_path <- "/Users/christoffercappelen/Library/CloudStorage/OneDrive-NTNU/legacies_project" -->
+<!-- ``` -->
+<!-- ```{r path hidden, eval = FALSE} -->
+<!-- covar_path <- ".../legacies_project" -->
+<!-- ``` -->
+<!-- ```{r covars, eval = TRUE} -->
+<!-- df_grid <- get_covariates(df_grid, path = covar_path) -->
+<!-- ``` -->
+<!-- Adding covariates to the panel version of the grid data follows the exact same structure:  -->
+<!-- ```{r covars panel, eval = TRUE} -->
+<!-- df_grid_panel <- get_covariates(df_grid_panel, path = covar_path) -->
+<!-- ``` -->
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">
@@ -395,7 +392,7 @@
 <div class="developers">
 <h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
-<li>Christoffer Cappelen <br><small class="roles"> Author, maintainer </small>  </li>
+<li>Christoffer Cappelen <br><small class="roles"> Author, maintainer </small>   </li>
 </ul>
 </div>
 
@@ -410,7 +407,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
 </div>
 
     </footer>

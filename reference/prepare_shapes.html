@@ -108,7 +108,7 @@ e.g., expands rows for maps coded with a range (rather than specific year), excl
 <dt id="arg-exclude-hierarchy">exclude_hierarchy<a class="anchor" aria-label="anchor" href="#arg-exclude-hierarchy"></a></dt>
 <dd><p>Character vector, whether to exclude maps for states that are subordinated (tributary or dependency). <code>none</code> (default)
 will keep all maps regardless of hierarchy status, <code>tributary</code> will exclude tributary states (<code>hierarchy == 1</code>), <code>dependency</code> will exclude
-dependencies (<code>hierarchy == 2</code>), and <code>both</code> will exclude both tributaries and dependencies. See also <code>combine_hierarchy</code>.</p></dd>
+dependencies (<code>hierarchy == 2</code>), and <code>all</code> will exclude both tributaries and dependencies. See also <code>combine_hierarchy</code>.</p></dd>
 
 
 <dt id="arg-exclude-core">exclude_core<a class="anchor" aria-label="anchor" href="#arg-exclude-core"></a></dt>
@@ -121,7 +121,8 @@ Default is <code>TRUE</code>.</p></dd>
 
 
 <dt id="arg-exclude-sovereign">exclude_sovereign<a class="anchor" aria-label="anchor" href="#arg-exclude-sovereign"></a></dt>
-<dd><p>Exclude maps for states that are not sovereign at the time of the map. See details.</p></dd>
+<dd><p>Exclude maps for states that are not sovereign at the time of the map. If <code>exclude_sovereign</code> is not <code>none</code>, then sovereign spells are defined by the same hierarchy rule.
+Otherwise, all polity-years in the ID data will be included as sovereign spells. See details.</p></dd>
 
 
 <dt id="arg-margin-sovereign">margin_sovereign<a class="anchor" aria-label="anchor" href="#arg-margin-sovereign"></a></dt>
@@ -159,7 +160,7 @@ in the same year, all of them withh be included. The capital names will then be 
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
 </div>
 
     </footer></div>
