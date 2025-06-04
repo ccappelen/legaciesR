@@ -246,6 +246,8 @@ contour_polygons <- function(shp,
   } else {
 
     if (cuts > n_maps - 1) {
+      cli::cli_alert_warning("Fewer maps than cuts specified for id_var = {ids}. This will result in fewer contour polygons than the specified number (cuts).
+                        If you prefer to exclude those cases, you can set {.arg threshold_exclude} = TRUE.", wrap = TRUE)
       cuts <- n_maps - 1
     }
 

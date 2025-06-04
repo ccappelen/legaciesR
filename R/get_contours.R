@@ -18,6 +18,8 @@
 #   For example, if `cuts = 10` the function will return 10 polygons representing the 10 deciles (0-0.1, 0.1-0.2, ...).
 #' @param smoothing Logical, whether to apply smoothing after polygonizing the raster. Default is `TRUE`.
 #' @param nmap_threshold Integer, indicating the number of shapes required within each group. Default is 5.
+#' @param threshold_exclude If the number of maps within a group (polity-period) is smaller than the number of `cuts` specified (but stiller above the `nmap_threshold`),
+#' the function will return fewer cuts for that group (and output a warning). If `threshold_exclude` is `TRUE`, these cases will be dropped. Default is `FALSE`.
 #' @param returnList Logical, whether to return a list of geometries by group.
 #'   Default is to return an sf dataframe containing all geometries.
 #' @param progress Logical, whether to show a progress bar.
@@ -67,6 +69,7 @@ get_contours <- function(shp,
                          cuts = 4,
                          include_higher = TRUE,
                          nmap_threshold = 5,
+                         threshold_exclude = FALSE,
                          invalid_geom = c("stop", "fix", "exclude"),
                          smoothing = TRUE,
                          returnList = FALSE,
@@ -156,6 +159,13 @@ get_contours <- function(shp,
       dplyr::filter(n() >= nmap_threshold) |>
       dplyr::ungroup()
 
+    if (threshold_exclude == TRUE) {
+      shp <- shp |>
+        dplyr::group_by({{ id_var }}) |>
+        dplyr::filter(n() > cuts)
+    }
+
+
     # shp_list <- split(shp, shp[[id_var_str]], drop = T)
     shp_list <- split(shp, list(shp[[id_var_str]], shp[["period"]]), drop = T)
 
@@ -202,6 +212,12 @@ get_contours <- function(shp,
         dplyr::filter(n() >= nmap_threshold) |>
         dplyr::ungroup()
 
+      if (threshold_exclude == TRUE) {
+        shp <- shp |>
+          dplyr::group_by({{ id_var }}) |>
+          dplyr::filter(n() > cuts)
+      }
+
       shp_list <- split(shp, list(shp[[id_var_str]], shp[["period"]]), drop = T)
 
     }
@@ -235,6 +251,12 @@ get_contours <- function(shp,
         dplyr::filter(n() >= nmap_threshold) |>
         dplyr::ungroup()
 
+      if (threshold_exclude == TRUE) {
+        shp <- shp |>
+          dplyr::group_by({{ id_var }}) |>
+          dplyr::filter(n() > cuts)
+      }
+
       shp_list <- split(shp, list(shp[[id_var_str]], shp[["period"]]), drop = T)
 
     }
@@ -258,6 +280,12 @@ get_contours <- function(shp,
         dplyr::group_by({{ id_var }}, .data$period) |>
         dplyr::filter(n() >= nmap_threshold) |>
         dplyr::ungroup()
+
+      if (threshold_exclude == TRUE) {
+        shp <- shp |>
+          dplyr::group_by({{ id_var }}) |>
+          dplyr::filter(n() > cuts)
+      }
 
       shp_list <- split(shp, list(shp[[id_var_str]], shp[["period"]]), drop = T)
 

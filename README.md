@@ -288,6 +288,12 @@ into four contours (correponding to 0-1, 0.25-1, 0.5-5, and 0.75-1). But
 the number of percentiles can be specified with the `cuts` option (see
 documentation for details).
 
+\* If the number of maps for a given polity (or polity-period) is equal
+to or smaller than the number of `cuts` specified, the function will
+return fewer contour polygons for that polity. By default, the function
+returns a warning for those cases, but it is also possible to exclude
+those cases by setting `threshold_exclude` to `TRUE`.
+
 ``` r
 df_contour <- get_contours(shp, id_var = COWID)
 ```

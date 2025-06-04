@@ -40,7 +40,7 @@ id2country <- function(id_data,
   independent <- independent_tributary <- independent_dependency <- NULL
   COWNUM <- year <- destination_states_COWNUM <- dest_COWNUM <- dest_rank <- NULL
   n_states <- capital_lon <- polity_name <- geometry <- cntry_area <- area <- polity_area <- NULL
-  share_polity_area <- polity_complete_within <- share_cntry_area <- NULL
+  share_polity_area <- polity_complete_within <- share_cntry_area <- legacies_include <- NULL
 
   if (stringr::str_length(cshape_year) != 4 && as.numeric(cshape_year) <= 2019) {
     cli::cli_abort("{.arg cshape_year} must be a four digit character string. Maximum year is 2019.")
@@ -70,11 +70,12 @@ id2country <- function(id_data,
 
   cntry <- cshapes::cshp(useGW = FALSE, dependencies = FALSE, date = date) |>
     sf::st_make_valid() |>
-    sf::st_wrap_dateline()
+    sf::st_wrap_dateline() |>
+    dplyr::mutate(legacies_include = ifelse(cowcode >= 400, TRUE, FALSE))
 
   cntry <- cntry |>
     dplyr::select(cowcode, country_name, status, owner, capital = capname,
-                  capital_lon = caplong, capital_lat = caplat)
+                  capital_lon = caplong, capital_lat = caplat, legacies_include)
 
   if (exclude_hierarchy == "tributary") {
     id_data <- id_data |>
@@ -119,7 +120,8 @@ id2country <- function(id_data,
       dplyr::arrange(desc(n_states))
 
     cntry <- cntry |>
-      dplyr::left_join(id_cntry, by = c("cowcode" = "dest_COWNUM"))
+      dplyr::left_join(id_cntry, by = c("cowcode" = "dest_COWNUM")) |>
+      dplyr::mutate(n_states = ifelse(is.na(n_states) & legacies_include == T, 0, n_states))
   }
 
 
@@ -150,7 +152,8 @@ id2country <- function(id_data,
       dplyr::summarise(n_states = n_distinct(COWNUM))
 
     cntry <- cntry |>
-      dplyr::left_join(id_cap, by = "cowcode")
+      dplyr::left_join(id_cap, by = "cowcode") |>
+      dplyr::mutate(n_states = ifelse(is.na(n_states) & legacies_include == T, 0, n_states))
 
   }
 
@@ -207,7 +210,8 @@ id2country <- function(id_data,
       dplyr::arrange(desc(n_states))
 
     cntry <- cntry |>
-      dplyr::left_join(id_poly, by = "cowcode")
+      dplyr::left_join(id_poly, by = "cowcode") |>
+      dplyr::mutate(n_states = ifelse(is.na(n_states) & legacies_include == T, 0, n_states))
   }
 
 }

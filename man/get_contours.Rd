@@ -13,6 +13,7 @@ get_contours(
   cuts = 4,
   include_higher = TRUE,
   nmap_threshold = 5,
+  threshold_exclude = FALSE,
   invalid_geom = c("stop", "fix", "exclude"),
   smoothing = TRUE,
   returnList = FALSE,
@@ -48,6 +49,9 @@ If TRUE (default), the 50 \% polygon will include all areas covered by at least 
 within the specified interval (e.g., 0.75-1, 0.50-0.75, 0.25-0.50...).}
 
 \item{nmap_threshold}{Integer, indicating the number of shapes required within each group. Default is 5.}
+
+\item{threshold_exclude}{If the number of maps within a group (polity-period) is smaller than the number of \code{cuts} specified (but stiller above the \code{nmap_threshold}),
+the function will return fewer cuts for that group (and output a warning). If \code{threshold_exclude} is \code{TRUE}, these cases will be dropped. Default is \code{FALSE}.}
 
 \item{invalid_geom}{Character, how to handle invalid geometries. If \code{"stop"}, returns an error
 if there are invalid geometries; if \code{"exclude"}, invalid geometries will be removed before
