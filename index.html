@@ -205,6 +205,7 @@
 <h2 id="create-contour-polygons">Create contour polygons<a class="anchor" aria-label="anchor" href="#create-contour-polygons"></a>
 </h2>
 <p>Contour polygons capture the varying degrees to which a given area is covered by the digitized maps. The contours divide the region covered by the union of all maps into custom intervals of the share of maps covering a given area. By default, the function divides the territory into four contours (correponding to 0-1, 0.25-1, 0.5-5, and 0.75-1). But the number of percentiles can be specified with the <code>cuts</code> option (see documentation for details).</p>
+<p>* If the number of maps for a given polity (or polity-period) is equal to or smaller than the number of <code>cuts</code> specified, the function will return fewer contour polygons for that polity. By default, the function returns a warning for those cases, but it is also possible to exclude those cases by setting <code>threshold_exclude</code> to <code>TRUE</code>.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df_contour</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/get_contours.html">get_contours</a></span><span class="op">(</span><span class="va">shp</span>, id_var <span class="op">=</span> <span class="va">COWID</span><span class="op">)</span></span></code></pre></div>
 <p>The code below plots the contour polygons for the Sokoto Caliphate:</p>
