@@ -304,18 +304,34 @@ detect_errors <- function(shp,
     }
 
     shp_list <- split(shp, shp[[id_var_str]])
+    # shp <- furrr::future_map(shp_list,
+    #                          .f = function(x) {
+    #                            tmp <- sf::st_intersects(x, sparse = TRUE) |>
+    #                              sapply(FUN = any) |>
+    #                              suppressMessages()
+    #                            x$non_overlap <- !tmp
+    #                            return(x)
+    #                          },
+    #                          .options = furrr_options(seed = TRUE),
+    #                          .progress = FALSE
+    # ) |>
+    #   bind_rows()
     shp <- furrr::future_map(shp_list,
                              .f = function(x) {
-                               tmp <- sf::st_overlaps(x, sparse = TRUE) |>
-                                 sapply(FUN = any) |>
-                                 suppressMessages()
-                               x$non_overlap <- !tmp
+                               tmp <- sf::st_union(x) |>
+                                 st_make_valid()
+                               tmp <- tmp[!sf::st_is_empty(tmp)]
+                               tmp <- tmp |>
+                                 st_cast("POLYGON")
+                               non_contiguous <- length(tmp) > 1
+                               x$non_overlap <- non_contiguous
                                return(x)
                              },
                              .options = furrr_options(seed = TRUE),
                              .progress = FALSE
     ) |>
       bind_rows()
+
 
     non_overlap <- shp |>
       dplyr::group_by({{ id_var }}) |>

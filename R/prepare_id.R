@@ -79,8 +79,9 @@ prepare_id <- function(data,
   # id_path <- "data_private/legacies_id_coding.xlsx"
   # data <- readxl::read_excel(id_path, col_types = "text")
 
-  steps <- 4
+  cli::cli_progress_cleanup()
   step <- 0
+  steps <- 4
 
   ########## PREPROCESSING ###########
 
@@ -118,6 +119,7 @@ prepare_id <- function(data,
     dplyr::mutate(year = purrr::map2(start_year, end_year, seq)) |>
     tidyr::unnest(year)
 
+  cli::cli_progress_done()
 
   ########## CAPITALS ###########
 
@@ -205,7 +207,7 @@ prepare_id <- function(data,
                     (is.na(Capital_Start) | is.na(Capital_End))) |> nrow() > 0) {
     capitals <- capitals |>
       dplyr::filter(!is.na(Capital_Start) & !is.na(Capital_End))
-    cli::cli_warn("Rows with missing information on start and end dates of capitals (with valid coordinates) have been removes.")
+    cli::cli_warn("Rows with missing information on start and end dates of capitals (with valid coordinates) have been removed.")
   }
 
 
@@ -283,12 +285,13 @@ prepare_id <- function(data,
   data <- data |>
     dplyr::left_join(capitals, by = c("Entity_Name", "year"))
 
-
+  cli::cli_progress_done()
 
   ########## HIERARCHIES ###########
 
   step <- step + 1
   cli::cli_progress_step("{step}/{steps}: Extract hierarchy information")
+
 
   # For each polity, separate hierarchies by ";"
   hierarchy <- data_raw |>
@@ -403,12 +406,13 @@ prepare_id <- function(data,
       independent_dependency == 1 & independent_tributary == 1, 1, 0))
 
 
-
+  cli::cli_progress_done()
 
   ### PREPARE FOR OUTPUT
 
   step <- step + 1
   cli::cli_progress_step("{step}/{steps}: Finishing")
+
 
   ## Select variables for output
   data <- data |>

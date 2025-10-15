@@ -143,6 +143,13 @@ prepare_shapes <- function(shp,
   exclude_hierarchy = match.arg(exclude_hierarchy)
 
 
+
+
+  ## Remove empty geometries
+  shp <- shp |>
+    filter(!if_all(c(everything(),-geometry), is.na) & !sf::st_is_empty(geometry))
+
+
   ## CHECK IF THERE ARE GEOMETRIES WITH MISSING ID (WILL PRODUCE AN ERROR)
   if (any(is.na(shp[[id_var_str]]))) {
     cli::cli_alert_warning("Geometries with missing {.arg id_var}: Geometries with missing {.arg id_var} are assigned to the value '99999'.")
@@ -166,6 +173,7 @@ prepare_shapes <- function(shp,
     exclude_sovereign +
     crop_to_land
   step <- 0
+
 
 
   ## Fix three-digit years
@@ -475,7 +483,10 @@ prepare_shapes <- function(shp,
 
 
 
-
+  ## Fix years outside range but within 10 year margin
+  shp <- shp |>
+    mutate(year = ifelse(year < 1750 & year >= 1740 & hyear < 1750, 1750, year),
+           year = ifelse(year > 1920 & year <= 1930 & lyear > 1920, 1920, year))
 
 
 
