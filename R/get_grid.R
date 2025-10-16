@@ -480,6 +480,15 @@ get_grid <- function(shp, ras,
     dplyr::rename(poly_count = count)
 
 
+  ## List of COWID for each grid cell (-period)
+  state_ids <- poly_count_df |>
+    dplyr::group_by(gid_period) |>
+    dplyr::summarise(COWIDs_combined = paste(grp_id, collapse = ";")) |>
+    mutate(COWIDs_combined = dplyr::na_if(COWIDs_combined, "NA"))
+  df <- df |>
+    dplyr::left_join(state_ids, by = "gid_period")
+
+
   ## Total number of polygons for each state (and period)
   max_poly <- shp |>
     sf::st_drop_geometry() |>
@@ -510,6 +519,7 @@ get_grid <- function(shp, ras,
                        statesum_across = n_distinct(grp_id)) |>
       dplyr::ungroup() |>
       dplyr::select(gid_period, polysum_across, statesum_across) |>
+      dplyr::mutate(statesum_across = ifelse(polysum_across == 0 & statesum_across == 1, 0, statesum_across)) |>
       as.data.table() |>
       suppressMessages()
 
