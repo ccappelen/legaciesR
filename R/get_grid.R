@@ -555,7 +555,7 @@ get_grid <- function(shp, ras,
       dplyr::mutate(polysh_largest_count = poly_count / max_poly) |>
       dplyr::mutate(polysh_largest_count = round(polysh_largest_count, 3)) |>
       dplyr::group_by(gid_period) |>
-      dplyr::arrange(desc(polysh_largest_count)) |>
+      dplyr::arrange(desc(max_poly)) |>
       dplyr::mutate(polysh_largest_count_ranked = paste0(grp_id, "_", polysh_largest_count, collapse = ";")) |>
       dplyr::select(gid_period, polysh_largest_count_ranked) |>
       dplyr::distinct(gid_period, .keep_all = TRUE) |>
@@ -613,7 +613,7 @@ get_grid <- function(shp, ras,
       dplyr::mutate(polysh_largest_area = poly_count / max_poly) |>
       dplyr::mutate(polysh_largest_area = round(polysh_largest_area, 3)) |>
       dplyr::group_by(gid_period) |>
-      dplyr::arrange(desc(polysh_largest_area)) |>
+      dplyr::arrange(desc(max_area)) |>
       dplyr::mutate(polysh_largest_area_ranked = paste0(grp_id, "_", polysh_largest_area, collapse = ";")) |>
       dplyr::select(gid_period, polysh_largest_area_ranked) |>
       dplyr::distinct(gid_period, .keep_all = TRUE) |>
