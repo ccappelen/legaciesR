@@ -11,13 +11,17 @@
 #' @param range_max Name of variable for upper year interval
 #' @param fix_year Logical, whether to fix three-digit years. Default is `TRUE`. See details.
 #' @param year_na Logical, whether to exclude maps with no year indication (exact or range)
-#' @param expand_range Logical, whether to expand rows for maps with year interval, default is `TRUE.` See details.
+#' @param expand_range Integer, indicating for maps with year interval (rather than specific year) the number of
+#'  years between repeating maps. If `0`, only the start and end date will be included. Otherwise, the specified
+#'  number indicates the how often maps should be repeated. Default is `20` years.
 #' @param match_capitals Logical, whether to add information on capital cities to the `shp` data. Default is `TRUE`. See details.
 #' @param exclude_hierarchy Character vector, whether to exclude maps for states that are subordinated (tributary or dependency). `none` (default)
 #' will keep all maps regardless of hierarchy status, `tributary` will exclude tributary states (`hierarchy == 1`), `dependency` will exclude
 #' dependencies (`hierarchy == 2`), and `all` will exclude both tributaries and dependencies. See also `combine_hierarchy`.
 # @param combine_hierarchy Logical, whether to combine maps for states that are part of the same hierarchy,
 # i.e., maps with hierarchy status 1 or 2 will be subsumed in the state of which they are subordinated.
+#' @param exclude_source_year Integer, indicating if maps from sources before a given year should be dropped. Default is
+#' `NA`, which means all maps, regardless of source year, are included.
 #' @param exclude_core Exclude maps coded as core (i.e., include only the complete shape of both core and periphery).
 #' Default is `TRUE`.
 #' @param exclude_incomplete Exclude maps with incomplete borders. Default is `TRUE`.
@@ -36,8 +40,9 @@
 #' @returns
 #' An sf dataframe.
 #' Further details:
-#' \item{`expand_year`}{Expands rows for maps with interval range rather than specific year. The lower and
-#' upper limits are always retained. In between the limits, rows are only in ten-year interval.}
+#' \item{`expand_range`}{Expands rows for maps with interval range rather than specific year. The lower and
+#' upper limits are always retained. In between the limits, rows are only in the specific interval. For example
+#' if `expand_range = 20`, years divisible by 20 will be included (in addition to the lower and upper limits).}
 #' \item{`match_capitals`}{Capital coordinates are stored as separate geometry. If there are multiple capitals
 #' in the same year, all of them withh be included. The capital names will then be separated by semicolon.}
 #' \item{`exclude_sovereign`}{Excludes maps for states that are not sovereign. If the year of the map is within
@@ -54,10 +59,11 @@ prepare_shapes <- function(shp,
                            range_max,
                            fix_year = TRUE,
                            year_na = TRUE,
-                           expand_range = TRUE,
+                           expand_range = 20L,
                            match_capitals = TRUE,
                            exclude_hierarchy = c("none", "tributary", "dependency", "all"),
                            # combine_hierarchy = FALSE,
+                           exclude_source_year = NA,
                            exclude_core = TRUE,
                            exclude_incomplete = TRUE,
                            exclude_sovereign = TRUE,
@@ -110,6 +116,10 @@ prepare_shapes <- function(shp,
     cli::cli_abort("{.arg period_var_str} must be present in both {.arg shp} AND {.arg state_data}.")
   }
 
+  expand_range <- as.integer(expand_range)
+  if (!is.integer(expand_range)) {
+    cli::cli_abort("{.arg expand_range} must be an integer.")
+  }
 
   if (missing(range_min)) {
     cli::cli_abort("{.arg range_min} is missing.")
@@ -164,7 +174,7 @@ prepare_shapes <- function(shp,
   ## Prepare progress updates
   steps <- fix_year +
     year_na +
-    expand_range +
+    (expand_range > 0) +
     match_capitals +
     (exclude_hierarchy != "none") +
     # combine_hierarchy +
@@ -210,9 +220,21 @@ prepare_shapes <- function(shp,
     cli::cli_progress_done()
   }
 
+  ## Extract source year
+  shp <- shp |>
+    dplyr::mutate(source_year = stringr::str_extract(source, "\\d+")) |>
+    dplyr::mutate(source_year = ifelse(stringr::str_length(source_year) == 2, paste0(source_year, "50"), source_year)) |>
+    dplyr::mutate(source_year = as.numeric(source_year))
+
+  ## Exclude source year
+  if (!is.na(exclude_source_year)) {
+    shp <- shp |>
+      dplyr::filter(source_year >= exclude_source_year)
+  }
+
 
   ## Expand range
-  if (expand_range) {
+  if (expand_range > 0) {
     step <- step + 1
     cli::cli_progress_step("{step}/{steps}: Expand range")
 
@@ -251,7 +273,7 @@ prepare_shapes <- function(shp,
       dplyr::mutate(drop = ifelse(inrange &
                                     {{ period_var }} != {{ range_min }} &
                                     {{ period_var }} != {{ range_max }} &
-                                    {{ period_var }} %% 10 != 0, 1, 0)) |>
+                                    {{ period_var }} %% expand_range != 0, 1, 0)) |>
       dplyr::filter(drop == 0) |>
       dplyr::select(-c(unique_id, inrange, drop))
 
@@ -480,6 +502,12 @@ prepare_shapes <- function(shp,
 
     cli::cli_progress_done()
   }
+
+
+
+  ## Explicitly exclude maps with year before 1750 AND source_year before 1750
+  shp <- shp |>
+    dplyr::filter(!(year < 1750 & source_year < 1750))
 
 
 

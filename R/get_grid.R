@@ -550,9 +550,23 @@ get_grid <- function(shp, ras,
       as.data.table() |>
       suppressMessages()
 
+    max_count_list <- poly_count_df |>
+      dtplyr::lazy_dt() |>
+      dplyr::mutate(polysh_largest_count = poly_count / max_poly) |>
+      dplyr::mutate(polysh_largest_count = round(polysh_largest_count, 3)) |>
+      dplyr::group_by(gid_period) |>
+      dplyr::arrange(desc(polysh_largest_count)) |>
+      dplyr::mutate(polysh_largest_count_ranked = paste0(grp_id, "_", polysh_largest_count, collapse = ";")) |>
+      dplyr::select(gid_period, polysh_largest_count_ranked) |>
+      dplyr::distinct(gid_period, .keep_all = TRUE) |>
+      dplyr::mutate(polysh_largest_count_ranked = ifelse(polysh_largest_count_ranked == "NA_NA", NA, polysh_largest_count_ranked)) |>
+      as.data.table() |>
+      suppressMessages()
+
     df <- df |>
-      dplyr::left_join(max_count_df, by = "gid_period")
-    rm(max_count_df)
+      dplyr::left_join(max_count_df, by = "gid_period") |>
+      dplyr::left_join(max_count_list, by = "gid_period")
+    rm(max_count_df, max_count_list)
 
   }
 
@@ -593,9 +607,24 @@ get_grid <- function(shp, ras,
       as.data.table() |>
       suppressMessages()
 
+    max_area_list <- poly_count_df |>
+      dtplyr::lazy_dt() |>
+      dplyr::left_join(area_df, by = "grp") |>
+      dplyr::mutate(polysh_largest_area = poly_count / max_poly) |>
+      dplyr::mutate(polysh_largest_area = round(polysh_largest_area, 3)) |>
+      dplyr::group_by(gid_period) |>
+      dplyr::arrange(desc(polysh_largest_area)) |>
+      dplyr::mutate(polysh_largest_area_ranked = paste0(grp_id, "_", polysh_largest_area, collapse = ";")) |>
+      dplyr::select(gid_period, polysh_largest_area_ranked) |>
+      dplyr::distinct(gid_period, .keep_all = TRUE) |>
+      dplyr::mutate(polysh_largest_area_ranked = ifelse(polysh_largest_area_ranked == "NA_NA", NA, polysh_largest_area_ranked)) |>
+      as.data.table() |>
+      suppressMessages()
+
     df <- df |>
-      dplyr::left_join(max_area_df, by = "gid_period")
-    rm(max_area_df)
+      dplyr::left_join(max_area_df, by = "gid_period") |>
+      dplyr::left_join(max_area_list, by = "gid_period")
+    rm(max_area_df, max_area_list)
   }
 
   ## ERROR CHECK:
@@ -621,9 +650,23 @@ get_grid <- function(shp, ras,
       as.data.table() |>
       suppressMessages()
 
+    max_share_list <- poly_count_df |>
+      dtplyr::lazy_dt() |>
+      dplyr::mutate(polysh_largest_share = poly_count / max_poly) |>
+      dplyr::mutate(polysh_largest_share = round(polysh_largest_share, 3)) |>
+      dplyr::group_by(gid_period) |>
+      dplyr::arrange(desc(polysh_largest_share)) |>
+      dplyr::mutate(polysh_largest_share_ranked = paste0(grp_id, "_", polysh_largest_share, collapse = ";")) |>
+      dplyr::select(gid_period, polysh_largest_share_ranked) |>
+      dplyr::distinct(gid_period, .keep_all = TRUE) |>
+      dplyr::mutate(polysh_largest_share_ranked = ifelse(polysh_largest_share_ranked == "NA_NA", NA, polysh_largest_share_ranked)) |>
+      as.data.table() |>
+      suppressMessages()
+
     df <- df |>
-      dplyr::left_join(max_share_df, by = "gid_period")
-    rm(max_share_df)
+      dplyr::left_join(max_share_df, by = "gid_period") |>
+      dplyr::left_join(max_share_list, by = "gid_period")
+    rm(max_share_df, max_share_list)
   }
 
   ## ERROR CHECK:
