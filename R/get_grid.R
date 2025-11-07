@@ -394,12 +394,12 @@ get_grid <- function(shp, ras,
     }
 
   ## Extract modern country names (iso codes) and to dataframe
-  ccode_levels <- levels(factor(world$sov_a3))  |>
+  ccode_levels <- levels(factor(world$iso_a3))  |>
     as.data.frame()  |>
     stats::setNames("label") |>
     tibble::rownames_to_column(var = "ccode")
   world <- world  |>
-    dplyr::mutate(sov_a3_fct = factor(sov_a3, levels = ccode_levels$label))
+    dplyr::mutate(iso_a3_fct = factor(iso_a3, levels = ccode_levels$label))
   r_ccode <- fasterize::fasterize(world, raster::raster(r), field = "sov_a3_fct")
   ccode <- terra::as.data.frame(r_ccode)  |>
     tibble::rownames_to_column(var = "gid")  |>
