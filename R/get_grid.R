@@ -79,7 +79,7 @@ get_grid <- function(shp, ras,
                      fix_invalid = FALSE){
 
   # Set internals to pass R CMD check
-  base = sov_a3 = layer = cname = NULL
+  base = iso_a3 = layer = cname = NULL
   period <- grp <- x <- y <- NULL
   gid <- lon <- lat <- gid_period <- poly_count <- NULL
   grp_id <- polysum_across <- statesum_across <- polysh_largest_count <- NULL
@@ -400,7 +400,7 @@ get_grid <- function(shp, ras,
     tibble::rownames_to_column(var = "ccode")
   world <- world  |>
     dplyr::mutate(iso_a3_fct = factor(iso_a3, levels = ccode_levels$label))
-  r_ccode <- fasterize::fasterize(world, raster::raster(r), field = "sov_a3_fct")
+  r_ccode <- fasterize::fasterize(world, raster::raster(r), field = "iso_a3_fct")
   ccode <- terra::as.data.frame(r_ccode)  |>
     tibble::rownames_to_column(var = "gid")  |>
     dplyr::mutate(gid = as.numeric(gid)) |>

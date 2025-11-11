@@ -203,7 +203,7 @@ detect_errors <- function(shp,
 
     }
 
-    if (nrow(id_duplicates) > 0) {
+    if (!is.null(id_duplicates)) {
       error_list$id_duplicates <- id_duplicates
     } else {
       error_list$id_duplicates <- NULL

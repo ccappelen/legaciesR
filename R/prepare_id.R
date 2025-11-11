@@ -292,7 +292,6 @@ prepare_id <- function(data,
   step <- step + 1
   cli::cli_progress_step("{step}/{steps}: Extract hierarchy information")
 
-
   # For each polity, separate hierarchies by ";"
   hierarchy <- data_raw |>
     dplyr::select(Entity_Name, Hie) |>
@@ -335,13 +334,10 @@ prepare_id <- function(data,
     cli::cli_abort("Hierarchy start or end dates that are more or less than 4 digits or missing")
   }
 
-
   # Expand to hierarchy-year data set
   hierarchy <- hierarchy |>
     dplyr::mutate(year = purrr::map2(Hie_Start, Hie_End, seq)) |>
     tidyr::unnest(year)
-
-
 
   # Create polity-year data set with summary of hierarchy information over time
   hierarchy <- hierarchy |>
@@ -364,46 +360,159 @@ prepare_id <- function(data,
     dplyr::mutate(across(.cols = c(Hie_Tributary, Hie_Dependency),
                          .fns = ~ ifelse(is.na(.x), 0, .x)))
 
-
-  # Create dummies for independent polities (based on hierarchy type)
-  data <- data |>
-    dplyr::mutate(independent_dependency = ifelse(Hie_Dependency == 1, 0, 1),
-                  independent_tributary = ifelse(Hie_Tributary == 1, 0, 1))
-
-  # Create lags and leads for hierarchy dummies
+  # Create new hierarchy dummies based on lag and lead values (e.g., if lag is zero, hierarchy in t is 0)
   data <- data |>
     dplyr::arrange(COWNum, year) |>
     dplyr::group_by(COWNum) |>
-    dplyr::mutate(Hie_Dependency_lag = dplyr::lag(Hie_Dependency, 1),
-                  Hie_Dependency_lead = dplyr::lead(Hie_Dependency, 1),
-                  Hie_Tributary_lag = dplyr::lag(Hie_Tributary, 1),
-                  Hie_Tributary_lead = dplyr::lead(Hie_Tributary, 1))
-
-  # Recode independent dummies based on lags and leads
-  data <- data |>
-    dplyr::mutate(independent_dependency = ifelse(
-      (Hie_Dependency == 1 & Hie_Dependency_lag == 0) |
-        (Hie_Dependency & Hie_Dependency_lead == 0),
-      1, independent_dependency)) |>
-    dplyr::mutate(independent_dependency = ifelse(
-      Hie_Dependency == 1 & is.na(Hie_Dependency_lag), 0, independent_dependency)) |>
-    dplyr::mutate(independent_dependency = ifelse(
-      Hie_Dependency == 1 & is.na(Hie_Dependency_lead), 0, independent_dependency))
+    dplyr::mutate(Hie_Tributary_lag = dplyr::lag(Hie_Tributary, 1),
+                  Hie_Dependency_lag = dplyr::lag(Hie_Dependency, 1),
+                  Hie_Tributary_lead = dplyr::lead(Hie_Tributary, 1),
+                  Hie_Dependency_lead = dplyr::lead(Hie_Dependency, 1)) |>
+    dplyr::ungroup()
 
   data <- data |>
-    dplyr::mutate(independent_tributary = ifelse(
-      (Hie_Tributary == 1 & Hie_Tributary_lag == 0) |
-        (Hie_Tributary & Hie_Tributary_lead == 0),
-      1, independent_tributary)) |>
-    dplyr::mutate(independent_tributary = ifelse(
-      Hie_Tributary == 1 & is.na(Hie_Tributary_lag), 0, independent_tributary)) |>
-    dplyr::mutate(independent_tributary = ifelse(
-      Hie_Tributary == 1 & is.na(Hie_Tributary_lead), 0, independent_tributary))
+    dplyr::mutate(
+      Hie_Tributary_inclusive = dplyr::case_when(
+        Hie_Tributary == 1 & (Hie_Tributary_lag == 0 | Hie_Tributary_lead == 0) ~ 0,
+        .default = Hie_Tributary),
+      Hie_Dependency_inclusive = dplyr::case_when(
+        Hie_Dependency == 1 & (Hie_Dependency_lag == 0 | Hie_Dependency_lead == 0) ~ 0,
+        .default = Hie_Dependency)
+    )
 
-  # Create dummy for independence excluding both hierarchy types
+  # Create independence codings, i.e. state types (state, quasi-state, polity)
   data <- data |>
-    dplyr::mutate(independent = ifelse(
-      independent_dependency == 1 & independent_tributary == 1, 1, 0))
+    dplyr::mutate(
+      state_type = dplyr::case_when(
+        Hie_Tributary_inclusive == 0 & Hie_Dependency_inclusive == 0 ~ "State",
+        Hie_Tributary_inclusive == 1 & Hie_Dependency_inclusive == 0 ~ "Quasi-State",
+        Hie_Tributary_inclusive == 0 & Hie_Dependency_inclusive == 1 ~ "Polity",
+        Hie_Tributary_inclusive == 1 & Hie_Dependency_inclusive == 1 ~ "Polity"
+      )
+    )
+
+  # Manually recode Australia and New Zealand in 1920 (because they gain independence in January 1920)
+  data <- data |>
+    dplyr::mutate(state_type = ifelse(COWNum == "900" & year == 1920, "State", state_type), # Australia
+                  state_type = ifelse(COWNum == "920" & year == 1920, "State", state_type) # New Zeland
+                  )
+
+  # Remove temporary columns
+  data <- data |>
+    dplyr::select(-c(Hie_Tributary_lag, Hie_Tributary_lead, Hie_Dependency_lag, Hie_Dependency_lead,
+                     Hie_Tributary_inclusive, Hie_Dependency_inclusive))
+
+  # # For each polity, separate hierarchies by ";"
+  # hierarchy <- data_raw |>
+  #   dplyr::select(Entity_Name, Hie) |>
+  #   tidyr::separate("Hie", sprintf("Hie_[%d]", seq(1:10)),
+  #                   sep = ";", extra = "drop", fill = "right")
+  #
+  # # Gather the data into long format, retaining all other information but hierarchies
+  # hierarchy <- hierarchy |>
+  #
+  #   # Pivot longer
+  #   tidyr::pivot_longer(cols = starts_with("Hie_["),
+  #                       names_to = "Hie_Num",
+  #                       values_to = "Hie_Info") |>
+  #   dplyr::mutate(Hie_Info = stringr::str_trim(Hie_Info)) |>
+  #
+  #   # Separate hierarchy information
+  #   tidyr::separate("Hie_Info", c("Hie_COWID", "Hie_Year", "Hie_Type"),
+  #                   sep = "_", extra = "drop", fill = "right") |>
+  #
+  #   # Remove brackets
+  #   dplyr::mutate(Hie_Year = gsub("[()]", "", Hie_Year)) |>
+  #
+  #   # Separate year information
+  #   tidyr::separate("Hie_Year", c("Hie_Start", "Hie_End"),
+  #                   sep = "-", extra = "drop", fill = "right") |>
+  #
+  #   # Sort and drop rows with missing year
+  #   dplyr::arrange(Entity_Name) |>
+  #   dplyr::filter(!is.na(Hie_Start)) |>
+  #   dplyr::mutate(Hie_Start = stringr::str_trim(Hie_Start),
+  #                 Hie_End = stringr::str_trim(Hie_End))
+  #
+  #
+  # ## Check for years with more or less than 4 digits (or missing)
+  # if (dplyr::filter(hierarchy, stringr::str_count(trimws(Hie_Start)) != 4 |
+  #                   stringr::str_count(trimws(Hie_End)) != 4 |
+  #                   is.na(Hie_Start) |
+  #                   is.na(Hie_End)) |>
+  #     nrow() > 0) {
+  #   cli::cli_abort("Hierarchy start or end dates that are more or less than 4 digits or missing")
+  # }
+  #
+  #
+  # # Expand to hierarchy-year data set
+  # hierarchy <- hierarchy |>
+  #   dplyr::mutate(year = purrr::map2(Hie_Start, Hie_End, seq)) |>
+  #   tidyr::unnest(year)
+  #
+  #
+  #
+  # # Create polity-year data set with summary of hierarchy information over time
+  # hierarchy <- hierarchy |>
+  #   dplyr::group_by(Entity_Name, year) |>
+  #   dplyr::summarise(
+  #     Hie_Type = as.character(paste0(stats::na.omit(Hie_Type), collapse = ";")),
+  #     Hie_COWID = as.character(paste0(Hie_COWID, collapse = ";"))) |>
+  #   dplyr::ungroup() |>
+  #   dplyr::rowwise() |>
+  #   dplyr::mutate(Hie_Tributary = ifelse(grepl("1", Hie_Type) == TRUE, 1, 0),
+  #                 Hie_Dependency = ifelse(grepl("2", Hie_Type) == TRUE, 1, 0))
+  #
+  #
+  # # Match to df
+  # data <- data |>
+  #   dplyr::left_join(hierarchy, by = c("Entity_Name", "year"))
+  #
+  # # Recode missing hierarchy to 0
+  # data <- data |>
+  #   dplyr::mutate(across(.cols = c(Hie_Tributary, Hie_Dependency),
+  #                        .fns = ~ ifelse(is.na(.x), 0, .x)))
+  #
+  #
+  # # Create dummies for independent polities (based on hierarchy type)
+  # data <- data |>
+  #   dplyr::mutate(independent_dependency = ifelse(Hie_Dependency == 1, 0, 1),
+  #                 independent_tributary = ifelse(Hie_Tributary == 1, 0, 1))
+  #
+  # # Create lags and leads for hierarchy dummies
+  # data <- data |>
+  #   dplyr::arrange(COWNum, year) |>
+  #   dplyr::group_by(COWNum) |>
+  #   dplyr::mutate(Hie_Dependency_lag = dplyr::lag(Hie_Dependency, 1),
+  #                 Hie_Dependency_lead = dplyr::lead(Hie_Dependency, 1),
+  #                 Hie_Tributary_lag = dplyr::lag(Hie_Tributary, 1),
+  #                 Hie_Tributary_lead = dplyr::lead(Hie_Tributary, 1))
+  #
+  # # Recode independent dummies based on lags and leads
+  # data <- data |>
+  #   dplyr::mutate(independent_dependency = ifelse(
+  #     (Hie_Dependency == 1 & Hie_Dependency_lag == 0) |
+  #       (Hie_Dependency & Hie_Dependency_lead == 0),
+  #     1, independent_dependency)) |>
+  #   dplyr::mutate(independent_dependency = ifelse(
+  #     Hie_Dependency == 1 & is.na(Hie_Dependency_lag), 0, independent_dependency)) |>
+  #   dplyr::mutate(independent_dependency = ifelse(
+  #     Hie_Dependency == 1 & is.na(Hie_Dependency_lead), 0, independent_dependency))
+  #
+  # data <- data |>
+  #   dplyr::mutate(independent_tributary = ifelse(
+  #     (Hie_Tributary == 1 & Hie_Tributary_lag == 0) |
+  #       (Hie_Tributary & Hie_Tributary_lead == 0),
+  #     1, independent_tributary)) |>
+  #   dplyr::mutate(independent_tributary = ifelse(
+  #     Hie_Tributary == 1 & is.na(Hie_Tributary_lag), 0, independent_tributary)) |>
+  #   dplyr::mutate(independent_tributary = ifelse(
+  #     Hie_Tributary == 1 & is.na(Hie_Tributary_lead), 0, independent_tributary))
+  #
+  # # Create dummy for independence excluding both hierarchy types
+  # data <- data |>
+  #   dplyr::mutate(independent = ifelse(
+  #     independent_dependency == 1 & independent_tributary == 1, 1, 0))
 
 
   cli::cli_progress_done()
@@ -427,8 +536,7 @@ prepare_id <- function(data,
                   capital_name = Capital_Name, capital_lon = Capital_Lon_dec, capital_lat = Capital_Lat_dec,
                   capital_raw = Capital,
                   hie_COWID = Hie_COWID, hie_type = Hie_Type,
-                  hie_tributary = Hie_Tributary, hie_dependency = Hie_Dependency,
-                  independent_dependency, independent_tributary, independent, hie_raw = Hie,
+                  hie_tributary = Hie_Tributary, hie_dependency = Hie_Dependency, state_type, hie_raw = Hie,
                   # ethnonational_group = Ethnonational_group, ## For now
                   EPR_link = EPR_Link,
                   # ACD_actor_link = ACD_Actor_Link, ## For now

@@ -15,11 +15,11 @@
 #'  years between repeating maps. If `0`, only the start and end date will be included. Otherwise, the specified
 #'  number indicates the how often maps should be repeated. Default is `20` years.
 #' @param match_capitals Logical, whether to add information on capital cities to the `shp` data. Default is `TRUE`. See details.
-#' @param exclude_hierarchy Character vector, whether to exclude maps for states that are subordinated (tributary or dependency). `none` (default)
-#' will keep all maps regardless of hierarchy status, `tributary` will exclude tributary states (`hierarchy == 1`), `dependency` will exclude
-#' dependencies (`hierarchy == 2`), and `all` will exclude both tributaries and dependencies. See also `combine_hierarchy`.
-# @param combine_hierarchy Logical, whether to combine maps for states that are part of the same hierarchy,
-# i.e., maps with hierarchy status 1 or 2 will be subsumed in the state of which they are subordinated.
+# #' @param exclude_hierarchy Character vector, whether to exclude maps for states that are subordinated (tributary or dependency). `none` (default)
+# #' will keep all maps regardless of hierarchy status, `tributary` will exclude tributary states (`hierarchy == 1`), `dependency` will exclude
+# #' dependencies (`hierarchy == 2`), and `all` will exclude both tributaries and dependencies. See also `combine_hierarchy`.
+# # @param combine_hierarchy Logical, whether to combine maps for states that are part of the same hierarchy,
+# # i.e., maps with hierarchy status 1 or 2 will be subsumed in the state of which they are subordinated.
 #' @param exclude_source_year Integer, indicating if maps from sources before a given year should be dropped. Default is
 #' `NA`, which means all maps, regardless of source year, are included.
 #' @param exclude_core Exclude maps coded as core (i.e., include only the complete shape of both core and periphery).
@@ -61,8 +61,7 @@ prepare_shapes <- function(shp,
                            year_na = TRUE,
                            expand_range = 20L,
                            match_capitals = TRUE,
-                           exclude_hierarchy = c("none", "tributary", "dependency", "all"),
-                           # combine_hierarchy = FALSE,
+                           # exclude_hierarchy = c("none", "tributary", "dependency", "all"),
                            exclude_source_year = NA,
                            exclude_core = TRUE,
                            exclude_incomplete = TRUE,
@@ -78,10 +77,9 @@ prepare_shapes <- function(shp,
   Hie_2 <- hie2 <- hie2_lag <- hie2_lead <- NULL
   hie3 <- hie3_lag <- hie3_lead <- NULL
   tributary <- dependency <- tributary_dependency <- NULL
-  Core.Great <- core <- core_periphery <- note <- NULL
+  core <- core_periphery <- note <- NULL
   incomplete <- year_diff <- new_spell <- spell <- year <- NULL
-  polity_name <- COWID <- COWNUM <- name <- capital_name <- hie_tributary <- hie_dependency <- NULL
-  independent_tributary <- independent_dependency <- independent <- NULL
+  polity_name <- COWID <- COWNUM <- name <- capital_name <- hie_tributary <- hie_dependency <- state_type <- NULL
   in_spell <- NULL
 
 
@@ -150,7 +148,7 @@ prepare_shapes <- function(shp,
     cli::cli_abort("{.arg range_max_str} must be present in {.arg shp}.")
   }
 
-  exclude_hierarchy = match.arg(exclude_hierarchy)
+  # exclude_hierarchy = match.arg(exclude_hierarchy)
 
 
 
@@ -176,8 +174,7 @@ prepare_shapes <- function(shp,
     year_na +
     (expand_range > 0) +
     match_capitals +
-    (exclude_hierarchy != "none") +
-    # combine_hierarchy +
+    # (exclude_hierarchy != "none") +
     exclude_core +
     exclude_incomplete +
     exclude_sovereign +
@@ -294,6 +291,203 @@ prepare_shapes <- function(shp,
 
 
 
+
+  ## Exclude core
+  if (exclude_core) {
+    step <- step + 1
+    cli::cli_progress_step("{step}/{steps}: Exclude core")
+
+    if (any(shp$core > 1, na.rm = TRUE)) {
+      cli::cli_abort("CODING ERROR: Core/periphery coding should only take on values `0` or `1`.
+      Check both column `Core.Great` and column `core` for errors.")
+    }
+
+    shp <- shp |>
+      dplyr::rowwise() |>
+      dplyr::mutate(core_periphery = core) |>
+      dplyr::ungroup() |>
+      dplyr::mutate(core_periphery = ifelse(is.na(core), 0, core_periphery)) |>
+      dplyr::mutate(core_periphery = dplyr::case_when(
+        core_periphery == 1 ~ "Core",
+        core_periphery == 0 ~ "Full",
+        is.na(core_periphery) ~ "Full"
+      ))
+
+    shp <- shp |>
+      dplyr::filter(core_periphery == "Full")
+
+    cli::cli_progress_done()
+  }
+
+
+  ## Exclude incomplete
+  if (exclude_incomplete) {
+    step <- step + 1
+    cli::cli_progress_step("{step}/{steps}: Exclude incomplete")
+
+    shp <- shp |>
+      dplyr::mutate(incomplete = stringr::str_detect(note, "incomplete|Incomplete")) |>
+      dplyr::mutate(incomplete = ifelse(is.na(incomplete), FALSE, incomplete)) |>
+      dplyr::filter(incomplete == FALSE)
+
+    cli::cli_progress_done()
+  }
+
+
+
+  ## Explicitly exclude maps with year before 1750 AND source_year before 1750
+  shp <- shp |>
+    dplyr::filter(!(year < 1750 & source_year < 1750))
+
+
+  ## Fix years outside range but within 10 year margin
+  shp <- shp |>
+    mutate(year = ifelse(year < 1750 & year >= 1740 & hyear < 1750, 1750, year),
+           year = ifelse(year > 1920 & year <= 1930 & lyear > 1920, 1920, year))
+
+  ## Exclude sovereign
+
+  # Create variable saving original map years
+  shp <- shp |>
+    dplyr::mutate(map_year = year)
+
+  if (exclude_sovereign) {
+    step <- step + 1
+    e <- environment()
+    msg <- ""
+    cli::cli_progress_step("{step}/{steps}: Exclude non-sovereign maps{msg}", spinner = TRUE)
+
+    # if (exclude_hierarchy != "none") {
+    #   sovereign_spell <- df_hierarchy
+    # } else {
+    #   sovereign_spell <- state_data
+    # }
+
+    # if (exclude_hierarchy == "none") {
+    #   sovereign_spell <- state_data
+    # } else if (exclude_hierarchy == "tributary") {
+    #   sovereign_spell <- state_data |>
+    #     dplyr::filter(independent_tributary == 1)
+    # } else if (exclude_hierarchy == "dependency") {
+    #   sovereign_spell <- state_data |>
+    #     dplyr::filter(independent_dependency == 1)
+    # } else if (exclude_hierarchy == "all") {
+    #   sovereign_spell <- state_data |>
+    #     dplyr::filter(independent == 1)
+    # }
+
+
+    sovereign_spell <- state_data
+
+    sovereign_spell <- sovereign_spell |>
+      dplyr::select({{ id_var }}, {{ period_var }}) |>
+      dplyr::group_by({{ id_var }}) |>
+      dplyr::mutate(year_diff = {{ period_var }} - lag({{ period_var }})) |>
+      dplyr::mutate(new_spell = ifelse(is.na(year_diff) | year_diff > 1, 1, 0)) |>
+      dplyr::mutate(spell = cumsum(new_spell)) |>
+      dplyr::ungroup() |>
+      dplyr::group_by({{ id_var }}, spell) |>
+      dplyr::summarise(from = min(year),
+                       to = max(year)) |>
+      dplyr::ungroup() |>
+      dplyr::mutate(unique_id = row_number())
+
+    sovereign_exp <- sovereign_spell |>
+      dplyr::group_by(unique_id) |>
+      tidyr::expand({{ period_var }} := seq(from, to)) |>
+      dplyr::ungroup()
+
+    sovereign_exp <- sovereign_exp |>
+      dplyr::left_join(sovereign_spell, by = "unique_id")
+
+    #
+    #
+    # shp_list <- split(shp, f = shp[[id_var_str]])
+    # shp <- lapply(shp_list,
+    #                 FUN = function(x) {
+    #
+    #                   tmp_length <- nrow(x)
+    #                   tmp_id <- x[[id_var_str]][1]
+    #                   tmp_year <- x[[period_var_str]]
+    #
+    #                   in_spell <- tmp_year %in% (state_data[state_data[[id_var_str]] == tmp_id,][[period_var_str]]) |
+    #                     tmp_year %in% (state_data[state_data[[id_var_str]] == tmp_id,][[period_var_str]] - margin_sovereign) |
+    #                     tmp_year %in% (state_data[state_data[[id_var_str]] == tmp_id,][[period_var_str]] + margin_sovereign)
+    #
+    #                   if (nrow(x) != length(in_spell)) stop(paste0("ERROR: ID ", tmp_id))
+    #
+    #                   x$in_spell <- in_spell
+    #
+    #                   .step_id <- x[[id_var_str]][1]
+    #                   e$msg <- glue::glue(": {.step_id}")
+    #                   cli::cli_progress_update(.envir = e)
+    #
+    #                   if (nrow(x) != tmp_length) stop(paste0("ERROR: ID ", tmp_id))
+    #                   return(x)
+    #
+    #                 }) |>
+    #   bind_rows()
+
+
+
+    shp_list <- split(shp, f = shp[[id_var_str]])
+
+    shp <- lapply(shp_list,
+           FUN = function(x) {
+             tmp_length <- nrow(x)
+             tmp_id <- x[[id_var_str]][1]
+             tmp_years <- x[[period_var_str]]
+             sov_years <- sovereign_exp |> filter(COWID == tmp_id) |> pull(year)
+
+             if (length(sov_years) == 0) {
+               in_spell <- rep(FALSE, tmp_length)
+               in_window <- rep(FALSE, tmp_length)
+               in_window_year <- rep(NA, tmp_length)
+               # window_diff <- rep(NA, tmp_length)
+             } else {
+               in_spell <- tmp_years %in% sov_years
+               # window_diff <- sapply(tmp_years, FUN = function(x) min(abs(x - sov_years)))
+               in_window <- sapply(tmp_years, FUN = function(x) min(abs(x - sov_years)) %in% 1:margin_sovereign)
+               in_window_year <- sapply(tmp_years, FUN = function(x) sov_years[which.min(abs(x - sov_years))])
+               in_window_year[!in_window] <- NA
+               in_window_year <- in_window_year |> unlist()
+             }
+
+             if (nrow(x) != length(in_spell)) stop(paste0("ERROR: ID ", tmp_id))
+
+             x$in_spell <- in_spell
+             x$in_window <- in_window
+             x$in_window_year <- in_window_year
+             # x$window_diff <- window_diff
+
+             x <- x |>
+               dplyr::mutate(year = ifelse(in_window == TRUE, in_window_year, year),
+                             in_spell = ifelse(in_window == TRUE, TRUE, in_spell))
+
+             x <- x |>
+               dplyr::select(-c(in_window, in_window_year))
+
+             .step_id <- x[[id_var_str]][1]
+             e$msg <- glue::glue(": {.step_id}")
+             cli::cli_progress_update(.envir = e)
+
+             if (nrow(x) != tmp_length) stop(paste0("ERROR: ID ", tmp_id))
+             return(x)
+           }) |>
+      bind_rows()
+
+
+    shp <- shp |>
+      dplyr::filter(in_spell == TRUE)
+
+    msg <- ""
+    cli::cli_progress_update()
+
+    cli::cli_progress_done()
+  }
+
+
+
   ## Match capitals
   if (match_capitals) {
     step <- step + 1
@@ -330,191 +524,42 @@ prepare_shapes <- function(shp,
   }
 
 
-  ## Exclude hierarchy
-  # if (exclude_hierarchy != "none" | exclude_sovereign) {
-  #   df_hierarchy <- state_data |>
-  #     dplyr::select({{ id_var }}, {{ period_var }}, Hie_1, Hie_2) |>
-  #     dplyr::group_by({{ id_var }}, {{ period_var }}) |>
-  #     dplyr::summarise(hie1 = max(Hie_1, na.rm = T),
-  #                      hie2 = max(Hie_2, na.rm = T)) |>
-  #     dplyr::mutate(hie3 = ifelse(hie1 == 1 | hie2 == 1, 1, 0)) |>
-  #     dplyr::group_by({{ id_var }}) |>
-  #     dplyr::mutate(hie1_lag = lag(hie1),
-  #                   hie1_lead = lead(hie1),
-  #                   hie2_lag = lag(hie2),
-  #                   hie2_lead = lead(hie2),
-  #                   hie3_lag = lag(hie3),
-  #                   hie3_lead = lead(hie3)) |>
-  #     dplyr::ungroup() |>
-  #     dplyr::mutate(tributary = hie1,
-  #                   tributary = ifelse((hie1 == 1 & hie1_lag == 0) | (hie1 == 0 & hie1_lead == 0),
-  #                                      0, tributary),
-  #                   dependency = hie2,
-  #                   dependency = ifelse((hie2 == 1 & hie2_lag == 0) | (hie2 == 0 & hie2_lead == 0),
-  #                                       0, dependency),
-  #                   tributary_dependency = hie3,
-  #                   tributary_dependency = ifelse((hie3 == 1 & hie3_lag == 0) | (hie3 == 0 & hie3_lead == 0),
-  #                                                 0, tributary_dependency)) |>
-  #   dplyr::select({{ id_var }}, {{ period_var }}, tributary, dependency, tributary_dependency)
-  # }
-
+  ## Match state type
   df_hierarchy <- state_data |>
-    dplyr::select({{ id_var }}, {{ period_var }}, hie_tributary, hie_dependency, independent_tributary, independent_dependency, independent)
+    dplyr::select({{ id_var }}, {{ period_var }}, hie_tributary, hie_dependency, state_type)
 
-
-  if (exclude_hierarchy != "none") {
-    step <- step + 1
-    cli::cli_progress_step("{step}/{steps}: Exclude hierarchy")
-
-    shp <- shp |>
-      dplyr::left_join(df_hierarchy, by = c(id_var_str, period_var_str))
-
-    if (exclude_hierarchy == "tributary") {
-      shp <- shp |>
-        dplyr::filter(independent_tributary == 1)
-    }
-
-    if (exclude_hierarchy == "dependency") {
-      shp <- shp |>
-        dplyr::filter(independent_dependency == 1)
-    }
-
-    if (exclude_hierarchy == "all") {
-      shp <- shp |>
-        dplyr::filter(independent == 1)
-    }
-
-    cli::cli_progress_done()
-  }
-
-
-
-  ## Exclude core
-  if (exclude_core) {
-    step <- step + 1
-    cli::cli_progress_step("{step}/{steps}: Exclude core")
-
-    if (any(shp$Core.Great > 1, na.rm = TRUE) || any(shp$core > 1, na.rm = TRUE)) {
-      cli::cli_abort("CODING ERROR: Core/periphery coding should only take on values `0` or `1`.
-      Check both column `Core.Great` and column `core` for errors.")
-    }
-
-    shp <- shp |>
-      dplyr::rowwise() |>
-      dplyr::mutate(core_periphery = sum(Core.Great, core, na.rm = T)) |>
-      dplyr::ungroup() |>
-      dplyr::mutate(core_periphery = ifelse(is.na(Core.Great) & is.na(core), NA, core_periphery)) |>
-      dplyr::mutate(core_periphery = dplyr::case_when(
-        core_periphery == 1 ~ "Core",
-        core_periphery == 0 ~ "Full"
-      ))
-
-    shp <- shp |>
-      dplyr::filter(core_periphery != "Core" | is.na(core_periphery))
-
-    cli::cli_progress_done()
-  }
-
-
-  ## Exclude incomplete
-  if (exclude_incomplete) {
-    step <- step + 1
-    cli::cli_progress_step("{step}/{steps}: Exclude incomplete")
-
-    shp <- shp |>
-      dplyr::mutate(incomplete = stringr::str_detect(note, "incomplete|Incomplete")) |>
-      dplyr::mutate(incomplete = ifelse(is.na(incomplete), FALSE, incomplete)) |>
-      dplyr::filter(incomplete == FALSE)
-
-    cli::cli_progress_done()
-  }
-
-
-  ## Exclude sovereign
-  if (exclude_sovereign) {
-    step <- step + 1
-    e <- environment()
-    msg <- ""
-    cli::cli_progress_step("{step}/{steps}: Exclude non-sovereign maps{msg}", spinner = TRUE)
-
-    # if (exclude_hierarchy != "none") {
-    #   sovereign_spell <- df_hierarchy
-    # } else {
-    #   sovereign_spell <- state_data
-    # }
-
-    if (exclude_hierarchy == "none") {
-      sovereign_spell <- state_data
-    } else if (exclude_hierarchy == "tributary") {
-      sovereign_spell <- state_data |>
-        dplyr::filter(independent_tributary == 1)
-    } else if (exclude_hierarchy == "dependency") {
-      sovereign_spell <- state_data |>
-        dplyr::filter(independent_dependency == 1)
-    } else if (exclude_hierarchy == "all") {
-      sovereign_spell <- state_data |>
-        dplyr::filter(independent == 1)
-    }
-
-
-    sovereign_spell <- sovereign_spell |>
-      dplyr::select({{ id_var }}, {{ period_var }}) |>
-      dplyr::group_by({{ id_var }}) |>
-      dplyr::mutate(year_diff = {{ period_var }} - lag({{ period_var }})) |>
-      dplyr::mutate(new_spell = ifelse(is.na(year_diff) | year_diff > 1, 1, 0)) |>
-      dplyr::mutate(spell = cumsum(new_spell)) |>
-      dplyr::ungroup() |>
-      dplyr::group_by({{ id_var }}, spell) |>
-      dplyr::summarise(from = min(year),
-                       to = max(year))
-
-    shp_list <- split(shp, f = shp[[id_var_str]])
-    shp <- lapply(shp_list,
-                    FUN = function(x) {
-
-                      tmp_length <- nrow(x)
-                      tmp_id <- x[[id_var_str]][1]
-                      tmp_year <- x[[period_var_str]]
-
-                      in_spell <- tmp_year %in% (state_data[state_data[[id_var_str]] == tmp_id,][[period_var_str]]) |
-                        tmp_year %in% (state_data[state_data[[id_var_str]] == tmp_id,][[period_var_str]] - margin_sovereign) |
-                        tmp_year %in% (state_data[state_data[[id_var_str]] == tmp_id,][[period_var_str]] + margin_sovereign)
-
-                      if (nrow(x) != length(in_spell)) stop(paste0("ERROR: ID ", tmp_id))
-
-                      x$in_spell <- in_spell
-
-                      .step_id <- x[[id_var_str]][1]
-                      e$msg <- glue::glue(": {.step_id}")
-                      cli::cli_progress_update(.envir = e)
-
-                      if (nrow(x) != tmp_length) stop(paste0("ERROR: ID ", tmp_id))
-                      return(x)
-
-                    }) |>
-      bind_rows()
-
-    shp <- shp |>
-      dplyr::filter(in_spell == TRUE)
-
-    msg <- ""
-    cli::cli_progress_update()
-
-    cli::cli_progress_done()
-  }
-
-
-
-  ## Explicitly exclude maps with year before 1750 AND source_year before 1750
   shp <- shp |>
-    dplyr::filter(!(year < 1750 & source_year < 1750))
+    dplyr::left_join(df_hierarchy, by = c(id_var_str, period_var_str))
 
 
-
-  ## Fix years outside range but within 10 year margin
-  shp <- shp |>
-    mutate(year = ifelse(year < 1750 & year >= 1740 & hyear < 1750, 1750, year),
-           year = ifelse(year > 1920 & year <= 1930 & lyear > 1920, 1920, year))
+  # ## Exclude hierarchy
+  # df_hierarchy <- state_data |>
+  #   dplyr::select({{ id_var }}, {{ period_var }}, hie_tributary, hie_dependency, state_type)
+  #
+  # if (exclude_hierarchy != "none") {
+  #   step <- step + 1
+  #   cli::cli_progress_step("{step}/{steps}: Exclude hierarchy")
+  #
+  #   shp <- shp |>
+  #     dplyr::left_join(df_hierarchy, by = c(id_var_str, period_var_str))
+  #
+  #   if (exclude_hierarchy == "tributary") {
+  #     shp <- shp |>
+  #       dplyr::filter(independent_tributary == 1)
+  #   }
+  #
+  #   if (exclude_hierarchy == "dependency") {
+  #     shp <- shp |>
+  #       dplyr::filter(independent_dependency == 1)
+  #   }
+  #
+  #   if (exclude_hierarchy == "all") {
+  #     shp <- shp |>
+  #       dplyr::filter(independent == 1)
+  #   }
+  #
+  #   cli::cli_progress_done()
+  # }
 
 
 
