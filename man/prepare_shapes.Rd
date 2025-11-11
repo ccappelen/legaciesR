@@ -13,9 +13,9 @@ prepare_shapes(
   range_max,
   fix_year = TRUE,
   year_na = TRUE,
-  expand_range = TRUE,
+  expand_range = 20L,
   match_capitals = TRUE,
-  exclude_hierarchy = c("none", "tributary", "dependency", "all"),
+  exclude_source_year = NA,
   exclude_core = TRUE,
   exclude_incomplete = TRUE,
   exclude_sovereign = TRUE,
@@ -40,13 +40,14 @@ prepare_shapes(
 
 \item{year_na}{Logical, whether to exclude maps with no year indication (exact or range)}
 
-\item{expand_range}{Logical, whether to expand rows for maps with year interval, default is \code{TRUE.} See details.}
+\item{expand_range}{Integer, indicating for maps with year interval (rather than specific year) the number of
+years between repeating maps. If \code{0}, only the start and end date will be included. Otherwise, the specified
+number indicates the how often maps should be repeated. Default is \code{20} years.}
 
 \item{match_capitals}{Logical, whether to add information on capital cities to the \code{shp} data. Default is \code{TRUE}. See details.}
 
-\item{exclude_hierarchy}{Character vector, whether to exclude maps for states that are subordinated (tributary or dependency). \code{none} (default)
-will keep all maps regardless of hierarchy status, \code{tributary} will exclude tributary states (\code{hierarchy == 1}), \code{dependency} will exclude
-dependencies (\code{hierarchy == 2}), and \code{all} will exclude both tributaries and dependencies. See also \code{combine_hierarchy}.}
+\item{exclude_source_year}{Integer, indicating if maps from sources before a given year should be dropped. Default is
+\code{NA}, which means all maps, regardless of source year, are included.}
 
 \item{exclude_core}{Exclude maps coded as core (i.e., include only the complete shape of both core and periphery).
 Default is \code{TRUE}.}
@@ -63,8 +64,9 @@ Otherwise, all polity-years in the ID data will be included as sovereign spells.
 \value{
 An sf dataframe.
 Further details:
-\item{\code{expand_year}}{Expands rows for maps with interval range rather than specific year. The lower and
-upper limits are always retained. In between the limits, rows are only in ten-year interval.}
+\item{\code{expand_range}}{Expands rows for maps with interval range rather than specific year. The lower and
+upper limits are always retained. In between the limits, rows are only in the specific interval. For example
+if \code{expand_range = 20}, years divisible by 20 will be included (in addition to the lower and upper limits).}
 \item{\code{match_capitals}}{Capital coordinates are stored as separate geometry. If there are multiple capitals
 in the same year, all of them withh be included. The capital names will then be separated by semicolon.}
 \item{\code{exclude_sovereign}}{Excludes maps for states that are not sovereign. If the year of the map is within
