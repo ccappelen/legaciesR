@@ -50,9 +50,9 @@ e.g., expands rows for maps coded with a range (rather than specific year), excl
 <span>  <span class="va">range_max</span>,</span>
 <span>  fix_year <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  year_na <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  expand_range <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  expand_range <span class="op">=</span> <span class="fl">20L</span>,</span>
 <span>  match_capitals <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  exclude_hierarchy <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"none"</span>, <span class="st">"tributary"</span>, <span class="st">"dependency"</span>, <span class="st">"all"</span><span class="op">)</span>,</span>
+<span>  exclude_source_year <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  exclude_core <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  exclude_incomplete <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  exclude_sovereign <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -98,17 +98,18 @@ e.g., expands rows for maps coded with a range (rather than specific year), excl
 
 
 <dt id="arg-expand-range">expand_range<a class="anchor" aria-label="anchor" href="#arg-expand-range"></a></dt>
-<dd><p>Logical, whether to expand rows for maps with year interval, default is <code>TRUE.</code> See details.</p></dd>
+<dd><p>Integer, indicating for maps with year interval (rather than specific year) the number of
+years between repeating maps. If <code>0</code>, only the start and end date will be included. Otherwise, the specified
+number indicates the how often maps should be repeated. Default is <code>20</code> years.</p></dd>
 
 
 <dt id="arg-match-capitals">match_capitals<a class="anchor" aria-label="anchor" href="#arg-match-capitals"></a></dt>
 <dd><p>Logical, whether to add information on capital cities to the <code>shp</code> data. Default is <code>TRUE</code>. See details.</p></dd>
 
 
-<dt id="arg-exclude-hierarchy">exclude_hierarchy<a class="anchor" aria-label="anchor" href="#arg-exclude-hierarchy"></a></dt>
-<dd><p>Character vector, whether to exclude maps for states that are subordinated (tributary or dependency). <code>none</code> (default)
-will keep all maps regardless of hierarchy status, <code>tributary</code> will exclude tributary states (<code>hierarchy == 1</code>), <code>dependency</code> will exclude
-dependencies (<code>hierarchy == 2</code>), and <code>all</code> will exclude both tributaries and dependencies. See also <code>combine_hierarchy</code>.</p></dd>
+<dt id="arg-exclude-source-year">exclude_source_year<a class="anchor" aria-label="anchor" href="#arg-exclude-source-year"></a></dt>
+<dd><p>Integer, indicating if maps from sources before a given year should be dropped. Default is
+<code>NA</code>, which means all maps, regardless of source year, are included.</p></dd>
 
 
 <dt id="arg-exclude-core">exclude_core<a class="anchor" aria-label="anchor" href="#arg-exclude-core"></a></dt>
@@ -137,9 +138,10 @@ Otherwise, all polity-years in the ID data will be included as sovereign spells.
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>An sf dataframe.
 Further details:</p>
-<dl><dt><code>expand_year</code></dt>
+<dl><dt><code>expand_range</code></dt>
 <dd><p>Expands rows for maps with interval range rather than specific year. The lower and
-upper limits are always retained. In between the limits, rows are only in ten-year interval.</p></dd>
+upper limits are always retained. In between the limits, rows are only in the specific interval. For example
+if <code>expand_range = 20</code>, years divisible by 20 will be included (in addition to the lower and upper limits).</p></dd>
 
 <dt><code>match_capitals</code></dt>
 <dd><p>Capital coordinates are stored as separate geometry. If there are multiple capitals

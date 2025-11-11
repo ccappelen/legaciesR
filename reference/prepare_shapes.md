@@ -16,9 +16,9 @@ prepare_shapes(
   range_max,
   fix_year = TRUE,
   year_na = TRUE,
-  expand_range = TRUE,
+  expand_range = 20L,
   match_capitals = TRUE,
-  exclude_hierarchy = c("none", "tributary", "dependency", "all"),
+  exclude_source_year = NA,
   exclude_core = TRUE,
   exclude_incomplete = TRUE,
   exclude_sovereign = TRUE,
@@ -65,22 +65,22 @@ prepare_shapes(
 
 - expand_range:
 
-  Logical, whether to expand rows for maps with year interval, default
-  is `TRUE.` See details.
+  Integer, indicating for maps with year interval (rather than specific
+  year) the number of years between repeating maps. If `0`, only the
+  start and end date will be included. Otherwise, the specified number
+  indicates the how often maps should be repeated. Default is `20`
+  years.
 
 - match_capitals:
 
   Logical, whether to add information on capital cities to the `shp`
   data. Default is `TRUE`. See details.
 
-- exclude_hierarchy:
+- exclude_source_year:
 
-  Character vector, whether to exclude maps for states that are
-  subordinated (tributary or dependency). `none` (default) will keep all
-  maps regardless of hierarchy status, `tributary` will exclude
-  tributary states (`hierarchy == 1`), `dependency` will exclude
-  dependencies (`hierarchy == 2`), and `all` will exclude both
-  tributaries and dependencies. See also `combine_hierarchy`.
+  Integer, indicating if maps from sources before a given year should be
+  dropped. Default is `NA`, which means all maps, regardless of source
+  year, are included.
 
 - exclude_core:
 
@@ -111,11 +111,13 @@ prepare_shapes(
 
 An sf dataframe. Further details:
 
-- `expand_year`:
+- `expand_range`:
 
   Expands rows for maps with interval range rather than specific year.
   The lower and upper limits are always retained. In between the limits,
-  rows are only in ten-year interval.
+  rows are only in the specific interval. For example if
+  `expand_range = 20`, years divisible by 20 will be included (in
+  addition to the lower and upper limits).
 
 - `match_capitals`:
 
