@@ -708,6 +708,7 @@ get_grid <- function(shp, ras,
   cli::cli_progress_done()
   ## 3F: Borders
 
+
   if ("borders" %in% output) {
     step <- step + 1
     cli::cli_progress_step("{step}/{steps}: Calculating summary measures - borders{msg}", spinner = TRUE)
@@ -744,7 +745,7 @@ get_grid <- function(shp, ras,
         return(polycount)
       }) |>
       dplyr::bind_rows(.id = "period") |>
-      dplyr::mutate(gid_period = paste0(gid, period, sep = "_")) |>
+      dplyr::mutate(gid_period = paste0(gid, "_", period)) |>
       dplyr::select(gid_period, border_count)
 
     msg <- ""
@@ -762,7 +763,12 @@ get_grid <- function(shp, ras,
 
     df <- df |>
       dplyr::left_join(border_count_df, by = "gid_period") |>
-      dplyr::mutate(border_share = border_count / polysum_across)
+      dplyr::mutate(border_share = border_count / polysum_across) |>
+      dplyr::mutate(border_share = dplyr::case_when(
+        is.nan(border_share) & is.na(COWIDs_combined) ~ NA,
+        is.nan(border_share) & !is.na(COWIDs_combined) ~ 0,
+        .default = border_share
+      ))
     rm(border_count_df, r_border, shp_borders)
   }
 
