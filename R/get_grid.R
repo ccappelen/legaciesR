@@ -366,32 +366,42 @@ get_grid <- function(shp, ras,
 
   ## Create empty dataframe (data.table) with cell id
 
-    period_unique <- unique(shp$period)
-    names(period_unique) <- period_unique
+  period_unique <- unique(shp$period)
+  names(period_unique) <- period_unique
 
-    df_temp <- terra::as.data.frame(r, xy = T, na.rm = F) |>
-      dplyr::rename(lon = x, lat = y) |>
-      tibble::rownames_to_column(var = "gid")  |>
-      dplyr::mutate(gid = as.numeric(gid)) |>
-      data.table::as.data.table()  |>
-      dplyr::select(gid, lon, lat) |>
-      suppressWarnings()
+  df_temp <- terra::as.data.frame(r, xy = T, na.rm = F) |>
+    dplyr::rename(lon = x, lat = y) |>
+    tibble::rownames_to_column(var = "gid")  |>
+    dplyr::mutate(gid = as.numeric(gid)) |>
+    data.table::as.data.table()  |>
+    dplyr::select(gid, lon, lat) |>
+    suppressWarnings()
 
-    df <- lapply(period_unique,
-                 FUN = function(x) {
-                   df_temp |>
-                     dplyr::mutate(period = x) |>
-                     dplyr::select(gid, period, everything())
-                 }) |>
-      bind_rows(.id = "period") |>
-      dplyr::mutate(gid_period = paste(gid, period, sep = "_")) |>
-      dplyr::select(gid, period, gid_period, everything()) |>
-      suppressWarnings()
+  df <- lapply(period_unique,
+               FUN = function(x) {
+                 df_temp |>
+                   dplyr::mutate(period = x) |>
+                   dplyr::select(gid, period, everything())
+               }) |>
+    bind_rows(.id = "period") |>
+    dplyr::mutate(gid_period = paste(gid, period, sep = "_")) |>
+    dplyr::select(gid, period, gid_period, everything()) |>
+    suppressWarnings()
 
-    ## ERROR CHECK:
-    if (nrow(df) %% terra::ncell(r) != 0) {
-      cli::cli_abort("Number of rows is not a multiple of the number of grid cells.")
-    }
+  ## ERROR CHECK:
+  if (nrow(df) %% terra::ncell(r) != 0) {
+    cli::cli_abort("Number of rows is not a multiple of the number of grid cells.")
+  }
+
+  ## Calculate land cover
+  r_cover <- terra::rasterize(world, r, cover = TRUE)
+  terra::set.names(r_cover, "landcover")
+  df_cover <- terra::as.data.frame(r_cover) |>
+    tibble::rownames_to_column(var = "gid") |>
+    dplyr::mutate(gid = as.numeric(gid)) |>
+    data.table::as.data.table()
+  df <- df |>
+    dplyr::left_join(df_cover, by = "gid")
 
   ## Extract modern country names (iso codes) and to dataframe
   ccode_levels <- levels(factor(world$iso_a3))  |>
@@ -407,7 +417,7 @@ get_grid <- function(shp, ras,
     data.table::as.data.table()  |>
     dplyr::rename(ccode = layer)
   df <- df  |>
-    dplyr::left_join(ccode, by = "gid") %>%
+    dplyr::left_join(ccode, by = "gid") |>
     dplyr::mutate(cname = factor(ccode, levels = ccode_levels$ccode, labels = ccode_levels$label))  |>
     dplyr::mutate(cname = as.character(cname))
 

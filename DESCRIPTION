@@ -43,6 +43,8 @@ Suggests:
     ggplot2,
     testthat (>= 3.0.0),
     pbapply
+    malariaAtlas
+    elevatr
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
