@@ -86,6 +86,8 @@ get_grid <- function(shp, ras,
   area <- max_area <- polysh_largest_area <- polysh_largest_share <- NULL
   polysh <- polysh_mean <- polymax_across <- polysh_mean_share <- polysh_across <- NULL
   border_count <- r_border <- polysh_ln <- polyshw <- NULL
+  COWIDs_combined <- polysh_largest_count_ranked <- polysh_largest_area_ranked <- polysh_largest_share_ranked <- NULL
+  border_share <- NULL
 
 
   return <- match.arg(return)

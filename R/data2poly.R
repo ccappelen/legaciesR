@@ -15,6 +15,7 @@
 #' @import data.table
 #' @import cli
 #' @import raster
+#' @importFrom utils capture.output
 #'
 #' @returns
 #' Returns a dataframe similar to `shp` with columsn added for covariates.
@@ -32,6 +33,9 @@
 
 
 data2poly <- function(shp, covars){
+
+  ## Initialize global variables
+
 
   ## Check if 'shp' is an sf data.frame
   if (!all(c("sf", "data.frame") %in% class(shp))) {
@@ -113,7 +117,7 @@ data2poly <- function(shp, covars){
     r_mal <- malariaAtlas::getRaster(dataset_id = "Explorer__2010_TempSuitability.Pv.Index.1k.global_Decompressed",
                                      extent = raster::extent(shp) |> as.matrix()) |>
       suppressMessages() |>
-      capture.output() |>
+      utils::capture.output() |>
       invisible()
 
     shp$malaria <- exactextractr::exact_extract(r_mal, shp, fun = "mean", progress = FALSE)

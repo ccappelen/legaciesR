@@ -232,7 +232,7 @@ contour_polygons <- function(shp,
 
   ids <- shp[1,] |>
     sf::st_drop_geometry() |>
-    select({{ id_vars }})
+    dplyr::select({{ id_vars }})
 
   if (n_maps == 1) {
 

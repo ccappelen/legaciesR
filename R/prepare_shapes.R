@@ -81,6 +81,7 @@ prepare_shapes <- function(shp,
   incomplete <- year_diff <- new_spell <- spell <- year <- NULL
   polity_name <- COWID <- COWNUM <- name <- capital_name <- hie_tributary <- hie_dependency <- state_type <- NULL
   in_spell <- NULL
+  source_year <- hyear <- lyear <- from <- to <- NULL
 
 
 

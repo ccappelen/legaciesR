@@ -16,6 +16,7 @@
 #' @import data.table
 #' @import cli
 #' @import raster
+#' @importFrom utils capture.output
 #'
 #'
 #' @returns
@@ -37,6 +38,8 @@
 
 data2grid <- function(x, covars){
 
+  ## Initialize global variables
+  gid <- y <- lon <- lat <- dist2coast <- NULL
 
   ## CHECK 'X': If it is a raster or output from 'get_grid'
   ## If raster: Create new data frame
@@ -167,7 +170,7 @@ data2grid <- function(x, covars){
       dataset_id = "Explorer__2010_TempSuitability.Pv.Index.1k.global_Decompressed",
       extent = raster::extent(raster::raster(ras)) |> as.matrix()) |>
       suppressMessages() |>
-      capture.output() |>
+      utils::capture.output() |>
       invisible()
     r_mal <- terra::resample(r_mal, ras, method = "average")
     terra::set.names(r_mal, "malaria")

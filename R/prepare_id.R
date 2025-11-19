@@ -75,6 +75,7 @@ prepare_id <- function(data,
   COWID <- Other_Names <- Population_10K <- Autonomy <- EPR_Link <- NULL
   Destination_States <- Destination_State_1 <- Destination_State_2 <- Destination_State_3 <- Destination_State_4 <- Destination_State_5 <- NULL
   Capital_Coord <- NULL
+  state_type <- Hie_Tributary_inclusive <- Hie_Dependency_inclusive <- NULL
 
   # id_path <- "data_private/legacies_id_coding.xlsx"
   # data <- readxl::read_excel(id_path, col_types = "text")
