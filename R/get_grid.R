@@ -395,6 +395,15 @@ get_grid <- function(shp, ras,
     cli::cli_abort("Number of rows is not a multiple of the number of grid cells.")
   }
 
+
+  ## Add grid cell geometry to df
+  r_poly <- terra::as.polygons(r)
+  r_poly$gid <- 1:length(r_poly)
+  r_df <- sf::st_as_sf(r_poly) |>
+    as_tibble()
+  df <- df |>
+    left_join(r_df, by = "gid")
+
   ## Calculate land cover
   r_cover <- terra::rasterize(world, r, cover = TRUE)
   terra::set.names(r_cover, "landcover")
@@ -507,7 +516,7 @@ get_grid <- function(shp, ras,
     dplyr::group_by(grp) |>
     dplyr::summarise(max_poly = n()) |>
     dplyr::ungroup() |>
-    select(grp, max_poly)
+    dplyr::select(grp, max_poly)
 
   poly_count_df <- poly_count_df |>
     dplyr::left_join(max_poly, by = "grp")
