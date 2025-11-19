@@ -546,6 +546,10 @@ id_aggregate_source <- id2country(id_data = id_contour,
   : Create Contour Polygons
 - [`create_random_polygons_df()`](https://ccappelen.github.io/legaciesR/reference/create_random_polygons_df.md)
   : Create random overlapping polygons
+- [`data2grid()`](https://ccappelen.github.io/legaciesR/reference/data2grid.md)
+  : Match covariates to raster data.
+- [`data2poly()`](https://ccappelen.github.io/legaciesR/reference/data2poly.md)
+  : Match covariates to polygon data.
 - [`detect_errors()`](https://ccappelen.github.io/legaciesR/reference/detect_errors.md)
   : Detect potential errors in maps
 - [`example_df`](https://ccappelen.github.io/legaciesR/reference/example_df.md)
