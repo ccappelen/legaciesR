@@ -266,7 +266,7 @@ prepare_shapes <- function(shp,
 
     # Merge with shp_tmp and drop in-between years not divisible by 10
     shp <- shp |>
-      dplyr::left_join(shp_tmp |> select(-{{ period_var }}), by = "unique_id") |>
+      dplyr::left_join(shp_tmp |> dplyr::select(-{{ period_var }}), by = "unique_id") |>
       dplyr::mutate(inrange = ifelse({{ range_min }} != {{ range_max }}, 1, 0)) |>
       dplyr::mutate(drop = ifelse(inrange &
                                     {{ period_var }} != {{ range_min }} &

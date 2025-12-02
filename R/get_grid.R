@@ -155,6 +155,12 @@ get_grid <- function(shp, ras,
       cli::cli_inform(c("Jobs running sequentially.",
                         "i" = "Reverts to original plan after running."
       ))
+    } else {
+      old_plan <- future::plan("sequential")
+      on.exit(future::plan(old_plan), add = TRUE)
+      cli::cli_inform(c("Jobs running sequentially.",
+                        "i" = "Reverts to original plan after running."
+      ))
     }
   }
 
