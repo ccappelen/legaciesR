@@ -352,6 +352,7 @@ get_contours <- function(shp,
     id_name <- shp |>
       sf::st_drop_geometry() |>
       dplyr::distinct({{ id_var }}, polity_name)
+    id_name <- id_name |> first()
   }
 
 

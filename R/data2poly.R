@@ -116,9 +116,7 @@ data2poly <- function(shp, covars){
 
     r_mal <- malariaAtlas::getRaster(dataset_id = "Explorer__2010_TempSuitability.Pv.Index.1k.global_Decompressed",
                                      extent = raster::extent(shp) |> as.matrix()) |>
-      suppressMessages() |>
-      utils::capture.output() |>
-      invisible()
+      suppressMessages()
 
     shp$malaria <- exactextractr::exact_extract(r_mal, shp, fun = "mean", progress = FALSE)
 
