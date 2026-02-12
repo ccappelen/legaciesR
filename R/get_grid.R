@@ -329,6 +329,8 @@ get_grid <- function(shp, ras,
     "rnaturalearthdata",
     reason = "'rnaturalearthdata' must be installed")
   world <- rnaturalearthdata::countries50
+  world <- world |>
+    mutate(mask = ifelse(continent %in% c("Africa", "Asia"), 1, 0))
 
   ## Subsetting
   if (!is.null(subset)) {
@@ -372,6 +374,10 @@ get_grid <- function(shp, ras,
     }
   }
 
+  # Create mask raster for defining study extent
+  r_mask <- terra::rasterize(world, r, field = "mask")
+  r_mask[r_mask == 0] <- NA
+
   ## Create empty dataframe (data.table) with cell id
 
   period_unique <- unique(shp$period)
@@ -384,6 +390,7 @@ get_grid <- function(shp, ras,
     data.table::as.data.table()  |>
     dplyr::select(gid, lon, lat) |>
     suppressWarnings()
+  df_temp$mask <- terra::values(r_mask)
 
   df <- lapply(period_unique,
                FUN = function(x) {
@@ -502,16 +509,16 @@ get_grid <- function(shp, ras,
   #   dplyr::rename(poly_count = count)
 
   poly_count_df <- df |>
-    dplyr::select(gid, period, gid_period) |>
+    dplyr::select(gid, period, gid_period, mask) |>
     dplyr::left_join(r_poly_count, by = c("gid", "period")) |>
-    dplyr::rename(poly_count = count)
-
+    dplyr::rename(poly_count = count) |>
+    dplyr::mutate(poly_count = ifelse(is.na(poly_count) & mask == 1, 0, poly_count))
 
   ## List of COWID for each grid cell (-period)
   state_ids <- poly_count_df |>
     dplyr::group_by(gid_period) |>
     dplyr::summarise(COWIDs_combined = paste(grp_id, collapse = ";")) |>
-    mutate(COWIDs_combined = dplyr::na_if(COWIDs_combined, "NA"))
+    dplyr::mutate(COWIDs_combined = dplyr::na_if(COWIDs_combined, "NA"))
   df <- df |>
     dplyr::left_join(state_ids, by = "gid_period")
 
@@ -551,7 +558,10 @@ get_grid <- function(shp, ras,
       suppressMessages()
 
     df <- df |>
-      dplyr::left_join(count_across_df, by = "gid_period")
+      dplyr::left_join(count_across_df, by = "gid_period") |>
+      dplyr::mutate(polysum_across = ifelse(is.na(mask), NA, polysum_across),
+                    statesum_across = ifelse(is.na(mask), NA, statesum_across))
+
     rm(count_across_df)
   }
 
@@ -592,7 +602,10 @@ get_grid <- function(shp, ras,
 
     df <- df |>
       dplyr::left_join(max_count_df, by = "gid_period") |>
-      dplyr::left_join(max_count_list, by = "gid_period")
+      dplyr::left_join(max_count_list, by = "gid_period") |>
+      dplyr::mutate(across(.cols = c(polysh_largest_count, polysum_largest_count, polymax_largest_count),
+                           .fns = ~ ifelse(is.na(.x) & mask == 1, 0, .x)))
+
     rm(max_count_df, max_count_list)
 
   }
@@ -650,7 +663,10 @@ get_grid <- function(shp, ras,
 
     df <- df |>
       dplyr::left_join(max_area_df, by = "gid_period") |>
-      dplyr::left_join(max_area_list, by = "gid_period")
+      dplyr::left_join(max_area_list, by = "gid_period") |>
+      dplyr::mutate(across(.cols = c(polysh_largest_area, polysum_largest_area, polymax_largest_area),
+                           .fns = ~ ifelse(is.na(.x) & mask == 1, 0, .x)))
+
     rm(max_area_df, max_area_list)
   }
 
@@ -692,7 +708,10 @@ get_grid <- function(shp, ras,
 
     df <- df |>
       dplyr::left_join(max_share_df, by = "gid_period") |>
-      dplyr::left_join(max_share_list, by = "gid_period")
+      dplyr::left_join(max_share_list, by = "gid_period") |>
+      dplyr::mutate(across(.cols = c(polysh_largest_share, polysum_largest_share, polymax_largest_share),
+                           .fns = ~ ifelse(is.na(.x) & mask == 1, 0, .x)))
+
     rm(max_share_df, max_share_list)
   }
 
@@ -723,7 +742,10 @@ get_grid <- function(shp, ras,
       suppressMessages()
 
     df <- df |>
-      dplyr::left_join(mean_share_df, by = "gid_period")
+      dplyr::left_join(mean_share_df, by = "gid_period") |>
+      dplyr::mutate(across(.cols = c(polysh_mean_share,polysh_across),
+                           .fns = ~ ifelse(is.na(.x) & mask == 1, 0, .x)))
+
     rm(mean_share_df)
   }
 
@@ -790,12 +812,15 @@ get_grid <- function(shp, ras,
 
     df <- df |>
       dplyr::left_join(border_count_df, by = "gid_period") |>
+      mutate(border_count = ifelse(is.na(mask), NA, border_count)) |>
       dplyr::mutate(border_share = border_count / polysum_across) |>
+      dplyr::mutate(border_share = ifelse(is.na(border_share) & mask == 1, 0, border_share)) |>
       dplyr::mutate(border_share = dplyr::case_when(
         is.nan(border_share) & is.na(COWIDs_combined) ~ NA,
         is.nan(border_share) & !is.na(COWIDs_combined) ~ 0,
         .default = border_share
       ))
+
     rm(border_count_df, r_border, shp_borders)
   }
 
@@ -817,6 +842,7 @@ get_grid <- function(shp, ras,
     contested_df <- poly_count_df |>
       dtplyr::lazy_dt() |>
       dplyr::mutate(polysh = poly_count / max_poly) |>
+      dplyr::mutate(polysh = ifelse(is.na(polysh) & mask == 1, 0, polysh)) |>
       dplyr::mutate(polysh_ln = ifelse(poly_count == 0, 0, log(polysh))) |>
       dplyr::mutate(polyshw = polysh*polysh_ln) |>
       dplyr::group_by(gid_period) |>
@@ -825,6 +851,7 @@ get_grid <- function(shp, ras,
 
     df <- df |>
       dplyr::left_join(contested_df, by = "gid_period")
+
     rm(contested_df)
   }
 
