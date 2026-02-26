@@ -122,8 +122,9 @@ Default is <code>TRUE</code>.</p></dd>
 
 
 <dt id="arg-exclude-sovereign">exclude_sovereign<a class="anchor" aria-label="anchor" href="#arg-exclude-sovereign"></a></dt>
-<dd><p>Exclude maps for states that are not sovereign at the time of the map. If <code>exclude_sovereign</code> is not <code>none</code>, then sovereign spells are defined by the same hierarchy rule.
-Otherwise, all polity-years in the ID data will be included as sovereign spells. See details.</p></dd>
+<dd><p>Exclude maps for states that are not sovereign at the time of the map.
+Sovereignty is defined by the state-years in the <code>state_data</code> provided. If, for instance, one wishes to include only "states" and
+"quasi-states" then the <code>state_data</code> needs to be subset to those categories. See also details.</p></dd>
 
 
 <dt id="arg-margin-sovereign">margin_sovereign<a class="anchor" aria-label="anchor" href="#arg-margin-sovereign"></a></dt>

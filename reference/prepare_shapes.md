@@ -94,9 +94,10 @@ prepare_shapes(
 - exclude_sovereign:
 
   Exclude maps for states that are not sovereign at the time of the map.
-  If `exclude_sovereign` is not `none`, then sovereign spells are
-  defined by the same hierarchy rule. Otherwise, all polity-years in the
-  ID data will be included as sovereign spells. See details.
+  Sovereignty is defined by the state-years in the `state_data`
+  provided. If, for instance, one wishes to include only "states" and
+  "quasi-states" then the `state_data` needs to be subset to those
+  categories. See also details.
 
 - margin_sovereign:
 
