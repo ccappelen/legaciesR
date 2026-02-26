@@ -25,8 +25,9 @@
 #' @param exclude_core Exclude maps coded as core (i.e., include only the complete shape of both core and periphery).
 #' Default is `TRUE`.
 #' @param exclude_incomplete Exclude maps with incomplete borders. Default is `TRUE`.
-#' @param exclude_sovereign Exclude maps for states that are not sovereign at the time of the map. If `exclude_sovereign` is not `none`, then sovereign spells are defined by the same hierarchy rule.
-#' Otherwise, all polity-years in the ID data will be included as sovereign spells. See details.
+#' @param exclude_sovereign Exclude maps for states that are not sovereign at the time of the map.
+#' Sovereignty is defined by the state-years in the `state_data` provided. If, for instance, one wishes to include only "states" and
+#' "quasi-states" then the `state_data` needs to be subset to those categories. See also details.
 #' @param margin_sovereign Number of years before or after a state is sovereign that a map is still included (if `exclude_sovereign` is `TRUE`). Default is 5 years.
 #' @param crop_to_land Logical, whether to crop geometries to land (default is `TRUE`)
 #'

@@ -54,8 +54,9 @@ Default is \code{TRUE}.}
 
 \item{exclude_incomplete}{Exclude maps with incomplete borders. Default is \code{TRUE}.}
 
-\item{exclude_sovereign}{Exclude maps for states that are not sovereign at the time of the map. If \code{exclude_sovereign} is not \code{none}, then sovereign spells are defined by the same hierarchy rule.
-Otherwise, all polity-years in the ID data will be included as sovereign spells. See details.}
+\item{exclude_sovereign}{Exclude maps for states that are not sovereign at the time of the map.
+Sovereignty is defined by the state-years in the \code{state_data} provided. If, for instance, one wishes to include only "states" and
+"quasi-states" then the \code{state_data} needs to be subset to those categories. See also details.}
 
 \item{margin_sovereign}{Number of years before or after a state is sovereign that a map is still included (if \code{exclude_sovereign} is \code{TRUE}). Default is 5 years.}
 
