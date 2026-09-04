@@ -417,6 +417,11 @@ get_grid <- function(shp, ras,
   df <- df |>
     left_join(r_df, by = "gid")
 
+  ## Save raster with ID
+  r_gid <- r_poly
+  values(r_gid) <- r_poly$gid
+  names(r_gid) <- "gid"
+
   ## Calculate land cover
   r_cover <- terra::rasterize(world, r, cover = TRUE)
   terra::set.names(r_cover, "landcover")
@@ -869,7 +874,7 @@ get_grid <- function(shp, ras,
 
   if(return == "list"){
     out <- list()
-    out$r <- r
+    out$r <- r_gid
     out$info$res <- res
     out$info$id_var <- "COWID"
     out$data <- df |> dplyr::as_tibble()
