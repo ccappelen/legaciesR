@@ -14,11 +14,13 @@ You can install the development version of legaciesr from
 [GitHub](https://github.com/) with:
 
 ``` r
+
 install.packages("devtools")
 devtools::install_github("ccappelen/legaciesR")
 ```
 
 ``` r
+
 library(legaciesr)
 #> Warning: replacing previous import 'dplyr::intersect' by 'terra::intersect'
 #> when loading 'legaciesr'
@@ -39,6 +41,7 @@ The plots produced below rely on custom functions available in my
 personal package which can be loaded with the following code:
 
 ``` r
+
 devtools::install_github("ccappelen/cappelenR")
 library(cappelenR)
 ```
@@ -94,6 +97,7 @@ It is therefore recommended to start the script by setting a
 \[future::plan\]:
 
 ``` r
+
 future::plan("multisession", workers = future::availableCores())
 ## The above code sets up parallel processing on all available cores. 
 ## This can be changed with the 'workers' option. 
@@ -107,12 +111,14 @@ mapping data is the set of shapefiles called “master_shapefile”, while
 the raw ID data isd called “legacies_id_coding.xlsx”:
 
 ``` r
+
 shp_folder <- "path to map data folder"
 shp_name <- "name of shapefile"
 id_path <- "file path to id data"
 ```
 
 ``` r
+
 shp <- st_read(shp_path, shp_name)
 rm(shp_folder, shp_name)
 
@@ -144,6 +150,7 @@ geometries and run the
 to identify potential issues.
 
 ``` r
+
 shp <- fix_invalid(shp)
 #> 447 (3.3 %) geometries were successfully rebuilt.
 #> 0 (0 %) geometries failed to rebuild as valid.
@@ -162,6 +169,7 @@ case each polity-year will be represented by multiple rows
 the capital with the longest continuous spell.
 
 ``` r
+
 id <- prepare_id(id, multiple_capital = FALSE)
 ```
 
@@ -190,6 +198,7 @@ considered sovereign. The size of the window can be changed with the
 `margin_sovereign` option.
 
 ``` r
+
 shp <- prepare_shapes(shp = shp, state_data = id,
                       id_var = COWID, period_var = year,
                       range_min = lyear, range_max = hyear,
@@ -215,6 +224,7 @@ First, it prints a report detailing whether and how many potential
 issues there are for a given type of error.
 
 ``` r
+
 errors <- detect_errors(shp = shp, capital_data = id,
                         id_var = COWID, period_var = year,
                         progress = FALSE)
@@ -238,6 +248,7 @@ other geometries of the same COWID (which might indicate either
 erroneous COWID assignment or erroneous geocoding of the map).
 
 ``` r
+
 shp_non_overlap <- errors$report$non_overlap
 shp_non_overlap
 #> Simple feature collection with 2188 features and 33 fields
@@ -286,12 +297,14 @@ returns a warning for those cases, but it is also possible to exclude
 those cases by setting `threshold_exclude` to `TRUE`.
 
 ``` r
+
 df_contour <- get_contours(shp, id_var = COWID)
 ```
 
 The code below plots the contour polygons for the Sokoto Caliphate:
 
 ``` r
+
 # Load map of Africa
 afr <- rnaturalearthdata::countries50 |>
   filter(continent == "Africa")
@@ -319,6 +332,7 @@ polygons by drawn separately by specified period (see documentation for
 further details).
 
 ``` r
+
 df_contour_panel <- get_contours(shp, id_var = COWID, by_period = TRUE, period_var = year)
 
 df_contour_panel |>
@@ -378,6 +392,7 @@ different concepts related to borders and contested territory.
     equation might change.)
 
 ``` r
+
 df_grid <- get_grid(shp, id_var = COWID, period_var = year)
 ```
 
@@ -388,6 +403,7 @@ object and assign the values for a particular variable to that object.
 See below:
 
 ``` r
+
 # Extract raster
 share_largest_count <- df_grid$r
 
@@ -416,6 +432,7 @@ divided by specified period (by default it will create a panel for each
 20-year period):
 
 ``` r
+
 df_grid_panel <- get_grid(shp, id_var = COWID, by_period = TRUE, period_var = year)
 ```
 
@@ -424,6 +441,7 @@ raster object for each period and then assigning the values for that
 period. The code below provides a function for doing that.
 
 ``` r
+
 # Define function for extracting raster grid and values for given variable
 # This might be moved to its own proper function in the package
 create_grid_panel <- function(x, var) {
@@ -446,6 +464,7 @@ share_largest_count_panel <- create_grid_panel(
 ```
 
 ``` r
+
 # Plot grid for each period
 ggplot() +
   geom_sf(data = afr) +
@@ -495,6 +514,7 @@ therefore necessary to specify a file path to the LEGACIES folder which
 contains data on population.
 
 ``` r
+
 id_contour <- match_id_contour(id_data = id, multiple_levels = FALSE,
                                contour_data = df_contour,
                                covar_path = ".../legacies_project")
@@ -509,6 +529,7 @@ whether to use only the first destination state or all destination
 states with the `multiple` option.
 
 ``` r
+
 id_aggregate_source <- id2country(id_data = id_contour, 
                            method = "source", 
                            multiple = FALSE)
@@ -520,6 +541,7 @@ polity-year is determined by the ID data created with
 [`prepare_id()`](https://ccappelen.github.io/legaciesR/reference/prepare_id.md).
 
 ``` r
+
 id_aggregate_source <- id2country(id_data = id_contour, 
                            method = "capital")
 ```
@@ -532,6 +554,7 @@ polity is located within the borders of a given modern country or (2)
 the polity overlaps with at least 5 % of the modern country.
 
 ``` r
+
 id_aggregate_source <- id2country(id_data = id_contour, 
                            method = "polygon")
 #> Warning: attribute variables are assumed to be spatially constant throughout
