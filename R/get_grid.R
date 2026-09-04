@@ -418,7 +418,7 @@ get_grid <- function(shp, ras,
     left_join(r_df, by = "gid")
 
   ## Save raster with ID
-  r_gid <- r_poly
+  r_gid <- r
   values(r_gid) <- r_poly$gid
   names(r_gid) <- "gid"
 
