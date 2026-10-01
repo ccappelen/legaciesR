@@ -223,7 +223,8 @@ prepare_shapes <- function(shp,
   shp <- shp |>
     dplyr::mutate(source_year = stringr::str_extract(source, "\\d+")) |>
     dplyr::mutate(source_year = ifelse(stringr::str_length(source_year) == 2, paste0(source_year, "50"), source_year)) |>
-    dplyr::mutate(source_year = as.numeric(source_year))
+    dplyr::mutate(source_year = as.numeric(source_year)) |>
+    dplyr::mutate(source_year = ifelse(stringr::str_detect(source, "^phersu"), 2025, source_year))
 
   ## Exclude source year
   if (!is.na(exclude_source_year)) {
