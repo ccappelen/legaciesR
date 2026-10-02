@@ -26,6 +26,12 @@
 #' @param parallel Logical, whether to use parallel processing with `ncores` number of cores.
 #'   See details below.
 #' @param ncores Integer, the number of cores to use for parallel processing. Default is all available cores minus 1.
+#' @param exclude_lower_bound numeric, if specified, the areas of least coverage will be excluded before generating the
+#'   contour polygons. Must be a number between 0 and 1. For example, 0.05 means that areas with less than 5 percent coverage
+#'   will be excluded from the contour polygons. Default is NA, meaning all areas are included.
+#' @param cut3 Numeric vector of length 2. Instead of equal range cuts specified with [cuts], this will result in 3 contour
+#'   polygons corresponding to periphery, intermediate, and core separated by the cut values. This will overwrite the [cuts] option.
+#'   Default is NA, which results in the equal range cuts being used.
 #' @param ... Additional arguments passed to [contour_polygons].
 
 #' @return Returns either an sf dataframe (default) or a list of sf dataframes (one list item per group).
@@ -68,6 +74,8 @@ get_contours <- function(shp,
                          period_var,
                          cuts = 4,
                          include_higher = TRUE,
+                         exclude_lower_bound = NA,
+                         cut3 = NA,
                          nmap_threshold = 5,
                          threshold_exclude = FALSE,
                          invalid_geom = c("stop", "fix", "exclude"),
@@ -371,6 +379,8 @@ get_contours <- function(shp,
           smoothing = smoothing,
           invalid_geom = invalid_geom,
           include_higher = include_higher,
+          exclude_lower_bound = exclude_lower_bound,
+          cut3 = cut3,
           cuts = cuts,
           ...)
       },

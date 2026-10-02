@@ -20,10 +20,17 @@
 #'   if there are invalid geometries; if `"exclude"`, invalid geometries will be removed before
 #'   calculating contours; if `"fix"`, invalid geometries will be rebuilt using [fix_invalid].
 #'   It is recommended to check for invalid geometries and run [fix_invalid] separately.
-#' @param include_higher logical, whether the contour polygons should include percentiles above current interval.
+#' @param include_higher Logical, whether the contour polygons should include percentiles above current interval.
 #'  If TRUE (default), the 50 % polygon will include all areas covered by at least 50 % of the shapes
 #'  (and not just within the specified interval, e.g., 0.75-1, 0.50-1, 0.25-1...). If FALSE, the polygon will include only areas
 #'  within the specified interval (e.g., 0.75-1, 0.50-0.75, 0.25-0.50...).
+#'  @param exclude_lower_bound Numeric, if specified, the areas of least coverage will be excluded before generating the
+#'  contour polygons. Must be a number between 0 and 1. For example, 0.05 means that areas with less than 5 percent coverage
+#'  will be excluded from the contour polygons. Default is NA, meaning all areas are included.
+#'  @param cut3 Numeric vector of length 2. Instead of equal range cuts specified with [cuts], this will result in 3 contour
+#'  polygons corresponding to periphery, intermediate, and core separated by the cut values. This will overwrite the [cuts] option.
+#'  Default is NA, which results in the equal range cuts being used.
+#'
 
 #' @return Returns an sf dataframe with the same number of features as specified in `cuts.` The density,
 #'  or percentile, is stored in the columns `prob` and `label.`
@@ -57,7 +64,9 @@ contour_polygons <- function(shp,
                              nmap_threshold = 2,
                              smoothing = TRUE,
                              invalid_geom = c("stop", "fix", "exclude"),
-                             include_higher = TRUE) {
+                             include_higher = TRUE,
+                             exclude_lower_bound = NA,
+                             cut3 = NA) {
 
   prob <- NULL
 
@@ -259,6 +268,39 @@ contour_polygons <- function(shp,
     r_count <- terra::rasterize(shp, r, fun = "count")
     r_prob <- r_count / n_maps
 
+    if (!is.na(exclude_lower_bound)) {
+      if (exclude_lower_bound <= 0 || exclude_lower_bound > 1) {
+        cli::cli_abort("{.arg exclude_lower_bound} must be a value between 0 and 1.")
+      }
+
+      r_prob <- terra::ifel(r_prob < exclude_lower_bound, 0, r_prob)
+    }
+
+    if (any(!is.na(cut3))) {
+      if (!is.numeric(cut3)) {
+        cli::cli_abort("{.arg cut3} must be a numeric vector of length two with values between 0 and 1
+                       specifying the two cuts separating periphery, intermediate, and core areas.")
+      }
+
+      if (length(cut3) != 2) {
+        cli::cli_abort("{.arg cut3} must be a numeric vector of length two with values between 0 and 1
+                       specifying the two cuts separating periphery, intermediate, and core areas.")
+      }
+
+      cuts <- 3
+      # r_prob <- terra::ifel(r_prob < cut3[1] & r_prob > 0, 1/3 - 0.01, r_prob)
+      # r_prob <- terra::ifel(r_prob >= cut3[1] & r_prob < cut3[2], 2/3 - 0.01, r_prob)
+      # r_prob <- terra::ifel(r_prob >= cut3[2], 1 - 0.01, r_prob)
+
+      m <- matrix(c(0,cut3[1], cut3[1] - 0.01,
+                    cut3[1], cut3[2], cut3[2] - 0.01,
+                    cut3[2], 1, 1 - 0.01),
+                  ncol = 3, byrow = TRUE)
+      r_prob <- terra::classify(r_prob, m, include.lowest = FALSE)
+
+    }
+
+
     if (missing(cuts)) {
       cli::cli_abort(c(
         "Please specify the number of cuts. For example, if the polygons should be split into deciles, the number of cuts should be 10 (for quartiles it should be 4)."
@@ -291,6 +333,20 @@ contour_polygons <- function(shp,
         dplyr::bind_rows() |>
         dplyr::arrange(prob)
 
+      if (any(!is.na(cut3))) {
+        shp_smoothed <- shp_smoothed |>
+          dplyr::mutate(prob = dplyr::case_when(
+            prob == round(0,2) ~ cut3[1],
+            prob == round(cut_seq[1],2) ~ cut3[2],
+            prob == round(cut_seq[2],2) ~ 1.00
+          )) |>
+          dplyr::mutate(label = dplyr::case_when(
+            prob == cut3[1] ~ "Periphery",
+            prob == cut3[2] ~ "Intermediate",
+            prob == 1.00 ~ "Core"
+          ))
+      }
+
     } else {
 
       shp_smoothed <- lapply(
@@ -302,12 +358,26 @@ contour_polygons <- function(shp,
             {\(.) if (smoothing) smoothr::smooth(.) else . }() |>
             # {if(smoothing) smoothr::smooth(_) else _ } |>  # method = smooth_method, smoothness = smoothness_factor
             dplyr::mutate(prob = round(x, 2)) |>
-            dplyr::mutate(label = paste0(round(x-cut_interval, 2), "-", x)) |>
+            dplyr::mutate(label = paste0(round(x-cut_interval, 2), "-", round(x, 2))) |>
             cbind(ids) |>
             dplyr::mutate(nmaps = n_maps) |>
             dplyr::select({{ id_vars }}, "prob", "label", "nmaps")
         }) |>
         dplyr::bind_rows()
+
+      if (any(!is.na(cut3))) {
+        shp_smoothed <- shp_smoothed |>
+          dplyr::mutate(prob = dplyr::case_when(
+            prob == round(cut_seq[1],2) ~ cut3[1],
+            prob == round(cut_seq[2],2) ~ cut3[2],
+            prob == round(cut_seq[3],2) ~ 1.00
+          )) |>
+          dplyr::mutate(label = dplyr::case_when(
+            prob == cut3[1] ~ "Periphery",
+            prob == cut3[2] ~ "Intermediate",
+            prob == 1.00 ~ "Core"
+          ))
+      }
 
     }
 
