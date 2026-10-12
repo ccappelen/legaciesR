@@ -12,6 +12,8 @@ get_contours(
   period_var,
   cuts = 4,
   include_higher = TRUE,
+  exclude_lower_bound = NA,
+  cut3 = NA,
   nmap_threshold = 5,
   threshold_exclude = FALSE,
   invalid_geom = c("stop", "fix", "exclude"),
@@ -43,10 +45,18 @@ This argument is necessary if \code{by_period} is \code{TRUE.}}
 \item{cuts}{Integer of length 1 specifying the number of (equally spaced) contour polygons to be returned.
 For example, if \code{cuts = 10} the function will return 10 polygons representing the 10 deciles (0-0.1, 0.1-0.2, ...).}
 
-\item{include_higher}{logical, whether the contour polygons should include percentiles above current interval.
+\item{include_higher}{Logical, whether the contour polygons should include percentiles above current interval.
 If TRUE (default), the 50 \% polygon will include all areas covered by at least 50 \% of the shapes
 (and not just within the specified interval, e.g., 0.75-1, 0.50-1, 0.25-1...). If FALSE, the polygon will include only areas
 within the specified interval (e.g., 0.75-1, 0.50-0.75, 0.25-0.50...).}
+
+\item{exclude_lower_bound}{numeric, if specified, the areas of least coverage will be excluded before generating the
+contour polygons. Must be a number between 0 and 1. For example, 0.05 means that areas with less than 5 percent coverage
+will be excluded from the contour polygons. Default is NA, meaning all areas are included.}
+
+\item{cut3}{Numeric vector of length 2. Instead of equal range cuts specified with \code{cuts}, this will result in 3 contour
+polygons corresponding to periphery, intermediate, and core separated by the cut values. This will overwrite the \code{cuts} option.
+Default is NA, which results in the equal range cuts being used.}
 
 \item{nmap_threshold}{Integer, indicating the number of shapes required within each group. Default is 5.}
 

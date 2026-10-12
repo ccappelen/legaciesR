@@ -29,8 +29,8 @@
 #' @param exclude_lower_bound numeric, if specified, the areas of least coverage will be excluded before generating the
 #'   contour polygons. Must be a number between 0 and 1. For example, 0.05 means that areas with less than 5 percent coverage
 #'   will be excluded from the contour polygons. Default is NA, meaning all areas are included.
-#' @param cut3 Numeric vector of length 2. Instead of equal range cuts specified with [cuts], this will result in 3 contour
-#'   polygons corresponding to periphery, intermediate, and core separated by the cut values. This will overwrite the [cuts] option.
+#' @param cut3 Numeric vector of length 2. Instead of equal range cuts specified with `cuts`, this will result in 3 contour
+#'   polygons corresponding to periphery, intermediate, and core separated by the cut values. This will overwrite the `cuts` option.
 #'   Default is NA, which results in the equal range cuts being used.
 #' @param ... Additional arguments passed to [contour_polygons].
 
