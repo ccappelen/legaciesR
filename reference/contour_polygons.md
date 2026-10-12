@@ -14,7 +14,9 @@ contour_polygons(
   nmap_threshold = 2,
   smoothing = TRUE,
   invalid_geom = c("stop", "fix", "exclude"),
-  include_higher = TRUE
+  include_higher = TRUE,
+  exclude_lower_bound = NA,
+  cut3 = NA
 )
 ```
 
@@ -64,12 +66,28 @@ contour_polygons(
 
 - include_higher:
 
-  logical, whether the contour polygons should include percentiles above
+  Logical, whether the contour polygons should include percentiles above
   current interval. If TRUE (default), the 50 % polygon will include all
   areas covered by at least 50 % of the shapes (and not just within the
   specified interval, e.g., 0.75-1, 0.50-1, 0.25-1...). If FALSE, the
   polygon will include only areas within the specified interval (e.g.,
   0.75-1, 0.50-0.75, 0.25-0.50...).
+
+- exclude_lower_bound:
+
+  Numeric, if specified, the areas of least coverage will be excluded
+  before generating the contour polygons. Must be a number between 0
+  and 1. For example, 0.05 means that areas with less than 5 percent
+  coverage will be excluded from the contour polygons. Default is NA,
+  meaning all areas are included.
+
+- cut3:
+
+  Numeric vector of length 2. Instead of equal range cuts specified with
+  `cuts`, this will result in 3 contour polygons corresponding to
+  periphery, intermediate, and core separated by the cut values. This
+  will overwrite the \`cuts“\` option. Default is NA, which results in
+  the equal range cuts being used.
 
 ## Value
 
