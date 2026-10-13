@@ -6,22 +6,30 @@
 \usage{
 contour_polygons(
   shp,
-  cuts = 4,
+  n.breaks = 4,
+  breaks = NULL,
+  label.breaks = NULL,
   id_vars,
   res = 1/30,
   nmap_threshold = 2,
   smoothing = TRUE,
   invalid_geom = c("stop", "fix", "exclude"),
   include_higher = TRUE,
-  exclude_lower_bound = NA,
-  cut3 = NA
+  exclude_lower_bound = NA
 )
 }
 \arguments{
 \item{shp}{An sf dataframe to be aggregated. Must consist of more than one feature.}
 
-\item{cuts}{Integer of length 1 specifying the number of (equally spaced) contour polygons to be returned.
-For example, if \code{cuts = 10} the function will return 10 polygons representing the 10 deciles (0-0.1, 0.1-0.2, ...).}
+\item{n.breaks}{Integer of length 1 specifying the number of intervals. If \code{breaks} is not specified, the intervals
+will be evenly spaced. For example, if \code{n.breaks} is 4, the intervals will be 0-0.25, 0.25-0.5, 0.5-0.75, 0.75-1.}
+
+\item{breaks}{Numeric vector specifying the interval breaks. Include only the inner break values,
+not the outer values of 0 and 1. For instance, if the desired intervals are 0-0.15, 0.15-0.75, and 0.75-1,
+\code{breaks} should be \code{c(0.15, 0.75)}. \code{breaks} supersedes \code{n.breaks}.}
+
+\item{label.breaks}{Character vector with optional labels for each interval. Has to be same length as \code{n.breaks}
+(or one more than the length of \code{breaks}).}
 
 \item{id_vars}{Group identifiers.}
 
@@ -46,10 +54,6 @@ within the specified interval (e.g., 0.75-1, 0.50-0.75, 0.25-0.50...).}
 \item{exclude_lower_bound}{Numeric, if specified, the areas of least coverage will be excluded before generating the
 contour polygons. Must be a number between 0 and 1. For example, 0.05 means that areas with less than 5 percent coverage
 will be excluded from the contour polygons. Default is NA, meaning all areas are included.}
-
-\item{cut3}{Numeric vector of length 2. Instead of equal range cuts specified with \code{cuts}, this will result in 3 contour
-polygons corresponding to periphery, intermediate, and core separated by the cut values. This will overwrite the `cuts``` option.
-Default is NA, which results in the equal range cuts being used.}
 }
 \value{
 Returns an sf dataframe with the same number of features as specified in \code{cuts.} The density,

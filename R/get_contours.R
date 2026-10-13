@@ -13,6 +13,13 @@
 #'   For user specification, the value can be either a scalar, indicating the length of intervals
 #'   (in which case the full range is used), or a vector specifying the exact breaks, including both the
 #'   start of the first interval and end of the last interval.
+#' @param n.breaks Integer of length 1 specifying the number of intervals. If `breaks` is not specified, the intervals
+#' will be evenly spaced. For example, if `n.breaks` is 4, the intervals will be 0-0.25, 0.25-0.5, 0.5-0.75, 0.75-1.
+#' @param breaks Numeric vector specifying the interval breaks. Include only the inner break values,
+#' not the outer values of 0 and 1. For instance, if the desired intervals are 0-0.15, 0.15-0.75, and 0.75-1,
+#' `breaks` should be `c(0.15, 0.75)`. `breaks` supersedes `n.breaks`.
+#' @param label.breaks Character vector with optional labels for each interval. Has to be same length as `n.breaks`
+#' (or one more than the length of `breaks`).
 #' @inheritParams contour_polygons
 # @param cuts Integer of length 1 specifying the number of (equally spaced) contour polygons to be returned.
 #   For example, if `cuts = 10` the function will return 10 polygons representing the 10 deciles (0-0.1, 0.1-0.2, ...).
@@ -29,9 +36,6 @@
 #' @param exclude_lower_bound numeric, if specified, the areas of least coverage will be excluded before generating the
 #'   contour polygons. Must be a number between 0 and 1. For example, 0.05 means that areas with less than 5 percent coverage
 #'   will be excluded from the contour polygons. Default is NA, meaning all areas are included.
-#' @param cut3 Numeric vector of length 2. Instead of equal range cuts specified with `cuts`, this will result in 3 contour
-#'   polygons corresponding to periphery, intermediate, and core separated by the cut values. This will overwrite the `cuts` option.
-#'   Default is NA, which results in the equal range cuts being used.
 #' @param ... Additional arguments passed to [contour_polygons].
 
 #' @return Returns either an sf dataframe (default) or a list of sf dataframes (one list item per group).
@@ -72,10 +76,11 @@ get_contours <- function(shp,
                          by_period = FALSE,
                          interval = NULL,
                          period_var,
-                         cuts = 4,
+                         n.breaks = 4,
+                         breaks = NULL,
+                         label.breaks = NULL,
                          include_higher = TRUE,
                          exclude_lower_bound = NA,
-                         cut3 = NA,
                          nmap_threshold = 5,
                          threshold_exclude = FALSE,
                          invalid_geom = c("stop", "fix", "exclude"),
@@ -116,45 +121,6 @@ get_contours <- function(shp,
   }
 
 
-
-
-
-  # Set parallel options
-  # supportedByOS <- ifelse(.Platform$OS.type == "unix", TRUE, FALSE)
-  #
-  # if (is.null(parallel)) {
-  #   if (supportedByOS) {
-  #     parallel <- TRUE
-  #   } else {
-  #     parallel <- FALSE
-  #   }
-  # }
-
-  # if (parallel) {
-  #   if (supportedByOS) {
-  #     if(missing(ncores)) {
-  #       future::plan("multisession", workers = future::availableCores() - 1)
-  #     } else {
-  #       if (ncores >= 2) {
-  #         future::plan("multicore", workers = ncores)
-  #       } else{
-  #         future::plan("multicore")
-  #         if (progress) cli::cli_inform("Jobs running sequentially since {.arg ncores} is 1.")
-  #       }
-  #     }
-  #     if (progress) cli::cli_inform("Jobs running in parallel using forking (multicore)")
-  #   } else {
-  #     if (missing(ncores)) {
-  #       ncores <- future::availableCores() - 1
-  #     }
-  #     future::plan("multisession", workers = ncores)
-  #     if (progress) cli::cli_inform("Jobs running in parallel using multisession.")
-  #   }
-  # } else {
-  #   future::plan("sequential")
-  #   if (progress) cli::cli_inform("Jobs running sequentially.")
-  # }
-  # on.exit(future::plan("sequential"), add = TRUE)
 
 
   ## CREATE CONTOUR POLYGONS ACROSS ALL PERIODS
@@ -360,7 +326,7 @@ get_contours <- function(shp,
     id_name <- shp |>
       sf::st_drop_geometry() |>
       dplyr::distinct({{ id_var }}, polity_name)
-    id_name <- id_name |> first()
+    # id_name <- id_name |> first()
   }
 
 
@@ -380,71 +346,14 @@ get_contours <- function(shp,
           invalid_geom = invalid_geom,
           include_higher = include_higher,
           exclude_lower_bound = exclude_lower_bound,
-          cut3 = cut3,
-          cuts = cuts,
+          n.breaks = n.breaks,
+          breaks = breaks,
+          label.breaks = label.breaks,
           ...)
       },
       .options = furrr_options(seed = TRUE)
     )
   }, interrupts = TRUE)
-
-
-  # ## APPLY CONTOUR FUNCTION OVER EACH GROUP OF GEOMETRIES
-  # if (by_period) {
-  #   progressr::with_progress({
-  #     p <- progressr::progressor(along = shp_list)
-  #
-  #     shp_contours <- furrr::future_map(
-  #       shp_list,
-  #       .f = function(x) {
-  #         p()
-  #         legaciesr::contour_polygons(
-  #           x, id_vars = c({{ id_var }}, period),
-  #           nmap_threshold = nmap_threshold,
-  #           smoothing = smoothing,
-  #           invalid_geom = invalid_geom,
-  #           include_higher = include_higher,
-  #           cuts = cuts,
-  #           ...)
-  #       },
-  #       .options = furrr_options(seed = TRUE)
-  #     )
-  #   }, interrupts = TRUE)
-  # } else {
-  #   progressr::with_progress({
-  #     p <- progressr::progressor(along = shp_list)
-  #
-  #     shp_contours <- furrr::future_map(
-  #       shp_list,
-  #       .f = function(x) {
-  #         p()
-  #         legaciesr::contour_polygons(
-  #           x, id_vars = c({{ id_var }}),
-  #           nmap_threshold = nmap_threshold,
-  #           smoothing = smoothing,
-  #           invalid_geom = invalid_geom,
-  #           include_higher = include_higher,
-  #           cuts = cuts,
-  #           ...)
-  #       },
-  #       .options = furrr_options(seed = TRUE)
-  #     )
-  #   }, interrupts = TRUE)
-  # }
-
-
-
-  # shp_contours <- pbapply::pblapply(
-  #   shp_list,
-  #   FUN = function(x) {
-  #     contour_polygons(
-  #       x, id_vars = c({{ id_var }}, period),
-  #       nmap_threshold = nmap_threshold,
-  #       smoothing = smoothing,
-  #       ...)
-  #   },
-  #   cl = cl
-  # ) %>% suppressWarnings()
 
 
   # Check for errors
