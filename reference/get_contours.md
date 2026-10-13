@@ -12,10 +12,11 @@ get_contours(
   by_period = FALSE,
   interval = NULL,
   period_var,
-  cuts = 4,
+  n.breaks = 4,
+  breaks = NULL,
+  label.breaks = NULL,
   include_higher = TRUE,
   exclude_lower_bound = NA,
-  cut3 = NA,
   nmap_threshold = 5,
   threshold_exclude = FALSE,
   invalid_geom = c("stop", "fix", "exclude"),
@@ -58,11 +59,24 @@ get_contours(
   Name of the period variable to be used for time grouping. This
   argument is necessary if `by_period` is `TRUE.`
 
-- cuts:
+- n.breaks:
 
-  Integer of length 1 specifying the number of (equally spaced) contour
-  polygons to be returned. For example, if `cuts = 10` the function will
-  return 10 polygons representing the 10 deciles (0-0.1, 0.1-0.2, ...).
+  Integer of length 1 specifying the number of intervals. If `breaks` is
+  not specified, the intervals will be evenly spaced. For example, if
+  `n.breaks` is 4, the intervals will be 0-0.25, 0.25-0.5, 0.5-0.75,
+  0.75-1.
+
+- breaks:
+
+  Numeric vector specifying the interval breaks. Include only the inner
+  break values, not the outer values of 0 and 1. For instance, if the
+  desired intervals are 0-0.15, 0.15-0.75, and 0.75-1, `breaks` should
+  be `c(0.15, 0.75)`. `breaks` supersedes `n.breaks`.
+
+- label.breaks:
+
+  Character vector with optional labels for each interval. Has to be
+  same length as `n.breaks` (or one more than the length of `breaks`).
 
 - include_higher:
 
@@ -80,14 +94,6 @@ get_contours(
   and 1. For example, 0.05 means that areas with less than 5 percent
   coverage will be excluded from the contour polygons. Default is NA,
   meaning all areas are included.
-
-- cut3:
-
-  Numeric vector of length 2. Instead of equal range cuts specified with
-  `cuts`, this will result in 3 contour polygons corresponding to
-  periphery, intermediate, and core separated by the cut values. This
-  will overwrite the `cuts` option. Default is NA, which results in the
-  equal range cuts being used.
 
 - nmap_threshold:
 
