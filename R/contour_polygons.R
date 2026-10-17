@@ -151,15 +151,6 @@ contour_polygons <- function(shp,
     n.breaks <- length(breaks) + 1
     breaks <- c(0, breaks, 1)
 
-    if (!is.null(label.breaks)) {
-      if (length(label.breaks) != n.breaks || !is.character(label.breaks)) {
-        cli::cli_abort("{.arg label.breaks} must be a character vector of same length as {.arg n.breaks}")
-      }
-    } else {
-      label.breaks <- if(include_higher) paste0(round(breaks[-length(breaks)], 2), "-", 1) else paste0(round(breaks[-length(breaks)], 2), "-", round(breaks[-1], 2))
-    }
-
-
   } else {
 
     if (is.null(n.breaks)) {
@@ -170,20 +161,36 @@ contour_polygons <- function(shp,
     # Create equal interval breaks based on n.breaks
     breaks <- seq(0, 1, 1/n.breaks)
 
-    if (!is.null(label.breaks)) {
-      if (length(label.breaks) != n.breaks || !is.character(label.breaks)) {
-        cli::cli_abort("{.arg label.breaks} must be a character vector of same length as {.arg n.breaks}")
-      }
-    } else {
-      label.breaks <- if(include_higher) paste0(round(breaks[-length(breaks)], 2), "-", 1) else paste0(round(breaks[-length(breaks)], 2), "-", round(breaks[-1], 2))
+  }
+
+  ## Exclude areas with probability less than specified value
+  if (!is.na(exclude_lower_bound)) {
+    if (exclude_lower_bound <= 0 || exclude_lower_bound > 1) {
+      cli::cli_abort("{.arg exclude_lower_bound} must be a value between 0 and 1.")
     }
 
+    if (exclude_lower_bound >= breaks[2]) {
+      cli::cli_abort("{.arg exclude_lower_bound} must be less than the first interval break. If you specified {.arg n.breaks},
+                     the lower bound must be less than 1/{.arg n.breaks}.")
+    }
+
+    # r_prob <- terra::ifel(r_prob < exclude_lower_bound, 0, r_prob)
+    breaks[1] <- exclude_lower_bound
   }
 
   breaks.cat <- seq_len(n.breaks)
   breaks.mat <- cbind(from = breaks[-length(breaks)],
                       to = breaks[-1],
                       becomes = breaks.cat)
+
+  # Create labels if none specified
+  if (!is.null(label.breaks)) {
+    if (length(label.breaks) != n.breaks || !is.character(label.breaks)) {
+      cli::cli_abort("{.arg label.breaks} must be a character vector of same length as {.arg n.breaks}")
+    }
+  } else {
+    label.breaks <- if(include_higher) paste0(round(breaks[-length(breaks)], 2), "-", 1) else paste0(round(breaks[-length(breaks)], 2), "-", round(breaks[-1], 2))
+  }
 
 
 
@@ -196,15 +203,6 @@ contour_polygons <- function(shp,
   r_prob <- r_count / n_maps
 
 
-
-  ## Exclude areas with probability less than specified value
-  if (!is.na(exclude_lower_bound)) {
-    if (exclude_lower_bound <= 0 || exclude_lower_bound > 1) {
-      cli::cli_abort("{.arg exclude_lower_bound} must be a value between 0 and 1.")
-    }
-
-    r_prob <- terra::ifel(r_prob < exclude_lower_bound, 0, r_prob)
-  }
 
 
   ## Reclassify raster probabilities

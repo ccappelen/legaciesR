@@ -31,12 +31,24 @@ devtools::install_github("ccappelen/legaciesR")
 
 ``` r
 library(legaciesr)
-#> Warning: replacing previous import 'dplyr::intersect' by 'terra::intersect'
-#> when loading 'legaciesr'
-#> Warning: replacing previous import 'glue::trim' by 'terra::trim' when loading
-#> 'legaciesr'
-#> Warning: replacing previous import 'dplyr::union' by 'terra::union' when
+#> Warning: replacing previous import 'data.table::first' by 'dplyr::first' when
 #> loading 'legaciesr'
+#> Warning: replacing previous import 'data.table::between' by 'dplyr::between'
+#> when loading 'legaciesr'
+#> Warning: replacing previous import 'data.table::last' by 'dplyr::last' when
+#> loading 'legaciesr'
+#> Warning: replacing previous import 'dplyr::union' by 'raster::union' when
+#> loading 'legaciesr'
+#> Warning: replacing previous import 'dplyr::intersect' by 'raster::intersect'
+#> when loading 'legaciesr'
+#> Warning: replacing previous import 'data.table::shift' by 'raster::shift' when
+#> loading 'legaciesr'
+#> Warning: replacing previous import 'glue::trim' by 'raster::trim' when loading
+#> 'legaciesr'
+#> Warning: replacing previous import 'dplyr::select' by 'raster::select' when
+#> loading 'legaciesr'
+#> Warning: replacing previous import 'data.table:::=' by 'rlang:::=' when loading
+#> 'legaciesr'
 #> Warning: replacing previous import 'terra::extract' by 'tidyr::extract' when
 #> loading 'legaciesr'
 #> Warning: replacing previous import 'terra::na.omit' by 'stats::na.omit' when
@@ -115,18 +127,21 @@ future::plan("multisession", workers = future::availableCores())
 
 The raw map and ID data is not currently included in the package and
 therefore has to be loaded from the user’s own directory. The raw
-mapping data is the set of shapefiles called “master_shapefile”, while
-the raw ID data isd called “legacies_id_coding.xlsx”:
+mapping data is the shapefile called “master_shapefile”, while the raw
+ID data isd called “legacies_id_coding.xlsx”. NB: Reading a .gpkg
+shapefile results in the geometry column being names “geom”, while the
+functions assume the geometry column is named “geometry”. Hence, it is
+necessary to rename the geometry column before continuing.
 
 ``` r
-shp_folder <- "path to map data folder"
-shp_name <- "name of shapefile"
-id_path <- "file path to id data"
+shp_path <- "path/name of shapefile, with .gpkg file extension"
+id_path <- "file path/name to id data (.xlsx)"
 ```
 
 ``` r
-shp <- st_read(shp_path, shp_name)
-rm(shp_folder, shp_name)
+shp <- st_read(shp_path) |> 
+  rename(geometry = geom)
+rm(shp_path)
 
 id <- readxl::read_xlsx(isd_path)
 rm(id_path)
@@ -154,7 +169,7 @@ issues.
 
 ``` r
 shp <- fix_invalid(shp)
-#> 447 (3.3 %) geometries were successfully rebuilt.
+#> 631 (4 %) geometries were successfully rebuilt.
 #> 0 (0 %) geometries failed to rebuild as valid.
 ```
 
@@ -182,23 +197,33 @@ therefore also necessary to provide the ID data (see previous step) in
 order to match the two data sets. By default, the function will (1)
 expand the data to have one row per year for maps that are assigned a
 range of years, (2) fix potential issues such as three-digit years due
-to approximate dating, (3) exclude maps without your assignment, (4) add
+to approximate dating, (3) exclude maps without year assignment, (4) add
 information on capitals (names and coordinates), (5) crop all geometries
-to coastlines\*, (6) exclude maps marked as “incomplete”, (7) exclude
-maps of core regions (if they are marked as such)\*\*, and (8) exclude
-maps for years in which a state is not considered sovereign (in the ID
-data)\*\*\*. Each of these options can be disabled. It is also possible
-to exclude maps based on the hierarchy coding of states, i.e., if states
-are coded as tributary and/or dependency.
+to coastlines, (6) exclude maps marked as “incomplete”, (7) include maps
+of core regions (if they are marked as such), and (8) exclude maps for
+years in which a state is not included in the ID data\*.
 
-\* The cropped geometries currently result in errors when creating
-contour polygons (but work for grid data) \*\* There are currently
-errors in the coding of core regions. \*\*\* By default, maps are
-included if they fall within a 5-year window of when a state is
-considered sovereign. The size of the window can be changed with the
-`margin_sovereign` option.
+The latter option (8) is important as it determines what types of
+entities are included in the final shapefile, and this is determined by
+how the ID data is subset. If the complete ID data is used (after
+`legaciesr::prepare_id()`), the result is to include all “polities”,
+which mean all entities that have at least internal autonomy but not
+necessarily external autonomy (i.e. it includes entities with
+`hierarchy = 2`). If the ID data is subset to include only quasi-states
+and states, then the resulting shapefile will similarly only include
+maps from years in which a given entity is considered a quasi-state or a
+state in the ID data (except for the 5-year window). In the following,
+we subset the ID data to quasi-states and states.
+
+\* By default, maps are included if they fall within a 5-year window of
+when a state is included in the ID data. The size of the window can be
+changed with the `margin_sovereign` option.
 
 ``` r
+# First, subset ID data to include only polity-years of quasi-states and states
+id <- id |> 
+  filter(state_type %in% c("Quasi-state", "State"))
+
 shp <- prepare_shapes(shp = shp, state_data = id,
                       id_var = COWID, period_var = year,
                       range_min = lyear, range_max = hyear,
@@ -229,13 +254,13 @@ errors <- detect_errors(shp = shp, capital_data = id,
                         progress = FALSE)
 #> 
 #> POTENTIAL ERRORS:
-#> • 113 states with potentially duplicate COWIDs.
-#> • 8 shapes with empty geometries.
+#> • 4 states with potentially duplicate COWIDs.
+#> • 0 shapes with empty geometries.
 #> • 0 shapes with missing IDs.
-#> • 23 COWIDs with only a single map.
-#> • 75 maps with years missing or outside 1750-1920.
-#> • 2188 maps that do not overlap with other shapes with the same ID.
-#> • 4765 maps where the capital falls outside the polygon.
+#> • 47 COWIDs with only a single map.
+#> • 0 maps with years missing or outside 1750-1920.
+#> • 2913 maps that do not overlap with other shapes with the same ID.
+#> • 2154 maps where the capital falls outside the polygon.
 ```
 
 Second, it returns a list composed of (1) the original data with columns
@@ -249,33 +274,33 @@ erroneous COWID assignment or erroneous geocoding of the map).
 ``` r
 shp_non_overlap <- errors$report$non_overlap
 shp_non_overlap
-#> Simple feature collection with 2188 features and 33 fields
-#> Active geometry column: geometry (with 8 geometries empty)
+#> Simple feature collection with 2913 features and 42 fields
+#> Active geometry column: geometry
 #> Geometry type: GEOMETRY
 #> Dimension:     XY
-#> Bounding box:  xmin: -17.26439 ymin: -29.96989 xmax: 115.7275 ymax: 45.67083
+#> Bounding box:  xmin: -17.10275 ymin: -26.98566 xmax: 179.8613 ymax: 56.78339
 #> Geodetic CRS:  WGS 84
-#> # A tibble: 2,188 × 35
-#> # Groups:   COWID [95]
+#> # A tibble: 2,913 × 44
+#> # Groups:   COWID [59]
 #>    COWID COWNUM polity_name map_name     year lyear hyear coder note  coasterror
-#>  * <chr>  <int> <chr>       <chr>       <int> <chr> <chr> <chr> <chr>      <int>
-#>  1 AGA     4783 agaie       Agaie        1870 1870  1870  cm    <NA>          NA
-#>  2 AIR     4361 air         Wuste Agad…  1787 1787  1787  ss    Spli…         NA
-#>  3 AIR     4361 air         Agades       1795 1795  1795  ss    <NA>          NA
-#>  4 AIR     4361 air         Agades       1790 1790  1790  ss    <NA>          NA
-#>  5 AIR     4361 air         Air or Asb…  1874 1874  1874  ss    <NA>          NA
-#>  6 AIR     4361 air         Agades       1811 1811  1811  ss    <NA>          NA
-#>  7 AIR     4361 air         Agades       1814 1814  1814  ss    <NA>          NA
-#>  8 AIR     4361 air         Agades       1818 1818  1818  ss    <NA>          NA
-#>  9 AIR     4361 air         Air or Asb…  1855 1855  1855  ss    <NA>          NA
-#> 10 AIR     4361 air         Air, Asben   1808 1808  1808  ss    Bord…         NA
-#> # ℹ 2,178 more rows
-#> # ℹ 25 more variables: cityerror <dbl>, sourcetype <int>, `Core/Great` <int>,
-#> #   source <chr>, core <int>, id <dbl>, layer <chr>, path <chr>,
-#> #   lyear_str <chr>, core_str <chr>, geometry <GEOMETRY [°]>, geom_valid <lgl>,
-#> #   rebuilt <lgl>, snap_precision <dbl>, capital_name <chr>,
-#> #   capital_coords <MULTIPOINT [°]>, incomplete <lgl>, in_spell <lgl>,
-#> #   empty_geom <lgl>, missing_id <lgl>, single_map <lgl>, year_outside <lgl>, …
+#>  * <chr>  <int> <chr>       <chr>       <dbl> <chr> <chr> <chr> <chr>      <int>
+#>  1 ACH     8531 aceh        atjeh (ach…  1782 1782  1828  ob    <NA>          39
+#>  2 ACH     8531 aceh        atjeh (ach…  1800 1782  1828  ob    <NA>          39
+#>  3 ACH     8531 aceh        atjeh (ach…  1820 1782  1828  ob    <NA>          39
+#>  4 ACH     8531 aceh        atjeh (ach…  1828 1782  1828  ob    <NA>          39
+#>  5 ACH     8531 aceh        sultanate …  1786 1786  1914  ob    <NA>          21
+#>  6 ACH     8531 aceh        sultanate …  1800 1786  1914  ob    <NA>          21
+#>  7 ACH     8531 aceh        sultanate …  1820 1786  1914  ob    <NA>          21
+#>  8 ACH     8531 aceh        sultanate …  1840 1786  1914  ob    <NA>          21
+#>  9 ACH     8531 aceh        sultanate …  1860 1786  1914  ob    <NA>          21
+#> 10 ACH     8531 aceh        Aceh         1858 1858  1908  ob    <NA>           9
+#> # ℹ 2,903 more rows
+#> # ℹ 34 more variables: cityerror <dbl>, sourcetype <dbl>, source <chr>,
+#> #   core <int>, id <dbl>, lyear_str <chr>, core_str <chr>, combo <chr>,
+#> #   tags <chr>, geom_char <chr>, .COWID_norm <chr>, .COWNUM_norm <chr>,
+#> #   .name_norm <chr>, .source_norm <chr>, geom_valid <lgl>, rebuilt <lgl>,
+#> #   snap_precision <dbl>, source_year <dbl>, incomplete <lgl>, map_year <dbl>,
+#> #   in_spell <lgl>, capital_name <chr>, hie_tributary <dbl>, …
 ```
 
 ## Create contour polygons
@@ -284,18 +309,36 @@ Contour polygons capture the varying degrees to which a given area is
 covered by the digitized maps. The contours divide the region covered by
 the union of all maps into custom intervals of the share of maps
 covering a given area. By default, the function divides the territory
-into four contours (correponding to 0-1, 0.25-1, 0.5-5, and 0.75-1). But
-the number of percentiles can be specified with the `cuts` option (see
-documentation for details).
+into four contours (correponding to 0-0.25, 0.25-0.50, 0.50-0.75, and
+0.75-1). But the number of intervals can be specified with the
+`n.breaks` option (see documentation for details). Specifying `n.breaks`
+results in intervals of the same range\*, but it is also possible to
+specify custom intervals of varying ranges using the `breaks` option,
+e.g., `breaks = c(0.15, 0.40, 0.75)`. Finally, the option `label.breaks`
+allows users to specify a set of labels for each interval (e.g.,
+periphery, intermediate, core). If not specified, the labels will
+automatically be equal to the intervals. `exclude_lower_bound` allows
+users to specify a lower threshold that will be excluded from the
+outermost contour polygon. For example, if `exclude_lower_bound = 0.05`
+the first interval will be, e.g., 0.05-0.25 instead of 0-0.25).
 
-\* If the number of maps for a given polity (or polity-period) is equal
-to or smaller than the number of `cuts` specified, the function will
-return fewer contour polygons for that polity. By default, the function
-returns a warning for those cases, but it is also possible to exclude
-those cases by setting `threshold_exclude` to `TRUE`.
+\* Except in the case of `exclude_lower_bound`, in which case the first
+interval will be truncated accordingly. If custom intervals are
+specified along with `exclude_lower_bound`, this will similarly result
+in truncation of the first interval.\
+\*\* If the number of maps for a given polity (or polity-period) is
+equal to or smaller than the number of `cuts` specified, the function
+will return fewer contour polygons for that polity. By default, the
+function returns a warning for those cases, but it is also possible to
+exclude those cases by setting `threshold_exclude` to `TRUE`.
 
 ``` r
-df_contour <- get_contours(shp, id_var = COWID)
+df_contour <- get_contours(shp, id_var = COWID, n.breaks = 4, exclude_lower_bound = 0.05)
+#> Jobs running sequentially.
+#> ℹ Reverts to original plan after running.
+# Alternative with custom intervals and labels
+# df_contour <- get_contours(shp, id_var = COWID, breaks = c(0.15, 0.75), 
+#   label.breaks = c("Periphery", "Intermediate", "Core"), exclude_lower_bound = 0.05)
 ```
 
 The code below plots the contour polygons for the Sokoto Caliphate:
@@ -320,7 +363,7 @@ df_contour |>
         legend.title.position = "top") 
 ```
 
-<img src="man/figures/README-plot_contours-1.png" width="100%" />
+<img src="man/figures/README-plot_contours-1.png" alt="" width="100%" />
 
 By default, the function summarizes the maps across the entire period
 (i.e. 1750-1920). However, it is also possible to specify the contour
@@ -328,7 +371,8 @@ polygons by drawn separately by specified period (see documentation for
 further details).
 
 ``` r
-df_contour_panel <- get_contours(shp, id_var = COWID, by_period = TRUE, period_var = year)
+df_contour_panel <- get_contours(shp, id_var = COWID, by_period = TRUE, period_var = year, 
+                                 n.breaks = 4, exclude_lower_bound = 0.05)
 
 df_contour_panel |>
   filter(COWID == "SOK") |>
@@ -345,7 +389,7 @@ df_contour_panel |>
   facet_wrap(~ period)
 ```
 
-<img src="man/figures/README-contour_panel-1.png" width="100%" />
+<img src="man/figures/README-contour_panel-1.png" alt="" width="100%" />
 
 ## Create grid data
 
@@ -418,7 +462,7 @@ ggplot() +
         legend.title = element_text(size = 12))
 ```
 
-<img src="man/figures/README-plot_grid-1.png" width="100%" />
+<img src="man/figures/README-plot_grid-1.png" alt="" width="100%" />
 
 Again, it is also possible to create a panel version of the grid data,
 divided by specified period (by default it will create a panel for each
@@ -473,7 +517,7 @@ ggplot() +
   facet_grid(~ lyr)
 ```
 
-<img src="man/figures/README-plot_panel_grid-1.png" width="100%" />
+<img src="man/figures/README-plot_panel_grid-1.png" alt="" width="100%" />
 
 ## Aggregate ID data
 
