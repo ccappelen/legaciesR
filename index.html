@@ -62,12 +62,24 @@
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"ccappelen/legaciesR"</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://www.legacies-project.com" class="external-link">legaciesr</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: replacing previous import 'dplyr::intersect' by 'terra::intersect'</span></span>
-<span><span class="co">#&gt; when loading 'legaciesr'</span></span>
-<span><span class="co">#&gt; Warning: replacing previous import 'glue::trim' by 'terra::trim' when loading</span></span>
-<span><span class="co">#&gt; 'legaciesr'</span></span>
-<span><span class="co">#&gt; Warning: replacing previous import 'dplyr::union' by 'terra::union' when</span></span>
+<span><span class="co">#&gt; Warning: replacing previous import 'data.table::first' by 'dplyr::first' when</span></span>
 <span><span class="co">#&gt; loading 'legaciesr'</span></span>
+<span><span class="co">#&gt; Warning: replacing previous import 'data.table::between' by 'dplyr::between'</span></span>
+<span><span class="co">#&gt; when loading 'legaciesr'</span></span>
+<span><span class="co">#&gt; Warning: replacing previous import 'data.table::last' by 'dplyr::last' when</span></span>
+<span><span class="co">#&gt; loading 'legaciesr'</span></span>
+<span><span class="co">#&gt; Warning: replacing previous import 'dplyr::union' by 'raster::union' when</span></span>
+<span><span class="co">#&gt; loading 'legaciesr'</span></span>
+<span><span class="co">#&gt; Warning: replacing previous import 'dplyr::intersect' by 'raster::intersect'</span></span>
+<span><span class="co">#&gt; when loading 'legaciesr'</span></span>
+<span><span class="co">#&gt; Warning: replacing previous import 'data.table::shift' by 'raster::shift' when</span></span>
+<span><span class="co">#&gt; loading 'legaciesr'</span></span>
+<span><span class="co">#&gt; Warning: replacing previous import 'glue::trim' by 'raster::trim' when loading</span></span>
+<span><span class="co">#&gt; 'legaciesr'</span></span>
+<span><span class="co">#&gt; Warning: replacing previous import 'dplyr::select' by 'raster::select' when</span></span>
+<span><span class="co">#&gt; loading 'legaciesr'</span></span>
+<span><span class="co">#&gt; Warning: replacing previous import 'data.table:::=' by 'rlang:::=' when loading</span></span>
+<span><span class="co">#&gt; 'legaciesr'</span></span>
 <span><span class="co">#&gt; Warning: replacing previous import 'terra::extract' by 'tidyr::extract' when</span></span>
 <span><span class="co">#&gt; loading 'legaciesr'</span></span>
 <span><span class="co">#&gt; Warning: replacing previous import 'terra::na.omit' by 'stats::na.omit' when</span></span>
@@ -109,14 +121,14 @@
 <div class="section level2">
 <h2 id="reading-the-data">Reading the data<a class="anchor" aria-label="anchor" href="#reading-the-data"></a>
 </h2>
-<p>The raw map and ID data is not currently included in the package and therefore has to be loaded from the user’s own directory. The raw mapping data is the set of shapefiles called “master_shapefile”, while the raw ID data isd called “legacies_id_coding.xlsx”:</p>
+<p>The raw map and ID data is not currently included in the package and therefore has to be loaded from the user’s own directory. The raw mapping data is the shapefile called “master_shapefile”, while the raw ID data isd called “legacies_id_coding.xlsx”. NB: Reading a .gpkg shapefile results in the geometry column being names “geom”, while the functions assume the geometry column is named “geometry”. Hence, it is necessary to rename the geometry column before continuing.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">shp_folder</span> <span class="op">&lt;-</span> <span class="st">"path to map data folder"</span></span>
-<span><span class="va">shp_name</span> <span class="op">&lt;-</span> <span class="st">"name of shapefile"</span></span>
-<span><span class="va">id_path</span> <span class="op">&lt;-</span> <span class="st">"file path to id data"</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">shp_path</span> <span class="op">&lt;-</span> <span class="st">"path/name of shapefile, with .gpkg file extension"</span></span>
+<span><span class="va">id_path</span> <span class="op">&lt;-</span> <span class="st">"file path/name to id data (.xlsx)"</span></span></code></pre></div>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">shp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_read.html" class="external-link">st_read</a></span><span class="op">(</span><span class="va">shp_path</span>, <span class="va">shp_name</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">shp_folder</span>, <span class="va">shp_name</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">shp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_read.html" class="external-link">st_read</a></span><span class="op">(</span><span class="va">shp_path</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/rename.html" class="external-link">rename</a></span><span class="op">(</span>geometry <span class="op">=</span> <span class="va">geom</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">shp_path</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">id</span> <span class="op">&lt;-</span> <span class="fu">readxl</span><span class="fu">::</span><span class="fu">read_xlsx</span><span class="op">(</span><span class="va">isd_path</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">id_path</span><span class="op">)</span></span></code></pre></div>
@@ -128,7 +140,7 @@
 <p>Because invalid geometries can happen for many reasons that may point to other data errors as well, it is recommended to check for valid geometries and run the <code><a href="reference/fix_invalid.html">legaciesr::fix_invalid()</a></code> to identify potential issues.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">shp</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/fix_invalid.html">fix_invalid</a></span><span class="op">(</span><span class="va">shp</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 447 (3.3 %) geometries were successfully rebuilt.</span></span>
+<span><span class="co">#&gt; 631 (4 %) geometries were successfully rebuilt.</span></span>
 <span><span class="co">#&gt; 0 (0 %) geometries failed to rebuild as valid.</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -141,10 +153,15 @@
 <div class="section level2">
 <h2 id="prepare-map-data">Prepare map data<a class="anchor" aria-label="anchor" href="#prepare-map-data"></a>
 </h2>
-<p>The next step is to prepare the map data to be in a suitable format for creating grid data, matching with data from the ISD data, etc. It is therefore also necessary to provide the ID data (see previous step) in order to match the two data sets. By default, the function will (1) expand the data to have one row per year for maps that are assigned a range of years, (2) fix potential issues such as three-digit years due to approximate dating, (3) exclude maps without your assignment, (4) add information on capitals (names and coordinates), (5) crop all geometries to coastlines*, (6) exclude maps marked as “incomplete”, (7) exclude maps of core regions (if they are marked as such)**, and (8) exclude maps for years in which a state is not considered sovereign (in the ID data)***. Each of these options can be disabled. It is also possible to exclude maps based on the hierarchy coding of states, i.e., if states are coded as tributary and/or dependency.</p>
-<p>* The cropped geometries currently result in errors when creating contour polygons (but work for grid data) ** There are currently errors in the coding of core regions. *** By default, maps are included if they fall within a 5-year window of when a state is considered sovereign. The size of the window can be changed with the <code>margin_sovereign</code> option.</p>
+<p>The next step is to prepare the map data to be in a suitable format for creating grid data, matching with data from the ISD data, etc. It is therefore also necessary to provide the ID data (see previous step) in order to match the two data sets. By default, the function will (1) expand the data to have one row per year for maps that are assigned a range of years, (2) fix potential issues such as three-digit years due to approximate dating, (3) exclude maps without year assignment, (4) add information on capitals (names and coordinates), (5) crop all geometries to coastlines, (6) exclude maps marked as “incomplete”, (7) include maps of core regions (if they are marked as such), and (8) exclude maps for years in which a state is not included in the ID data*.</p>
+<p>The latter option (8) is important as it determines what types of entities are included in the final shapefile, and this is determined by how the ID data is subset. If the complete ID data is used (after <code><a href="reference/prepare_id.html">legaciesr::prepare_id()</a></code>), the result is to include all “polities”, which mean all entities that have at least internal autonomy but not necessarily external autonomy (i.e. it includes entities with <code>hierarchy = 2</code>). If the ID data is subset to include only quasi-states and states, then the resulting shapefile will similarly only include maps from years in which a given entity is considered a quasi-state or a state in the ID data (except for the 5-year window). In the following, we subset the ID data to quasi-states and states.</p>
+<p>* By default, maps are included if they fall within a 5-year window of when a state is included in the ID data. The size of the window can be changed with the <code>margin_sovereign</code> option.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">shp</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/prepare_shapes.html">prepare_shapes</a></span><span class="op">(</span>shp <span class="op">=</span> <span class="va">shp</span>, state_data <span class="op">=</span> <span class="va">id</span>,</span>
+<code class="sourceCode R"><span><span class="co"># First, subset ID data to include only polity-years of quasi-states and states</span></span>
+<span><span class="va">id</span> <span class="op">&lt;-</span> <span class="va">id</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">state_type</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Quasi-state"</span>, <span class="st">"State"</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">shp</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/prepare_shapes.html">prepare_shapes</a></span><span class="op">(</span>shp <span class="op">=</span> <span class="va">shp</span>, state_data <span class="op">=</span> <span class="va">id</span>,</span>
 <span>                      id_var <span class="op">=</span> <span class="va">COWID</span>, period_var <span class="op">=</span> <span class="va">year</span>,</span>
 <span>                      range_min <span class="op">=</span> <span class="va">lyear</span>, range_max <span class="op">=</span> <span class="va">hyear</span>,</span>
 <span>                      crop_to_land <span class="op">=</span> <span class="cn">FALSE</span>, <span class="co">## 'get_contours' currently not working when cropped to land</span></span>
@@ -162,52 +179,58 @@
 <span>                        progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; POTENTIAL ERRORS:</span></span>
-<span><span class="co">#&gt; • 113 states with potentially duplicate COWIDs.</span></span>
-<span><span class="co">#&gt; • 8 shapes with empty geometries.</span></span>
+<span><span class="co">#&gt; • 4 states with potentially duplicate COWIDs.</span></span>
+<span><span class="co">#&gt; • 0 shapes with empty geometries.</span></span>
 <span><span class="co">#&gt; • 0 shapes with missing IDs.</span></span>
-<span><span class="co">#&gt; • 23 COWIDs with only a single map.</span></span>
-<span><span class="co">#&gt; • 75 maps with years missing or outside 1750-1920.</span></span>
-<span><span class="co">#&gt; • 2188 maps that do not overlap with other shapes with the same ID.</span></span>
-<span><span class="co">#&gt; • 4765 maps where the capital falls outside the polygon.</span></span></code></pre></div>
+<span><span class="co">#&gt; • 47 COWIDs with only a single map.</span></span>
+<span><span class="co">#&gt; • 0 maps with years missing or outside 1750-1920.</span></span>
+<span><span class="co">#&gt; • 2913 maps that do not overlap with other shapes with the same ID.</span></span>
+<span><span class="co">#&gt; • 2154 maps where the capital falls outside the polygon.</span></span></code></pre></div>
 <p>Second, it returns a list composed of (1) the original data with columns indicating potential issues for each error type and (2) separate subsets of the data set including only observations identified as a potential issue for each of the error types. For instance, the code below returns only those COWIDs for which there are geometries not overlapping with other geometries of the same COWID (which might indicate either erroneous COWID assignment or erroneous geocoding of the map).</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">shp_non_overlap</span> <span class="op">&lt;-</span> <span class="va">errors</span><span class="op">$</span><span class="va">report</span><span class="op">$</span><span class="va">non_overlap</span></span>
 <span><span class="va">shp_non_overlap</span></span>
-<span><span class="co">#&gt; Simple feature collection with 2188 features and 33 fields</span></span>
-<span><span class="co">#&gt; Active geometry column: geometry (with 8 geometries empty)</span></span>
+<span><span class="co">#&gt; Simple feature collection with 2913 features and 42 fields</span></span>
+<span><span class="co">#&gt; Active geometry column: geometry</span></span>
 <span><span class="co">#&gt; Geometry type: GEOMETRY</span></span>
 <span><span class="co">#&gt; Dimension:     XY</span></span>
-<span><span class="co">#&gt; Bounding box:  xmin: -17.26439 ymin: -29.96989 xmax: 115.7275 ymax: 45.67083</span></span>
+<span><span class="co">#&gt; Bounding box:  xmin: -17.10275 ymin: -26.98566 xmax: 179.8613 ymax: 56.78339</span></span>
 <span><span class="co">#&gt; Geodetic CRS:  WGS 84</span></span>
-<span><span class="co">#&gt; # A tibble: 2,188 × 35</span></span>
-<span><span class="co">#&gt; # Groups:   COWID [95]</span></span>
+<span><span class="co">#&gt; # A tibble: 2,913 × 44</span></span>
+<span><span class="co">#&gt; # Groups:   COWID [59]</span></span>
 <span><span class="co">#&gt;    COWID COWNUM polity_name map_name     year lyear hyear coder note  coasterror</span></span>
-<span><span class="co">#&gt;  * &lt;chr&gt;  &lt;int&gt; &lt;chr&gt;       &lt;chr&gt;       &lt;int&gt; &lt;chr&gt; &lt;chr&gt; &lt;chr&gt; &lt;chr&gt;      &lt;int&gt;</span></span>
-<span><span class="co">#&gt;  1 AGA     4783 agaie       Agaie        1870 1870  1870  cm    &lt;NA&gt;          NA</span></span>
-<span><span class="co">#&gt;  2 AIR     4361 air         Wuste Agad…  1787 1787  1787  ss    Spli…         NA</span></span>
-<span><span class="co">#&gt;  3 AIR     4361 air         Agades       1795 1795  1795  ss    &lt;NA&gt;          NA</span></span>
-<span><span class="co">#&gt;  4 AIR     4361 air         Agades       1790 1790  1790  ss    &lt;NA&gt;          NA</span></span>
-<span><span class="co">#&gt;  5 AIR     4361 air         Air or Asb…  1874 1874  1874  ss    &lt;NA&gt;          NA</span></span>
-<span><span class="co">#&gt;  6 AIR     4361 air         Agades       1811 1811  1811  ss    &lt;NA&gt;          NA</span></span>
-<span><span class="co">#&gt;  7 AIR     4361 air         Agades       1814 1814  1814  ss    &lt;NA&gt;          NA</span></span>
-<span><span class="co">#&gt;  8 AIR     4361 air         Agades       1818 1818  1818  ss    &lt;NA&gt;          NA</span></span>
-<span><span class="co">#&gt;  9 AIR     4361 air         Air or Asb…  1855 1855  1855  ss    &lt;NA&gt;          NA</span></span>
-<span><span class="co">#&gt; 10 AIR     4361 air         Air, Asben   1808 1808  1808  ss    Bord…         NA</span></span>
-<span><span class="co">#&gt; # ℹ 2,178 more rows</span></span>
-<span><span class="co">#&gt; # ℹ 25 more variables: cityerror &lt;dbl&gt;, sourcetype &lt;int&gt;, `Core/Great` &lt;int&gt;,</span></span>
-<span><span class="co">#&gt; #   source &lt;chr&gt;, core &lt;int&gt;, id &lt;dbl&gt;, layer &lt;chr&gt;, path &lt;chr&gt;,</span></span>
-<span><span class="co">#&gt; #   lyear_str &lt;chr&gt;, core_str &lt;chr&gt;, geometry &lt;GEOMETRY [°]&gt;, geom_valid &lt;lgl&gt;,</span></span>
-<span><span class="co">#&gt; #   rebuilt &lt;lgl&gt;, snap_precision &lt;dbl&gt;, capital_name &lt;chr&gt;,</span></span>
-<span><span class="co">#&gt; #   capital_coords &lt;MULTIPOINT [°]&gt;, incomplete &lt;lgl&gt;, in_spell &lt;lgl&gt;,</span></span>
-<span><span class="co">#&gt; #   empty_geom &lt;lgl&gt;, missing_id &lt;lgl&gt;, single_map &lt;lgl&gt;, year_outside &lt;lgl&gt;, …</span></span></code></pre></div>
+<span><span class="co">#&gt;  * &lt;chr&gt;  &lt;int&gt; &lt;chr&gt;       &lt;chr&gt;       &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt; &lt;chr&gt; &lt;chr&gt;      &lt;int&gt;</span></span>
+<span><span class="co">#&gt;  1 ACH     8531 aceh        atjeh (ach…  1782 1782  1828  ob    &lt;NA&gt;          39</span></span>
+<span><span class="co">#&gt;  2 ACH     8531 aceh        atjeh (ach…  1800 1782  1828  ob    &lt;NA&gt;          39</span></span>
+<span><span class="co">#&gt;  3 ACH     8531 aceh        atjeh (ach…  1820 1782  1828  ob    &lt;NA&gt;          39</span></span>
+<span><span class="co">#&gt;  4 ACH     8531 aceh        atjeh (ach…  1828 1782  1828  ob    &lt;NA&gt;          39</span></span>
+<span><span class="co">#&gt;  5 ACH     8531 aceh        sultanate …  1786 1786  1914  ob    &lt;NA&gt;          21</span></span>
+<span><span class="co">#&gt;  6 ACH     8531 aceh        sultanate …  1800 1786  1914  ob    &lt;NA&gt;          21</span></span>
+<span><span class="co">#&gt;  7 ACH     8531 aceh        sultanate …  1820 1786  1914  ob    &lt;NA&gt;          21</span></span>
+<span><span class="co">#&gt;  8 ACH     8531 aceh        sultanate …  1840 1786  1914  ob    &lt;NA&gt;          21</span></span>
+<span><span class="co">#&gt;  9 ACH     8531 aceh        sultanate …  1860 1786  1914  ob    &lt;NA&gt;          21</span></span>
+<span><span class="co">#&gt; 10 ACH     8531 aceh        Aceh         1858 1858  1908  ob    &lt;NA&gt;           9</span></span>
+<span><span class="co">#&gt; # ℹ 2,903 more rows</span></span>
+<span><span class="co">#&gt; # ℹ 34 more variables: cityerror &lt;dbl&gt;, sourcetype &lt;dbl&gt;, source &lt;chr&gt;,</span></span>
+<span><span class="co">#&gt; #   core &lt;int&gt;, id &lt;dbl&gt;, lyear_str &lt;chr&gt;, core_str &lt;chr&gt;, combo &lt;chr&gt;,</span></span>
+<span><span class="co">#&gt; #   tags &lt;chr&gt;, geom_char &lt;chr&gt;, .COWID_norm &lt;chr&gt;, .COWNUM_norm &lt;chr&gt;,</span></span>
+<span><span class="co">#&gt; #   .name_norm &lt;chr&gt;, .source_norm &lt;chr&gt;, geom_valid &lt;lgl&gt;, rebuilt &lt;lgl&gt;,</span></span>
+<span><span class="co">#&gt; #   snap_precision &lt;dbl&gt;, source_year &lt;dbl&gt;, incomplete &lt;lgl&gt;, map_year &lt;dbl&gt;,</span></span>
+<span><span class="co">#&gt; #   in_spell &lt;lgl&gt;, capital_name &lt;chr&gt;, hie_tributary &lt;dbl&gt;, …</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="create-contour-polygons">Create contour polygons<a class="anchor" aria-label="anchor" href="#create-contour-polygons"></a>
 </h2>
-<p>Contour polygons capture the varying degrees to which a given area is covered by the digitized maps. The contours divide the region covered by the union of all maps into custom intervals of the share of maps covering a given area. By default, the function divides the territory into four contours (correponding to 0-1, 0.25-1, 0.5-5, and 0.75-1). But the number of percentiles can be specified with the <code>cuts</code> option (see documentation for details).</p>
-<p>* If the number of maps for a given polity (or polity-period) is equal to or smaller than the number of <code>cuts</code> specified, the function will return fewer contour polygons for that polity. By default, the function returns a warning for those cases, but it is also possible to exclude those cases by setting <code>threshold_exclude</code> to <code>TRUE</code>.</p>
+<p>Contour polygons capture the varying degrees to which a given area is covered by the digitized maps. The contours divide the region covered by the union of all maps into custom intervals of the share of maps covering a given area. By default, the function divides the territory into four contours (correponding to 0-0.25, 0.25-0.50, 0.50-0.75, and 0.75-1). But the number of intervals can be specified with the <code>n.breaks</code> option (see documentation for details). Specifying <code>n.breaks</code> results in intervals of the same range*, but it is also possible to specify custom intervals of varying ranges using the <code>breaks</code> option, e.g., <code>breaks = c(0.15, 0.40, 0.75)</code>. Finally, the option <code>label.breaks</code> allows users to specify a set of labels for each interval (e.g., periphery, intermediate, core). If not specified, the labels will automatically be equal to the intervals. <code>exclude_lower_bound</code> allows users to specify a lower threshold that will be excluded from the outermost contour polygon. For example, if <code>exclude_lower_bound = 0.05</code> the first interval will be, e.g., 0.05-0.25 instead of 0-0.25).</p>
+<p>* Except in the case of <code>exclude_lower_bound</code>, in which case the first interval will be truncated accordingly. If custom intervals are specified along with <code>exclude_lower_bound</code>, this will similarly result in truncation of the first interval.<br>
+** If the number of maps for a given polity (or polity-period) is equal to or smaller than the number of <code>cuts</code> specified, the function will return fewer contour polygons for that polity. By default, the function returns a warning for those cases, but it is also possible to exclude those cases by setting <code>threshold_exclude</code> to <code>TRUE</code>.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">df_contour</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/get_contours.html">get_contours</a></span><span class="op">(</span><span class="va">shp</span>, id_var <span class="op">=</span> <span class="va">COWID</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">df_contour</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/get_contours.html">get_contours</a></span><span class="op">(</span><span class="va">shp</span>, id_var <span class="op">=</span> <span class="va">COWID</span>, n.breaks <span class="op">=</span> <span class="fl">4</span>, exclude_lower_bound <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Jobs running sequentially.</span></span>
+<span><span class="co">#&gt; ℹ Reverts to original plan after running.</span></span>
+<span><span class="co"># Alternative with custom intervals and labels</span></span>
+<span><span class="co"># df_contour &lt;- get_contours(shp, id_var = COWID, breaks = c(0.15, 0.75), </span></span>
+<span><span class="co">#   label.breaks = c("Periphery", "Intermediate", "Core"), exclude_lower_bound = 0.05)</span></span></code></pre></div>
 <p>The code below plots the contour polygons for the Sokoto Caliphate:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Load map of Africa</span></span>
@@ -227,10 +250,11 @@
 <span>                        expand_x <span class="op">=</span> <span class="fl">6</span>, expand_y <span class="op">=</span> <span class="fl">3</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span>, legend.justification <span class="op">=</span> <span class="st">"center"</span>,</span>
 <span>        legend.title.position <span class="op">=</span> <span class="st">"top"</span><span class="op">)</span> </span></code></pre></div>
-<p><img src="reference/figures/README-plot_contours-1.png" width="100%"></p>
+<p><img src="reference/figures/README-plot_contours-1.png" alt="" width="100%"></p>
 <p>By default, the function summarizes the maps across the entire period (i.e. 1750-1920). However, it is also possible to specify the contour polygons by drawn separately by specified period (see documentation for further details).</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">df_contour_panel</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/get_contours.html">get_contours</a></span><span class="op">(</span><span class="va">shp</span>, id_var <span class="op">=</span> <span class="va">COWID</span>, by_period <span class="op">=</span> <span class="cn">TRUE</span>, period_var <span class="op">=</span> <span class="va">year</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">df_contour_panel</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/get_contours.html">get_contours</a></span><span class="op">(</span><span class="va">shp</span>, id_var <span class="op">=</span> <span class="va">COWID</span>, by_period <span class="op">=</span> <span class="cn">TRUE</span>, period_var <span class="op">=</span> <span class="va">year</span>, </span>
+<span>                                 n.breaks <span class="op">=</span> <span class="fl">4</span>, exclude_lower_bound <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">df_contour_panel</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">COWID</span> <span class="op">==</span> <span class="st">"SOK"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -245,7 +269,7 @@
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span>, legend.justification <span class="op">=</span> <span class="st">"center"</span>,</span>
 <span>        legend.title.position <span class="op">=</span> <span class="st">"top"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span> <span class="va">period</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-contour_panel-1.png" width="100%"></p>
+<p><img src="reference/figures/README-contour_panel-1.png" alt="" width="100%"></p>
 </div>
 <div class="section level2">
 <h2 id="create-grid-data">Create grid data<a class="anchor" aria-label="anchor" href="#create-grid-data"></a>
@@ -291,7 +315,7 @@
 <span>        legend.justification <span class="op">=</span> <span class="st">"center"</span>, legend.margin <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">margin</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>,<span class="fl">0</span>,<span class="fl">0</span>,<span class="fl">0</span>,unit <span class="op">=</span> <span class="st">"cm"</span><span class="op">)</span>,</span>
 <span>        axis.ticks <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_blank</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>        legend.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">12</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-plot_grid-1.png" width="100%"></p>
+<p><img src="reference/figures/README-plot_grid-1.png" alt="" width="100%"></p>
 <p>Again, it is also possible to create a panel version of the grid data, divided by specified period (by default it will create a panel for each 20-year period):</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df_grid_panel</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/get_grid.html">get_grid</a></span><span class="op">(</span><span class="va">shp</span>, id_var <span class="op">=</span> <span class="va">COWID</span>, by_period <span class="op">=</span> <span class="cn">TRUE</span>, period_var <span class="op">=</span> <span class="va">year</span><span class="op">)</span></span></code></pre></div>
@@ -333,7 +357,7 @@
 <span>        axis.ticks <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_blank</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>        <span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_grid.html" class="external-link">facet_grid</a></span><span class="op">(</span><span class="op">~</span> <span class="va">lyr</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-plot_panel_grid-1.png" width="100%"></p>
+<p><img src="reference/figures/README-plot_panel_grid-1.png" alt="" width="100%"></p>
 </div>
 <div class="section level2">
 <h2 id="aggregate-id-data">Aggregate ID data<a class="anchor" aria-label="anchor" href="#aggregate-id-data"></a>
