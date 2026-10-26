@@ -58,7 +58,7 @@ data2grid <- function(x, covars){
 
     dat <- terra::as.data.frame(x, xy = T, na.rm = F) |>
       dplyr::rename(lon = x, lat = y) |>
-      tibble::rownames_to_column(var = "gid")  |>
+      (\(d) if ("gid" %in% names(d)) d else tibble::rownames_to_column(d, var = "gid"))()  |>
       dplyr::mutate(gid = as.numeric(gid)) |>
       data.table::as.data.table()  |>
       dplyr::select(gid, lon, lat) |>
